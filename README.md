@@ -73,32 +73,34 @@ npm start
 
 ---
 
-## 🌐 Deployment (Netlify & Render)
+## ⚡ Deployment (Netlify & Supabase)
 
-This repository is pre-configured for deployment with **Netlify** (Frontend) and **Render** (Backend).
+This repository is configured for deployment with **Netlify** (Frontend) and **Supabase** (PostgreSQL Database & Realtime Services).
 
-### 1. Deploy Backend on Render
-1. Go to [Render Dashboard](https://dashboard.render.com/) -> **New +** -> **Web Service**.
-2. Connect repository `https://github.com/pixel-library/UNO.git`.
-3. Select **Node** environment with the following settings (auto-detected via `render.yaml`):
-   - **Build Command**: `npm run build:server`
-   - **Start Command**: `npm run start`
-4. Deploy and copy your backend service URL (e.g., `https://uno-backend.onrender.com`).
+### 1. Set Up Supabase Backend Database
+1. Go to [Supabase Dashboard](https://supabase.com/dashboard) -> **New Project**.
+2. Go to **SQL Editor** -> **New Query** -> Paste and run the contents of [`supabase_schema.sql`](file:///run/media/rudra/534a134c-69cb-49e5-9a9c-284e9ad8ee1b/UNO/supabase_schema.sql).
+3. Go to **Project Settings** -> **Database**:
+   - Copy the **Connection String** (`DATABASE_URL`).
+4. Go to **Project Settings** -> **API**:
+   - Copy **Project URL** (`VITE_SUPABASE_URL`) and **anon key** (`VITE_SUPABASE_ANON_KEY`).
 
 ### 2. Deploy Frontend on Netlify
 1. Go to [Netlify Dashboard](https://app.netlify.com/) -> **Add new site** -> **Import an existing project**.
-2. Connect repository `https://github.com/pixel-library/UNO.git`.
-3. Netlify will detect settings from `netlify.toml`:
+2. Connect GitHub repository `https://github.com/pixel-library/UNO.git`.
+3. Netlify will auto-detect settings from `netlify.toml`:
    - **Build Command**: `npm run build:client`
    - **Publish Directory**: `dist`
-4. Go to **Site Configuration** -> **Environment Variables** -> Add variable:
-   - **Key**: `VITE_SOCKET_URL`
-   - **Value**: `https://<your-render-backend-url>.onrender.com`
-5. Deploy site. SPA routing and dynamic Socket.IO client connections will work out of the box!
+4. Go to **Site Configuration** -> **Environment Variables** -> Add variables:
+   - `VITE_SUPABASE_URL`: Your Supabase Project URL
+   - `VITE_SUPABASE_ANON_KEY`: Your Supabase Anon Public Key
+   - `DATABASE_URL`: Your Supabase PostgreSQL Connection String
+5. Click **Deploy Site**. SPA routing and database connectivity are fully configured!
 
 ---
 
 ## 📄 License
 
 MIT License. Free and open source.
+
 
