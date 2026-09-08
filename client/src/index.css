@@ -1,0 +1,57 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    background-color: #F8FAFC;
+    color: #0C1B33;
+    font-family: 'Outfit', 'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+/* Custom 3D Card Fanning & Layering */
+.card-perspective {
+  perspective: 1000px;
+}
+
+.card-fan-1 {
+  transform: rotate(-16deg) translateY(12px) translateX(-20px);
+}
+
+.card-fan-2 {
+  transform: rotate(-8deg) translateY(4px) translateX(-10px);
+}
+
+.card-fan-3 {
+  transform: rotate(0deg) translateY(0px);
+}
+
+.card-fan-4 {
+  transform: rotate(8deg) translateY(4px) translateX(10px);
+}
+
+.card-fan-5 {
+  transform: rotate(16deg) translateY(12px) translateX(20px);
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.35);
+}

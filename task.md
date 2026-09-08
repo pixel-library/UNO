@@ -1,0 +1,58 @@
+# Tasks - Premium Online UNO Game Platform
+
+- [x] Phase 1: Project Foundation & Environment Setup
+  - [x] Initialize monorepo directory structure (`client`, `server`, `shared`)
+  - [x] Configure `package.json`, Vite, TypeScript, Tailwind CSS, Prisma
+  - [x] Install dependencies (`express`, `socket.io`, `socket.io-client`, `lucide-react`, `vitest`, `prisma`, `@prisma/client`, `clsx`, `tailwind-merge`)
+- [x] Phase 2: Design System & Reusable Vector `UnoCard` Component
+  - [x] Create Tailwind color tokens (Red, Yellow, Green, Blue, Royal Blue Game Table)
+  - [x] Build vector `UnoCard` SVG/CSS component supporting face-up, face-down, playable glow, selection state, and custom card types
+- [x] Phase 3: Global Navigation & Footer
+  - [x] Build responsive `Navbar` component matching Reference 1 (UNO logo, navigation links, yellow `[ PLAY NOW ]` CTA, no login links)
+  - [x] Build `Footer` component
+- [x] Phase 4: Home Page & Enter Name Page
+  - [x] Implement Home Page (`/`) matching Reference 1 (Navy/Red Hero title, yellow/white buttons, fanned 3D UNO cards, 4 game mode cards, Classic Reimagined section, Card showcase, 4-step How-to-play, Rules Preview, Final CTA)
+  - [x] Implement Enter Name Page (`/enter-name`) with temporary `guest_xxxxx` identity and local storage
+- [x] Phase 5: Rules Page & Quick Reference
+  - [x] Implement Rules Page (`/rules`) matching Reference 2 (2-column layout, rounded cards, vector card components, concise descriptions for basic, action, and custom cards)
+- [x] Phase 6: Server-Authoritative UNO Game Engine & AI Bot Engine
+  - [x] Build `Deck` class (creation, Fisher-Yates shuffle, draw, reshuffle discard pile)
+  - [x] Build `UnoGame` class (legal moves, action execution for Skip, Reverse, Draw Two, Wild, Wild Draw Four, custom rules, 2-player Reverse, UNO call tracking, score calculation)
+  - [x] Build `AIPlayer` strategy module (Easy, Medium, Hard AI)
+  - [x] Write comprehensive unit tests in Vitest and verify 100% pass rate
+- [x] Phase 7: Realtime Express + Socket.IO Server & Prisma Setup
+  - [x] Set up Express + Socket.IO server with TypeScript
+  - [x] Implement Room Management handlers (create, join, disconnect, reconnect, spectator)
+  - [x] Implement Game Socket synchronization with server-masked player hands
+  - [x] Initialize Prisma SQLite/PostgreSQL schema (`Game`, `GamePlayer`, `GameMove`, `GameSession`)
+- [x] Phase 8: Game Screen Implementation (Matching Reference 3)
+  - [x] Implement Game Table view (`/game/:gameId`) on deep royal blue background
+  - [x] Build Top Bar (Room code badge with copy icon, top player info, audio/settings/chat icons)
+  - [x] Build 4-Player Seats (Top, Left, Right, Bottom-YOU) with face-down opponent hands and card counts
+  - [x] Build Center Table (3D Draw Pile, Discard Pile with top card, Special Mode indicator, direction indicators)
+  - [x] Build `Your Turn` glowing pulse status bar
+  - [x] Build Bottom Hand fan layout with lift-on-hover / select interactivity
+  - [x] Build prominent 3D `[ ⚡ UNO! ]` button, `[ 📥 Draw Card ]`, and `[ ➔ End Turn ]` buttons
+  - [x] Build Color Picker modal & Chat panel overlay
+- [x] Phase 9: Complete Game Flow & Secondary Routes
+  - [x] Implement `/play`, `/create-game`, `/join-game`, `/room/:roomCode`
+  - [x] Implement `/computer` (Single player vs 3 AI bots)
+  - [x] Implement `/game/:gameId/result` (Victory celebration & Rematch)
+  - [x] Implement `/games` (Local history), `/replay/:gameId`, `/watch` (Spectator), `/tournaments`, `/leaderboard`, `/settings`
+- [x] Phase 10: Web Audio API Sound Engine & Micro-Animations
+  - [x] Build zero-dependency Web Audio API synthesizer for card play, deal, draw, UNO, turn, skip, reverse, win sounds
+  - [x] Implement smooth CSS/Framer card draw & play transition animations
+- [x] Phase 11: E2E Verification & Final Polish
+  - [x] Run automated unit & integration tests
+  - [x] Verify multi-tab Socket.IO game flow and single-player AI mode
+  - [x] Mobile responsive audit & final visual alignment check
+- [x] Phase 12: Complete Game Audit, Rules Fix & UI Preservation
+  - [x] Fixed human card visibility root cause by binding `socket.id` and joining room channel in `game:sync` handler
+  - [x] Added Active Color Diamond/Rhombus badge beside Discard Pile displaying `currentColor` (`#E52521`, `#FCD116`, `#2D963F`, `#0082CA`)
+  - [x] Verified Wild & Wild Draw Four color selection flow (pauses turn progression, prompts color picker, updates `currentColor` & diamond)
+  - [x] Verified legal card matching against `currentColor` (not physical top card color for Wilds)
+  - [x] Fixed How To Play navigation (`/how-to-play` route works, survives refresh, back button works)
+  - [x] Added race condition protection (`isActionPending` state) on card play, draw card, and color selection
+  - [x] Hidden chat panel in VS AI mode while keeping online multiplayer chat intact
+  - [x] Verified zero scrolling on `GameScreen` (`h-screen overflow-hidden`)
+  - [x] Verified 100% Vitest test suite pass rate and zero build errors in `npm run build`

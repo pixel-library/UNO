@@ -1,0 +1,58 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model Game {
+  id               String       @id @default(uuid())
+  roomCode         String       @unique
+  status           String       @default("WAITING")
+  mode             String       @default("CLASSIC")
+  direction        String       @default("CW")
+  currentColor     String       @default("RED")
+  winnerId         String?
+  activeStackCount Int          @default(0)
+  createdAt        DateTime     @default(now())
+  startedAt        DateTime?
+  endedAt          DateTime?
+  players          GamePlayer[]
+  moves            GameMove[]
+}
+
+model GamePlayer {
+  id          String   @id @default(uuid())
+  gameId      String
+  sessionId   String
+  name        String
+  cardCount   Int      @default(7)
+  score       Int      @default(0)
+  isHost      Boolean  @default(false)
+  isSpectator Boolean  @default(false)
+  game        Game     @relation(fields: [gameId], references: [id], onDelete: Cascade)
+}
+
+model GameMove {
+  id        String   @id @default(uuid())
+  gameId    String
+  playerId  String
+  moveType  String
+  cardId    String?
+  cardColor String?
+  cardValue String?
+  timestamp DateTime @default(now())
+  game      Game     @relation(fields: [gameId], references: [id], onDelete: Cascade)
+}
+
+model GameSession {
+  sessionId   String   @id
+  playerName  String
+  totalGames  Int      @default(0)
+  totalWins   Int      @default(0)
+  unoCalls    Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
