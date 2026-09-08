@@ -73,9 +73,9 @@ npm start
 
 ---
 
-## ⚡ Deployment (Vercel, Netlify & Supabase)
+## ⚡ Deployment (Vercel & Supabase)
 
-This repository is pre-configured for deployment on **Vercel** or **Netlify** (Frontend) and **Supabase** (PostgreSQL Database & Realtime Services).
+This repository is pre-configured for deployment on **Vercel** (Frontend) and **Supabase** (PostgreSQL Database & Realtime Services).
 
 ### 1. Set Up Supabase Backend Database
 1. Go to [Supabase Dashboard](https://supabase.com/dashboard) -> **New Project**.
@@ -98,18 +98,12 @@ This repository is pre-configured for deployment on **Vercel** or **Netlify** (F
    - `DATABASE_URL`: Your Supabase PostgreSQL Connection String
 5. Click **Deploy**. SPA routing and rewrite rules are handled automatically!
 
-### 3. Deploy Frontend on Netlify (Alternative)
-1. Go to [Netlify Dashboard](https://app.netlify.com/) -> **Add new site** -> **Import an existing project**.
-2. Connect GitHub repository `https://github.com/pixel-library/UNO.git`.
-3. Netlify will auto-detect settings from `netlify.toml` (`npm run build:client` -> `dist`).
-4. Set environment variables (`VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `DATABASE_URL`) in **Site Configuration** -> **Environment Variables**.
-5. Click **Deploy Site**.
-
 ---
 
 ## 📄 License
 
 MIT License. Free and open source.
+
 
 
 
