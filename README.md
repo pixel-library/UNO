@@ -73,9 +73,9 @@ npm start
 
 ---
 
-## ⚡ Deployment (Netlify & Supabase)
+## ⚡ Deployment (Vercel, Netlify & Supabase)
 
-This repository is configured for deployment with **Netlify** (Frontend) and **Supabase** (PostgreSQL Database & Realtime Services).
+This repository is pre-configured for deployment on **Vercel** or **Netlify** (Frontend) and **Supabase** (PostgreSQL Database & Realtime Services).
 
 ### 1. Set Up Supabase Backend Database
 1. Go to [Supabase Dashboard](https://supabase.com/dashboard) -> **New Project**.
@@ -85,22 +85,31 @@ This repository is configured for deployment with **Netlify** (Frontend) and **S
 4. Go to **Project Settings** -> **API**:
    - Copy **Project URL** (`VITE_SUPABASE_URL`) and **anon key** (`VITE_SUPABASE_ANON_KEY`).
 
-### 2. Deploy Frontend on Netlify
-1. Go to [Netlify Dashboard](https://app.netlify.com/) -> **Add new site** -> **Import an existing project**.
-2. Connect GitHub repository `https://github.com/pixel-library/UNO.git`.
-3. Netlify will auto-detect settings from `netlify.toml`:
+### 2. Deploy Frontend on Vercel
+1. Go to [Vercel Dashboard](https://vercel.com/dashboard) -> **Add New...** -> **Project**.
+2. Import repository `https://github.com/pixel-library/UNO.git`.
+3. Vercel will auto-detect settings from `vercel.json`:
+   - **Framework Preset**: Vite
    - **Build Command**: `npm run build:client`
-   - **Publish Directory**: `dist`
-4. Go to **Site Configuration** -> **Environment Variables** -> Add variables:
+   - **Output Directory**: `dist`
+4. Expand **Environment Variables** and add:
    - `VITE_SUPABASE_URL`: Your Supabase Project URL
    - `VITE_SUPABASE_ANON_KEY`: Your Supabase Anon Public Key
    - `DATABASE_URL`: Your Supabase PostgreSQL Connection String
-5. Click **Deploy Site**. SPA routing and database connectivity are fully configured!
+5. Click **Deploy**. SPA routing and rewrite rules are handled automatically!
+
+### 3. Deploy Frontend on Netlify (Alternative)
+1. Go to [Netlify Dashboard](https://app.netlify.com/) -> **Add new site** -> **Import an existing project**.
+2. Connect GitHub repository `https://github.com/pixel-library/UNO.git`.
+3. Netlify will auto-detect settings from `netlify.toml` (`npm run build:client` -> `dist`).
+4. Set environment variables (`VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `DATABASE_URL`) in **Site Configuration** -> **Environment Variables**.
+5. Click **Deploy Site**.
 
 ---
 
 ## 📄 License
 
 MIT License. Free and open source.
+
 
 
