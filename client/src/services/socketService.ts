@@ -85,7 +85,7 @@ class SocketService {
           game.drawCard(currentPlayer.id);
         }
 
-        const humanPlayer = game.players.find(p => !p.id.startsWith('bot_'));
+        const humanPlayer = game.players.find(p => !p.id.startsWith('bot_')) || game.players[0];
         if (humanPlayer) {
           this.triggerLocalEvent('game:state', game.getPrivateState(humanPlayer.id));
         }
@@ -106,8 +106,9 @@ class SocketService {
       const roomCode = Math.random().toString(36).substring(2, 8).toUpperCase();
       const gameId = `game_${Date.now()}`;
       const game = new UnoGame(gameId, roomCode, settings);
-      const playerId = `player_${Math.random().toString(36).substring(2, 9)}`;
+      const playerId = localStorage.getItem('uno_player_id') || `player_${Math.random().toString(36).substring(2, 9)}`;
       const sessionId = `sess_${Math.random().toString(36).substring(2, 9)}`;
+      localStorage.setItem('uno_player_id', playerId);
 
       game.addPlayer(playerId, sessionId, valName.sanitizedName || 'Player', true);
       this.localGames.set(roomCode, game);
@@ -125,8 +126,9 @@ class SocketService {
       const roomCode = Math.random().toString(36).substring(2, 8).toUpperCase();
       const gameId = `game_ai_${Date.now()}`;
       const game = new UnoGame(gameId, roomCode, { maxPlayers: 4 });
-      const humanId = `player_${Math.random().toString(36).substring(2, 9)}`;
+      const humanId = localStorage.getItem('uno_player_id') || `player_${Math.random().toString(36).substring(2, 9)}`;
       const sessionId = `sess_${Math.random().toString(36).substring(2, 9)}`;
+      localStorage.setItem('uno_player_id', humanId);
 
       game.addPlayer(humanId, sessionId, valName.sanitizedName || 'Player', true);
       const bots = [
@@ -156,14 +158,15 @@ class SocketService {
       let game = this.localGames.get(formattedCode);
 
       if (!game) {
-        // Create an active game instance if joining a new code locally
         game = new UnoGame(`game_${Date.now()}`, formattedCode, { maxPlayers: 4 });
         this.localGames.set(formattedCode, game);
       }
 
       const valName = validatePlayerName(playerName || 'Guest');
-      const playerId = `player_${Math.random().toString(36).substring(2, 9)}`;
+      const playerId = localStorage.getItem('uno_player_id') || `player_${Math.random().toString(36).substring(2, 9)}`;
       const sessionId = `sess_${Math.random().toString(36).substring(2, 9)}`;
+      localStorage.setItem('uno_player_id', playerId);
+
       const player = game.addPlayer(playerId, sessionId, valName.sanitizedName || 'Guest', game.players.length === 0);
 
       const state = game.getPrivateState(playerId);
@@ -178,15 +181,37 @@ class SocketService {
       if (!game && gameId) game = this.localGames.get(gameId);
       if (!game && this.localGames.size > 0) game = Array.from(this.localGames.values())[0];
 
+      // Auto-create AI game if no active game found for gameId/sync
       if (!game) {
-        if (ackCallback) ackCallback({ success: false, error: 'Game not found' });
-        return;
+        const fallbackRoom = roomCode || 'ROOM12';
+        const fallbackGameId = gameId || `game_ai_${Date.now()}`;
+        game = new UnoGame(fallbackGameId, fallbackRoom, { maxPlayers: 4 });
+        const hId = playerId || localStorage.getItem('uno_player_id') || `player_${Math.random().toString(36).substring(2, 9)}`;
+        localStorage.setItem('uno_player_id', hId);
+        const pName = localStorage.getItem('uno_player_name') || 'Player';
+
+        game.addPlayer(hId, `sess_${hId}`, pName, true);
+        const bots = [
+          { id: 'bot_alex', name: 'Bot Alex (AI)' },
+          { id: 'bot_sam', name: 'Bot Sam (AI)' },
+          { id: 'bot_morgan', name: 'Bot Morgan (AI)' }
+        ];
+        bots.forEach(b => game.addPlayer(b.id, `sess_${b.id}`, b.name, false));
+
+        this.localGames.set(fallbackRoom, game);
+        this.localGames.set(fallbackGameId, game);
+        game.startGame();
       }
 
-      const pId = playerId || game.players.find(p => !p.id.startsWith('bot_'))?.id || game.players[0]?.id;
+      const pId = playerId || localStorage.getItem('uno_player_id') || game.players.find(p => !p.id.startsWith('bot_'))?.id || game.players[0]?.id;
       const state = game.getPrivateState(pId);
       if (ackCallback) ackCallback({ success: true, state });
-      setTimeout(() => this.triggerLocalEvent('game:state', state), 50);
+      setTimeout(() => {
+        this.triggerLocalEvent('game:state', state);
+        if (game!.status === 'PLAYING' && game!.getCurrentPlayer().id.startsWith('bot_')) {
+          this.checkAndExecuteLocalAIMove(game!);
+        }
+      }, 50);
       return;
     }
 
@@ -195,7 +220,7 @@ class SocketService {
       if (game) {
         game.startGame();
         if (ackCallback) ackCallback({ success: true });
-        const humanPlayer = game.players.find(p => !p.id.startsWith('bot_'));
+        const humanPlayer = game.players.find(p => !p.id.startsWith('bot_')) || game.players[0];
         if (humanPlayer) {
           const state = game.getPrivateState(humanPlayer.id);
           this.triggerLocalEvent('game:state', state);
@@ -209,7 +234,7 @@ class SocketService {
       const payload: MovePayload = args[0];
       const game = Array.from(this.localGames.values())[0];
       if (game && payload?.cardId) {
-        const humanPlayer = game.players.find(p => !p.id.startsWith('bot_'));
+        const humanPlayer = game.players.find(p => !p.id.startsWith('bot_')) || game.players[0];
         const playerId = humanPlayer?.id || game.getCurrentPlayer().id;
         const result = game.playCard(playerId, payload.cardId, payload.chosenColor);
         if (ackCallback) ackCallback(result);
@@ -225,7 +250,7 @@ class SocketService {
     if (eventName === 'game:drawCard') {
       const game = Array.from(this.localGames.values())[0];
       if (game) {
-        const humanPlayer = game.players.find(p => !p.id.startsWith('bot_'));
+        const humanPlayer = game.players.find(p => !p.id.startsWith('bot_')) || game.players[0];
         const playerId = humanPlayer?.id || game.getCurrentPlayer().id;
         const result = game.drawCard(playerId);
         if (ackCallback) ackCallback(result);
@@ -241,7 +266,7 @@ class SocketService {
     if (eventName === 'game:callUno') {
       const game = Array.from(this.localGames.values())[0];
       if (game) {
-        const humanPlayer = game.players.find(p => !p.id.startsWith('bot_'));
+        const humanPlayer = game.players.find(p => !p.id.startsWith('bot_')) || game.players[0];
         const result = game.callUno(humanPlayer?.id || game.players[0].id);
         if (ackCallback) ackCallback(result);
         if (result.success && humanPlayer) {
@@ -257,7 +282,7 @@ class SocketService {
       if (game) {
         game.startGame();
         if (ackCallback) ackCallback({ success: true });
-        const humanPlayer = game.players.find(p => !p.id.startsWith('bot_'));
+        const humanPlayer = game.players.find(p => !p.id.startsWith('bot_')) || game.players[0];
         if (humanPlayer) {
           const state = game.getPrivateState(humanPlayer.id);
           this.triggerLocalEvent('game:state', state);
