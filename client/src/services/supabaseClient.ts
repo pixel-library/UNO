@@ -15,3 +15,19 @@ export const isSupabaseConfigured = (): boolean => {
     import.meta.env.VITE_SUPABASE_URL !== 'https://placeholder.supabase.co'
   );
 };
+
+export const checkSupabaseConnection = async (): Promise<{ connected: boolean; error?: string }> => {
+  if (!isSupabaseConfigured()) {
+    return { connected: false, error: 'VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY environment variables are missing on Vercel.' };
+  }
+  try {
+    const { data, error } = await supabase.from('GameSession').select('count', { count: 'exact', head: true });
+    if (error) {
+      return { connected: false, error: error.message };
+    }
+    return { connected: true };
+  } catch (err: any) {
+    return { connected: false, error: err?.message || 'Failed to connect to Supabase.' };
+  }
+};
+
