@@ -11,12 +11,9 @@ class SocketService {
 
   public getSocket(): Socket {
     if (!this.socket) {
-      const isDev = window.location.port === '3000' || window.location.port === '5173';
       const socketUrl =
         import.meta.env.VITE_SOCKET_URL ||
-        (isDev
-          ? `${window.location.protocol}//${window.location.hostname}:5000`
-          : window.location.origin);
+        window.location.origin;
 
       const realSocket = io(socketUrl, {
         transports: ['websocket', 'polling'],
@@ -31,7 +28,9 @@ class SocketService {
         get: (target: any, prop: string) => {
           if (prop === 'emit') {
             return (eventName: string, ...args: any[]) => {
-              if (target.connected) {
+              // Socket.IO buffers emissions natively when connecting/reconnecting.
+              // Always pass emit to target unless target is explicitly disconnected without pending reconnection.
+              if (target.connected || target.active !== false) {
                 return target.emit(eventName, ...args);
               }
               // Offline / Static Client Fallback Execution when server is not connected
@@ -158,8 +157,8 @@ class SocketService {
       let game = this.localGames.get(formattedCode);
 
       if (!game) {
-        game = new UnoGame(`game_${Date.now()}`, formattedCode, { maxPlayers: 4 });
-        this.localGames.set(formattedCode, game);
+        if (ackCallback) ackCallback({ success: false, error: 'Room not found. Check your room code.' });
+        return;
       }
 
       const valName = validatePlayerName(playerName || 'Guest');
@@ -168,6 +167,10 @@ class SocketService {
       localStorage.setItem('uno_player_id', playerId);
 
       const player = game.addPlayer(playerId, sessionId, valName.sanitizedName || 'Guest', game.players.length === 0);
+      if (!player) {
+        if (ackCallback) ackCallback({ success: false, error: 'Room is full.' });
+        return;
+      }
 
       const state = game.getPrivateState(playerId);
       if (ackCallback) ackCallback({ success: true, roomCode: formattedCode, gameId: game.id, playerId, sessionId, state });
@@ -181,30 +184,12 @@ class SocketService {
       if (!game && gameId) game = this.localGames.get(gameId);
       if (!game && this.localGames.size > 0) game = Array.from(this.localGames.values())[0];
 
-      // Auto-create AI game if no active game found for gameId/sync
       if (!game) {
-        const fallbackRoom = roomCode || 'ROOM12';
-        const fallbackGameId = gameId || `game_ai_${Date.now()}`;
-        game = new UnoGame(fallbackGameId, fallbackRoom, { maxPlayers: 4 });
-        const hId = playerId || localStorage.getItem('uno_player_id') || `player_${Math.random().toString(36).substring(2, 9)}`;
-        localStorage.setItem('uno_player_id', hId);
-        const pName = localStorage.getItem('uno_player_name') || 'Player';
-
-        game.addPlayer(hId, `sess_${hId}`, pName, true);
-        const bots = [
-          { id: 'bot_alex', name: 'Bot Alex (AI)' },
-          { id: 'bot_sam', name: 'Bot Sam (AI)' },
-          { id: 'bot_morgan', name: 'Bot Morgan (AI)' }
-        ];
-        const activeGame = game;
-        bots.forEach(b => activeGame.addPlayer(b.id, `sess_${b.id}`, b.name, false));
-
-        this.localGames.set(fallbackRoom, game);
-        this.localGames.set(fallbackGameId, game);
-        game.startGame();
+        if (ackCallback) ackCallback({ success: false, error: 'Game not found' });
+        return;
       }
 
-      const activeGame = game!;
+      const activeGame = game;
       const pId = playerId || localStorage.getItem('uno_player_id') || activeGame.players.find(p => !p.id.startsWith('bot_'))?.id || activeGame.players[0]?.id;
       const state = activeGame.getPrivateState(pId);
       if (ackCallback) ackCallback({ success: true, state });

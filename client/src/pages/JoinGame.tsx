@@ -23,7 +23,7 @@ export const JoinGame: React.FC = () => {
 
     const playerName = localStorage.getItem('uno_player_name');
     if (!playerName) {
-      navigate('/enter-name');
+      navigate('/enter-name', { state: { returnTo: `/join/${validation.formattedCode}` } });
       return;
     }
 

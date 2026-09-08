@@ -59,4 +59,22 @@ describe('UnoGame Engine Unit Tests', () => {
       expect(move.cardId).toBeDefined();
     }
   });
+
+  it('should correctly handle joining players and enforce max player limit', () => {
+    const customGame = new UnoGame('g_102', 'JOIN99', { maxPlayers: 2 });
+    const p1 = customGame.addPlayer('p1', 's1', 'Host Player', true);
+    expect(p1).not.toBeNull();
+    expect(p1?.isHost).toBe(true);
+    expect(customGame.players.length).toBe(1);
+
+    const p2 = customGame.addPlayer('p2', 's2', 'Guest Player', false);
+    expect(p2).not.toBeNull();
+    expect(p2?.isHost).toBe(false);
+    expect(customGame.players.length).toBe(2);
+
+    // 3rd player should be rejected as room is full (max 2)
+    const p3 = customGame.addPlayer('p3', 's3', 'Extra Player', false);
+    expect(p3).toBeNull();
+    expect(customGame.players.length).toBe(2);
+  });
 });

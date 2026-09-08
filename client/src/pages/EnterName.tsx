@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { User, ArrowRight, Sparkles } from 'lucide-react';
 import { validatePlayerName } from '@shared/validation/roomValidator';
 
 export const EnterName: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [name, setName] = useState('');
   const [error, setError] = useState<string | null>(null);
 
@@ -32,7 +33,8 @@ export const EnterName: React.FC = () => {
       localStorage.setItem('uno_player_id', guestId);
     }
 
-    navigate('/play');
+    const returnTo = (location.state as any)?.returnTo || '/play';
+    navigate(returnTo);
   };
 
   return (

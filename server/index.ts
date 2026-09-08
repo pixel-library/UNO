@@ -226,14 +226,23 @@ io.on('connection', (socket) => {
       return;
     }
 
-    const playerId = `player_${Math.random().toString(36).substring(2, 9)}`;
-    const sessionId = `sess_${Math.random().toString(36).substring(2, 9)}`;
+    let existingPlayer = game.players.find(p => p.name.toLowerCase() === valName.sanitizedName!.toLowerCase());
+    let playerId: string;
+    let sessionId: string;
 
-    const player = game.addPlayer(playerId, sessionId, valName.sanitizedName!, false);
-    if (!player) {
-      console.log(`[ROOM] Room "${formattedCode}" is full (${game.players.length}/${game.settings.maxPlayers}).`);
-      if (callback) callback({ success: false, error: 'Room is full.' });
-      return;
+    if (existingPlayer) {
+      playerId = existingPlayer.id;
+      sessionId = existingPlayer.sessionId;
+      existingPlayer.isConnected = true;
+    } else {
+      playerId = `player_${Math.random().toString(36).substring(2, 9)}`;
+      sessionId = `sess_${Math.random().toString(36).substring(2, 9)}`;
+      const player = game.addPlayer(playerId, sessionId, valName.sanitizedName!, false);
+      if (!player) {
+        console.log(`[ROOM] Room "${formattedCode}" is full (${game.players.length}/${game.settings.maxPlayers}).`);
+        if (callback) callback({ success: false, error: 'Room is full.' });
+        return;
+      }
     }
 
     socket.join(`room_${formattedCode}`);
