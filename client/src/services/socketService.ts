@@ -196,15 +196,17 @@ class SocketService {
           { id: 'bot_sam', name: 'Bot Sam (AI)' },
           { id: 'bot_morgan', name: 'Bot Morgan (AI)' }
         ];
-        bots.forEach(b => game.addPlayer(b.id, `sess_${b.id}`, b.name, false));
+        const activeGame = game;
+        bots.forEach(b => activeGame.addPlayer(b.id, `sess_${b.id}`, b.name, false));
 
         this.localGames.set(fallbackRoom, game);
         this.localGames.set(fallbackGameId, game);
         game.startGame();
       }
 
-      const pId = playerId || localStorage.getItem('uno_player_id') || game.players.find(p => !p.id.startsWith('bot_'))?.id || game.players[0]?.id;
-      const state = game.getPrivateState(pId);
+      const activeGame = game!;
+      const pId = playerId || localStorage.getItem('uno_player_id') || activeGame.players.find(p => !p.id.startsWith('bot_'))?.id || activeGame.players[0]?.id;
+      const state = activeGame.getPrivateState(pId);
       if (ackCallback) ackCallback({ success: true, state });
       setTimeout(() => {
         this.triggerLocalEvent('game:state', state);

@@ -16,7 +16,7 @@
     "noUnusedParameters": false,
     "noImplicitReturns": true,
     "baseUrl": ".",
-    "types": ["node"],
+    "types": ["node", "vite/client"],
     "paths": {
       "@/*": ["client/src/*"],
       "@shared/*": ["shared/*"]
