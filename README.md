@@ -73,6 +73,32 @@ npm start
 
 ---
 
+## 🌐 Deployment (Netlify & Render)
+
+This repository is pre-configured for deployment with **Netlify** (Frontend) and **Render** (Backend).
+
+### 1. Deploy Backend on Render
+1. Go to [Render Dashboard](https://dashboard.render.com/) -> **New +** -> **Web Service**.
+2. Connect repository `https://github.com/pixel-library/UNO.git`.
+3. Select **Node** environment with the following settings (auto-detected via `render.yaml`):
+   - **Build Command**: `npm run build:server`
+   - **Start Command**: `npm run start`
+4. Deploy and copy your backend service URL (e.g., `https://uno-backend.onrender.com`).
+
+### 2. Deploy Frontend on Netlify
+1. Go to [Netlify Dashboard](https://app.netlify.com/) -> **Add new site** -> **Import an existing project**.
+2. Connect repository `https://github.com/pixel-library/UNO.git`.
+3. Netlify will detect settings from `netlify.toml`:
+   - **Build Command**: `npm run build:client`
+   - **Publish Directory**: `dist`
+4. Go to **Site Configuration** -> **Environment Variables** -> Add variable:
+   - **Key**: `VITE_SOCKET_URL`
+   - **Value**: `https://<your-render-backend-url>.onrender.com`
+5. Deploy site. SPA routing and dynamic Socket.IO client connections will work out of the box!
+
+---
+
 ## 📄 License
 
 MIT License. Free and open source.
+
