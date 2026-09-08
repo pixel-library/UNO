@@ -129,6 +129,8 @@ io.on('connection', (socket) => {
     socket.join(`room_${roomCode}`);
     socketPlayerMap.set(socket.id, { roomCode, playerId, sessionId });
 
+    console.log(`[ROOM] Created room ${roomCode} for host ${valName.sanitizedName} (socket ${socket.id})`);
+
     if (callback) {
       callback({
         success: true,
@@ -177,6 +179,8 @@ io.on('connection', (socket) => {
     socket.join(`room_${roomCode}`);
     socketPlayerMap.set(socket.id, { roomCode, playerId: humanId, sessionId });
 
+    console.log(`[ROOM] Created VS AI room ${roomCode} for player ${valName.sanitizedName}`);
+
     // Start game immediately
     game.startGame();
 
@@ -197,21 +201,27 @@ io.on('connection', (socket) => {
 
   // 2. Join Room
   socket.on('room:join', ({ roomCode, playerName }: { roomCode: string; playerName: string }, callback) => {
+    console.log(`[ROOM] Join request for code: "${roomCode}" from player: "${playerName}"`);
     const valCode = validateRoomCode(roomCode);
     const valName = validatePlayerName(playerName);
 
     if (!valCode.valid || !valName.valid) {
-      if (callback) callback({ success: false, error: valCode.error || valName.error });
+      const err = valCode.error || valName.error;
+      console.log(`[ROOM] Join validation failed for code "${roomCode}": ${err}`);
+      if (callback) callback({ success: false, error: err });
       return;
     }
 
-    const game = activeGames.get(valCode.formattedCode!);
+    const formattedCode = valCode.formattedCode!;
+    const game = activeGames.get(formattedCode);
     if (!game) {
+      console.log(`[ROOM] Room not found for code: "${formattedCode}"`);
       if (callback) callback({ success: false, error: 'Room not found. Check your room code.' });
       return;
     }
 
     if (game.status === 'PLAYING') {
+      console.log(`[ROOM] Room "${formattedCode}" is already playing.`);
       if (callback) callback({ success: false, error: 'Game already in progress.' });
       return;
     }
@@ -221,17 +231,20 @@ io.on('connection', (socket) => {
 
     const player = game.addPlayer(playerId, sessionId, valName.sanitizedName!, false);
     if (!player) {
+      console.log(`[ROOM] Room "${formattedCode}" is full (${game.players.length}/${game.settings.maxPlayers}).`);
       if (callback) callback({ success: false, error: 'Room is full.' });
       return;
     }
 
-    socket.join(`room_${roomCode}`);
-    socketPlayerMap.set(socket.id, { roomCode: valCode.formattedCode!, playerId, sessionId });
+    socket.join(`room_${formattedCode}`);
+    socketPlayerMap.set(socket.id, { roomCode: formattedCode, playerId, sessionId });
+
+    console.log(`[ROOM] Player ${valName.sanitizedName} (${playerId}) joined room ${formattedCode}. Players: ${game.players.length}/${game.settings.maxPlayers}`);
 
     if (callback) {
       callback({
         success: true,
-        roomCode: valCode.formattedCode!,
+        roomCode: formattedCode,
         gameId: game.id,
         playerId,
         sessionId,
@@ -261,6 +274,8 @@ io.on('connection', (socket) => {
       if (callback) callback({ success: false, error: 'Need at least 2 players to start.' });
       return;
     }
+
+    console.log(`[ROOM] Game started in room ${game.roomCode}`);
 
     if (callback) callback({ success: true });
     broadcastGameState(game);
@@ -320,10 +335,11 @@ io.on('connection', (socket) => {
   // 6b. Sync Game State
   socket.on('game:sync', ({ roomCode, playerId, gameId }: { roomCode?: string; playerId?: string; gameId?: string } = {}, callback?: (res: any) => void) => {
     const playerInfo = socketPlayerMap.get(socket.id);
+    let formattedCode = roomCode ? roomCode.trim().toUpperCase() : undefined;
     let game: UnoGame | undefined;
 
-    if (roomCode) {
-      game = activeGames.get(roomCode);
+    if (formattedCode) {
+      game = activeGames.get(formattedCode);
     }
     if (!game && gameId) {
       game = Array.from(activeGames.values()).find(g => g.id === gameId);
@@ -334,11 +350,9 @@ io.on('connection', (socket) => {
     if (!game && playerId) {
       game = Array.from(activeGames.values()).find(g => g.players.some(p => p.id === playerId));
     }
-    if (!game && activeGames.size > 0) {
-      game = Array.from(activeGames.values())[activeGames.size - 1];
-    }
 
     if (!game) {
+      console.log(`[ROOM] game:sync failed for roomCode="${roomCode}", gameId="${gameId}", playerId="${playerId}"`);
       if (callback) callback({ success: false, error: 'Game not found' });
       return;
     }
@@ -349,11 +363,13 @@ io.on('connection', (socket) => {
     if (pId) {
       const targetPlayer = game.players.find(p => p.id === pId);
       if (targetPlayer) {
+        targetPlayer.isConnected = true;
         socketPlayerMap.set(socket.id, { roomCode: game.roomCode, playerId: pId, sessionId: targetPlayer.sessionId });
         socket.join(`room_${game.roomCode}`);
       }
     }
 
+    console.log(`[ROOM] game:sync success for room ${game.roomCode}, player ${pId}`);
     const privateState = game.getPrivateState(pId);
     if (callback) callback({ success: true, state: privateState });
   });

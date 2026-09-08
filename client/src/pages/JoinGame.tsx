@@ -1,18 +1,20 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { KeyRound, ArrowRight } from 'lucide-react';
 import { validateRoomCode } from '@shared/validation/roomValidator';
 import { socketService } from '@/services/socketService';
 
 export const JoinGame: React.FC = () => {
   const navigate = useNavigate();
-  const [code, setCode] = useState('');
+  const { roomCode: urlCode } = useParams<{ roomCode: string }>();
+  const [code, setCode] = useState(urlCode ? urlCode.trim().toUpperCase() : '');
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleJoin = (e: React.FormEvent) => {
     e.preventDefault();
-    const validation = validateRoomCode(code);
+    const cleanCode = code.trim().toUpperCase();
+    const validation = validateRoomCode(cleanCode);
 
     if (!validation.valid) {
       setError(validation.error || 'Invalid room code');
@@ -28,7 +30,7 @@ export const JoinGame: React.FC = () => {
     setIsSubmitting(true);
     const socket = socketService.getSocket();
 
-    socket.emit('room:join', { roomCode: validation.formattedCode, playerName }, (res: any) => {
+    socket.emit('room:join', { roomCode: validation.formattedCode!, playerName }, (res: any) => {
       setIsSubmitting(false);
       if (res?.success) {
         if (res.playerId) {

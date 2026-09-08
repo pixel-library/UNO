@@ -63,10 +63,36 @@ export const GameScreen: React.FC = () => {
 
   // Copy Room Code
   const handleCopyCode = () => {
-    if (gameState?.roomCode) {
-      navigator.clipboard.writeText(gameState.roomCode);
+    const codeToCopy = (gameState?.roomCode || '').trim().toUpperCase();
+    if (!codeToCopy) return;
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(codeToCopy).then(() => {
+        setCopiedCode(true);
+        setTimeout(() => setCopiedCode(false), 2000);
+      }).catch(() => {
+        fallbackCopyText(codeToCopy);
+      });
+    } else {
+      fallbackCopyText(codeToCopy);
+    }
+  };
+
+  const fallbackCopyText = (text: string) => {
+    try {
+      const textArea = document.createElement('textarea');
+      textArea.value = text;
+      textArea.style.position = 'fixed';
+      textArea.style.left = '-999999px';
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textArea);
       setCopiedCode(true);
       setTimeout(() => setCopiedCode(false), 2000);
+    } catch (err) {
+      console.error('Copy failed:', err);
     }
   };
 

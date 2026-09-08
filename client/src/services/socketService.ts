@@ -31,7 +31,7 @@ class SocketService {
         get: (target: any, prop: string) => {
           if (prop === 'emit') {
             return (eventName: string, ...args: any[]) => {
-              if (target.connected) {
+              if (target.connected || eventName.startsWith('room:') || eventName.startsWith('game:') || eventName.startsWith('chat:')) {
                 return target.emit(eventName, ...args);
               }
               // Offline / Static Client Fallback Execution

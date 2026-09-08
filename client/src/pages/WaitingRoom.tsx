@@ -12,17 +12,23 @@ export const WaitingRoom: React.FC = () => {
   const [copied, setCopied] = useState(false);
   const myId = localStorage.getItem('uno_player_id');
 
+  const formattedRoomCode = roomCode ? roomCode.trim().toUpperCase() : '';
+
   useEffect(() => {
     const socket = socketService.getSocket();
 
-    socket.on('game:state', (newState: GamePublicState) => {
-      setGameState(newState);
-      if (newState.status === 'PLAYING') {
-        navigate(`/game/${newState.id}`, { state: { initialGameState: newState } });
+    const handleGameState = (newState: GamePublicState) => {
+      if (newState.roomCode === formattedRoomCode || !formattedRoomCode) {
+        setGameState(newState);
+        if (newState.status === 'PLAYING') {
+          navigate(`/game/${newState.id}`, { state: { initialGameState: newState } });
+        }
       }
-    });
+    };
 
-    socket.emit('game:sync', { roomCode, playerId: myId }, (res: any) => {
+    socket.on('game:state', handleGameState);
+
+    socket.emit('game:sync', { roomCode: formattedRoomCode, playerId: myId }, (res: any) => {
       if (res?.success && res?.state) {
         setGameState(res.state);
         if (res.state.status === 'PLAYING') {
@@ -32,15 +38,42 @@ export const WaitingRoom: React.FC = () => {
     });
 
     return () => {
-      socket.off('game:state');
+      socket.off('game:state', handleGameState);
     };
-  }, [navigate]);
+  }, [formattedRoomCode, navigate, myId]);
 
-  const handleCopyInvite = () => {
-    const inviteUrl = `${window.location.origin}/join/${roomCode}`;
-    navigator.clipboard.writeText(inviteUrl);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+  const handleCopyCode = () => {
+    const codeToCopy = formattedRoomCode || gameState?.roomCode || '';
+    if (!codeToCopy) return;
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(codeToCopy).then(() => {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      }).catch(() => {
+        fallbackCopyText(codeToCopy);
+      });
+    } else {
+      fallbackCopyText(codeToCopy);
+    }
+  };
+
+  const fallbackCopyText = (text: string) => {
+    try {
+      const textArea = document.createElement('textarea');
+      textArea.value = text;
+      textArea.style.position = 'fixed';
+      textArea.style.left = '-999999px';
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textArea);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error('Copy failed:', err);
+    }
   };
 
   const handleStartGame = () => {
@@ -76,11 +109,11 @@ export const WaitingRoom: React.FC = () => {
           </div>
 
           <button
-            onClick={handleCopyInvite}
+            onClick={handleCopyCode}
             className="bg-neutral-100 hover:bg-neutral-200 border border-neutral-200 text-uno-navy font-bold px-6 py-3 rounded-2xl text-xs flex items-center gap-2 transition-all"
           >
             {copied ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
-            {copied ? 'LINK COPIED!' : 'COPY INVITE LINK'}
+            {copied ? 'CODE COPIED!' : 'COPY ROOM CODE'}
           </button>
         </div>
 
