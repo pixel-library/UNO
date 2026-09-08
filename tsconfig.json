@@ -22,5 +22,5 @@
       "@shared/*": ["shared/*"]
     }
   },
-  "include": ["client/src", "shared", "vite.config.ts"]
+  "include": ["client/src", "shared", "server/engine", "vite.config.ts"]
 }
