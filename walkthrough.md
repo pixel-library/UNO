@@ -40,4 +40,5 @@ We have successfully built a complete, production-ready, real-time online UNO ga
 - **Unit Tests**: 6/6 Vitest unit tests passed (`npx vitest run`).
 - **Frontend Build**: Vite production bundle compiled cleanly (`npm run build:client`).
 - **Server Compilation**: TypeScript server build succeeded with 0 errors (`npm run build:server`).
-- **Real-Time Multiplayer Chat**: Synchronized across all connected players in Socket.io mode, local engine fallback, and Supabase Realtime broadcast channels. All changes committed and pushed to `main` branch.
+- **Real-Time Multiplayer Chat**: Synchronized across all connected players in Socket.io mode, local engine fallback, and Supabase Realtime broadcast channels.
+- **3 & 4 Player Mobile View Layout**: Optimized Left, Right, and Center table elements for small viewports (<640px) to prevent overlapping cards, squished piles, or visual clipping while preserving desktop/tablet views (`≥640px`). All changes pushed to `main` branch (`commit 299eb2c`).
