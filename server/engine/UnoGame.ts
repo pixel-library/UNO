@@ -207,11 +207,8 @@ export class UnoGame {
 
     this.lastActionMessage = `${currentPlayer.name} drew a card`;
 
-    // If drawn card is playable, keep turn on current player so they can play it immediately
-    const canPlayDrawn = this.isPlayable(drawnCard);
-    if (!canPlayDrawn) {
-      this.advanceTurn();
-    }
+    // Always advance turn after drawing a card
+    this.advanceTurn();
 
     return { success: true, drawnCard };
   }
