@@ -26,6 +26,19 @@ export const GameScreen: React.FC = () => {
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
 
+  // Responsive screen detection for mobile card sizing
+  const [isMobile, setIsMobile] = useState(
+    typeof window !== 'undefined' ? window.innerWidth < 640 : false
+  );
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 640);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   // Action pending state for race condition protection
   const [isActionPending, setIsActionPending] = useState(false);
   const [syncError, setSyncError] = useState<string | null>(null);
@@ -41,6 +54,9 @@ export const GameScreen: React.FC = () => {
       socket.emit('game:sync', { playerId: myId, gameId }, (res: any) => {
         if (res?.success && res?.state) {
           setGameState(res.state);
+          if (res.state.chatMessages) {
+            setChatMessages(res.state.chatMessages);
+          }
           setSyncError(null);
         } else {
           if (!gameState) {
@@ -52,12 +68,18 @@ export const GameScreen: React.FC = () => {
 
     socket.on('game:state', (newState: PlayerPrivateState) => {
       setGameState(newState);
+      if (newState.chatMessages) {
+        setChatMessages(newState.chatMessages);
+      }
       setIsActionPending(false);
       setSyncError(null);
     });
 
     socket.on('chat:message', (msg: ChatMessage) => {
-      setChatMessages((prev) => [...prev, msg]);
+      setChatMessages((prev) => {
+        if (prev.some(m => m.id === msg.id)) return prev;
+        return [...prev, msg];
+      });
     });
 
     socket.on('connect', handleSync);
@@ -665,13 +687,14 @@ export const GameScreen: React.FC = () => {
                     const mid = (total - 1) / 2;
                     
                     // Smooth fan angle calculation
-                    const angle = total > 1 ? (idx - mid) * Math.min(3, 24 / total) : 0;
+                    const angle = isMobile
+                      ? (total > 1 ? (idx - mid) * Math.min(2, 16 / total) : 0)
+                      : (total > 1 ? (idx - mid) * Math.min(3, 24 / total) : 0);
                     
                     // Dynamic negative spacing so cards overlap neatly without hiding values
-                    const overlapMargin = total <= 4 ? '-ml-1 sm:-ml-2' :
-                                          total <= 7 ? '-ml-4 sm:-ml-6' :
-                                          total <= 11 ? '-ml-7 sm:-ml-10' :
-                                          '-ml-10 sm:-ml-14';
+                    const overlapMargin = isMobile
+                      ? (total <= 4 ? '-ml-2' : total <= 7 ? '-ml-4' : total <= 11 ? '-ml-6' : '-ml-8')
+                      : (total <= 4 ? '-ml-1 sm:-ml-2' : total <= 7 ? '-ml-4 sm:-ml-6' : total <= 11 ? '-ml-7 sm:-ml-10' : '-ml-10 sm:-ml-14');
 
                     // Check if card is playable
                     const isPlayable = isMyTurn && (
@@ -680,8 +703,8 @@ export const GameScreen: React.FC = () => {
                       card.value === topDiscard.value
                     );
 
-                    // Dynamic card size: size="sm" when hand size > 7 or screen is small
-                    const cardSize = total > 7 ? 'sm' : 'md';
+                    // Dynamic card size: size="sm" on mobile view (<640px) or when hand size > 7
+                    const cardSize = (isMobile || total > 7) ? 'sm' : 'md';
 
                     return (
                       <div

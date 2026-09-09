@@ -333,7 +333,8 @@ export class UnoGame {
       turnDuration: this.settings.turnTimerSeconds,
       settings: this.settings,
       activeStackCount: this.activeStackCount,
-      lastActionMessage: this.lastActionMessage
+      lastActionMessage: this.lastActionMessage,
+      chatMessages: this.chatMessages
     };
   }
 

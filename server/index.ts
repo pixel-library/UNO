@@ -435,7 +435,15 @@ io.on('connection', (socket) => {
     };
 
     game.chatMessages.push(msg);
+
+    // Ensure socket is joined to room channel
+    socket.join(`room_${game.roomCode}`);
+
+    // Broadcast chat message directly
     io.to(`room_${game.roomCode}`).emit('chat:message', msg);
+
+    // Also sync state so all clients have updated chatMessages history
+    broadcastGameState(game);
   });
 
   // 8. Disconnect

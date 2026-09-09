@@ -67,6 +67,7 @@ export interface GamePublicState {
   settings: GameSettings;
   activeStackCount: number;      // Stacking penalty pool (+2 +2 = +4)
   lastActionMessage?: string;
+  chatMessages?: ChatMessage[];
 }
 
 export interface PlayerPrivateState extends GamePublicState {
