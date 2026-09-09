@@ -260,13 +260,39 @@ export const GameScreen: React.FC = () => {
   const myId = localStorage.getItem('uno_player_id') || '';
   const activePlayers = (gameState?.players || []).filter(p => p && !p.isSpectator);
 
-  const opponents = activePlayers.filter(p => p && p.id !== myId);
-  const topOpponent = opponents[0] || activePlayers[0] || { id: 'p2', name: 'PLAYER 2', avatar: '👤', cardCount: 7 };
-  const leftOpponent = opponents[1] || { id: 'p3', name: 'Player 3', avatar: '👤', cardCount: 7 };
-  const rightOpponent = opponents[2] || { id: 'p4', name: 'Player 4', avatar: '👤', cardCount: 7 };
+  // Compute relative seating order starting from local player
+  const myIdx = activePlayers.findIndex(p => p.id === myId);
+  const validMyIdx = myIdx >= 0 ? myIdx : 0;
+
+  const relativeOpponents: typeof activePlayers = [];
+  if (activePlayers.length > 1) {
+    for (let i = 1; i < activePlayers.length; i++) {
+      relativeOpponents.push(activePlayers[(validMyIdx + i) % activePlayers.length]);
+    }
+  }
+
+  // Seating breakdown based on active player count:
+  // 2 Players: You (Bottom), Opponent 1 (Top)
+  // 3 Players: You (Bottom), Opponent 1 (Left), Opponent 2 (Right)
+  // 4 Players: You (Bottom), Opponent 1 (Left), Opponent 2 (Top), Opponent 3 (Right)
+  let topOpponent: typeof activePlayers[0] | null = null;
+  let leftOpponent: typeof activePlayers[0] | null = null;
+  let rightOpponent: typeof activePlayers[0] | null = null;
+
+  if (activePlayers.length === 2) {
+    topOpponent = relativeOpponents[0] || null;
+  } else if (activePlayers.length === 3) {
+    leftOpponent = relativeOpponents[0] || null;
+    rightOpponent = relativeOpponents[1] || null;
+  } else if (activePlayers.length >= 4) {
+    leftOpponent = relativeOpponents[0] || null;
+    topOpponent = relativeOpponents[1] || null;
+    rightOpponent = relativeOpponents[2] || null;
+  }
 
   const currentIdx = typeof gameState?.currentPlayerIndex === 'number' ? gameState.currentPlayerIndex : 0;
-  const isMyTurn = activePlayers[currentIdx]?.id === myId;
+  const currentTurnPlayerId = activePlayers[currentIdx]?.id;
+  const isMyTurn = currentTurnPlayerId === myId;
   const displayHand: Card[] = Array.isArray(gameState?.hand) ? gameState.hand : [];
   const topDiscard: Card = gameState?.topDiscardCard || { id: 'disc_1', color: 'GREEN', value: '2', score: 2 };
 
@@ -309,23 +335,31 @@ export const GameScreen: React.FC = () => {
           </div>
         </div>
 
-        {/* Top Center: PLAYER 2 Status Pill (Matching Image 1) */}
+        {/* Top Center: Top Opponent Status Pill (Rendered when top opponent exists) */}
         <div className="flex flex-col items-center z-20">
-          <div className="bg-white/10 backdrop-blur-md px-4 py-1.5 rounded-2xl border border-white/20 flex items-center gap-3 shadow-lg">
-            <div className="w-7 h-7 rounded-full bg-sky-400/30 text-white flex items-center justify-center text-xs font-bold border border-sky-300/40">
-              👤
+          {topOpponent ? (
+            <div className={`bg-white/10 backdrop-blur-md px-4 py-1.5 rounded-2xl border transition-all flex items-center gap-3 shadow-lg ${
+              currentTurnPlayerId === topOpponent.id
+                ? 'border-emerald-400 ring-2 ring-emerald-400/60 bg-emerald-500/20 shadow-[0_0_15px_rgba(52,211,153,0.5)]'
+                : 'border-white/20'
+            }`}>
+              <div className="w-7 h-7 rounded-full bg-sky-400/30 text-white flex items-center justify-center text-xs font-bold border border-sky-300/40">
+                {topOpponent.avatar || '👤'}
+              </div>
+              <div className="text-left leading-tight">
+                <div className="font-bold text-xs text-white uppercase tracking-wider">{topOpponent.name}</div>
+                <div className="text-[10px] text-white/70">{topOpponent.cardCount} cards</div>
+              </div>
+              <span className="flex items-center gap-1 bg-emerald-500/20 px-2 py-0.5 rounded-full text-[10px] text-emerald-300 font-bold border border-emerald-400/30">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> {topOpponent.isConnected ? 'Online' : 'Offline'}
+              </span>
             </div>
-            <div className="text-left leading-tight">
-              <div className="font-bold text-xs text-white uppercase tracking-wider">{topOpponent?.name || 'PLAYER 2'}</div>
-              <div className="text-[10px] text-white/70">{topOpponent?.cardCount || 7} cards</div>
-            </div>
-            <span className="flex items-center gap-1 bg-emerald-500/20 px-2 py-0.5 rounded-full text-[10px] text-emerald-300 font-bold border border-emerald-400/30">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> Online
-            </span>
-          </div>
+          ) : (
+            <div className="text-xs font-extrabold tracking-widest text-sky-300/60 uppercase">UNO ARENA</div>
+          )}
         </div>
 
-        {/* Top Right: Glassmorphic Controls (Sound, Music, Settings, Chat) */}
+        {/* Top Right: Controls */}
         <div className="flex items-center gap-2">
           <button
             onClick={toggleSound}
@@ -367,17 +401,19 @@ export const GameScreen: React.FC = () => {
       </header>
 
       {/* ------------------------------------------------------------- */}
-      {/* MAIN GAME TABLE OVAL SURFACE (Matching Image 1)              */}
+      {/* MAIN GAME TABLE OVAL SURFACE                                  */}
       {/* ------------------------------------------------------------- */}
       <main className="relative flex-1 w-full max-w-7xl mx-auto flex flex-col items-center justify-between px-4 py-1 overflow-hidden">
 
         {/* Top Opponent Fanned Hand Resting Above Table */}
-        <div className="z-10 -mt-2">
-          <div className="flex -space-x-8 transform scale-75">
-            {Array.from({ length: Math.min(topOpponent?.cardCount || 7, 8) }).map((_, idx) => (
-              <UnoCard key={idx} faceDown size="sm" />
-            ))}
-          </div>
+        <div className="z-10 -mt-2 h-14 flex items-center justify-center">
+          {topOpponent && (
+            <div className="flex -space-x-8 transform scale-75">
+              {Array.from({ length: Math.min(topOpponent.cardCount || 7, 8) }).map((_, idx) => (
+                <UnoCard key={idx} faceDown size="sm" />
+              ))}
+            </div>
+          )}
         </div>
 
         {/* ----------------------------------------------------------- */}
@@ -385,31 +421,44 @@ export const GameScreen: React.FC = () => {
         {/* ----------------------------------------------------------- */}
         <div className="w-full flex items-center justify-between px-2 sm:px-6 z-10 my-auto">
           
-          {/* Left Opponent (Player 3) */}
-          <div className="flex items-center gap-3 shrink-0">
-            {/* Player 3 Vertical Card Fan */}
-            <div className="flex flex-col -space-y-11 transform scale-75">
-              {Array.from({ length: Math.min(leftOpponent?.cardCount || 7, 7) }).map((_, idx) => (
-                <UnoCard key={idx} faceDown size="sm" />
-              ))}
-            </div>
-
-            {/* Status Badge + Online Dot */}
-            <div className="flex flex-col items-start space-y-1">
-              <div className="bg-white/10 backdrop-blur-md px-3 py-1.5 rounded-2xl border border-white/20 text-xs font-bold flex items-center gap-2">
-                <div className="w-6 h-6 rounded-full bg-purple-500 text-white flex items-center justify-center text-[10px]">👤</div>
-                <div>
-                  <div className="text-[11px] font-bold">{leftOpponent?.name || 'Player 3'}</div>
+          {/* Left Opponent */}
+          <div className="flex items-center gap-3 shrink-0 min-w-[120px]">
+            {leftOpponent ? (
+              <>
+                {/* Left Player Vertical Card Fan */}
+                <div className="flex flex-col -space-y-11 transform scale-75">
+                  {Array.from({ length: Math.min(leftOpponent.cardCount || 7, 7) }).map((_, idx) => (
+                    <UnoCard key={idx} faceDown size="sm" />
+                  ))}
                 </div>
-              </div>
-              <span className="flex items-center gap-1 text-[10px] text-emerald-400 font-bold bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" /> Online
-              </span>
-            </div>
+
+                {/* Left Status Badge */}
+                <div className="flex flex-col items-start space-y-1">
+                  <div className={`bg-white/10 backdrop-blur-md px-3 py-1.5 rounded-2xl border transition-all text-xs font-bold flex items-center gap-2 ${
+                    currentTurnPlayerId === leftOpponent.id
+                      ? 'border-emerald-400 ring-2 ring-emerald-400/60 bg-emerald-500/20 shadow-[0_0_15px_rgba(52,211,153,0.5)]'
+                      : 'border-white/20'
+                  }`}>
+                    <div className="w-6 h-6 rounded-full bg-purple-500 text-white flex items-center justify-center text-[10px]">
+                      {leftOpponent.avatar || '👤'}
+                    </div>
+                    <div>
+                      <div className="text-[11px] font-bold">{leftOpponent.name}</div>
+                      <div className="text-[9px] text-white/70">{leftOpponent.cardCount} cards</div>
+                    </div>
+                  </div>
+                  <span className="flex items-center gap-1 text-[10px] text-emerald-400 font-bold bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" /> {leftOpponent.isConnected ? 'Online' : 'Offline'}
+                  </span>
+                </div>
+              </>
+            ) : (
+              <div className="w-12 shrink-0 pointer-events-none" />
+            )}
           </div>
 
           {/* --------------------------------------------------------- */}
-          {/* CENTER TABLE OVAL (Matching Image 1 Exact Layout)         */}
+          {/* CENTER TABLE OVAL                                         */}
           {/* --------------------------------------------------------- */}
           <div className="relative px-12 sm:px-20 py-8 rounded-[110px] bg-[#0c2b57]/90 border-2 border-sky-400/30 shadow-[0_0_50px_rgba(0,130,202,0.3)] flex flex-col items-center justify-center">
             
@@ -419,7 +468,7 @@ export const GameScreen: React.FC = () => {
             {/* Piles Container: DRAW PILE on Left, DISCARD PILE on Right */}
             <div className="flex items-center gap-10 sm:gap-14 z-10">
               
-              {/* DRAW PILE (Matching Image 1) */}
+              {/* DRAW PILE */}
               <div
                 onClick={isMyTurn ? handleDrawCard : undefined}
                 className={`flex flex-col items-center group ${isMyTurn ? 'cursor-pointer' : 'cursor-not-allowed'}`}
@@ -437,7 +486,7 @@ export const GameScreen: React.FC = () => {
                 </div>
               </div>
 
-              {/* DISCARD PILE with Color Glowing Aura Ring (Matching Image 1) */}
+              {/* DISCARD PILE with Color Glowing Aura Ring */}
               <div className="flex flex-col items-center">
                 <div className={`rounded-2xl p-1 transition-all ${discardGlowClass}`}>
                   <UnoCard color={topDiscard.color} value={topDiscard.value} size="md" />
@@ -451,7 +500,7 @@ export const GameScreen: React.FC = () => {
 
             </div>
 
-            {/* YOUR TURN INDICATOR (Centered directly below piles inside oval) */}
+            {/* YOUR TURN INDICATOR */}
             <div className="mt-6 z-10 flex items-center gap-2">
               <span className={`w-3 h-3 rounded-full ${isMyTurn ? 'bg-emerald-400 animate-ping' : 'bg-white/40'}`} />
               <span className="font-extrabold text-sm sm:text-base tracking-widest text-white uppercase">
@@ -461,27 +510,40 @@ export const GameScreen: React.FC = () => {
 
           </div>
 
-          {/* Right Opponent (Player 4) */}
-          <div className="flex items-center gap-3 shrink-0">
-            {/* Status Badge + Online Dot */}
-            <div className="flex flex-col items-end space-y-1">
-              <div className="bg-white/10 backdrop-blur-md px-3 py-1.5 rounded-2xl border border-white/20 text-xs font-bold flex items-center gap-2">
-                <div>
-                  <div className="text-[11px] font-bold">{rightOpponent?.name || 'Player 4'}</div>
+          {/* Right Opponent */}
+          <div className="flex items-center gap-3 shrink-0 min-w-[120px] justify-end">
+            {rightOpponent ? (
+              <>
+                {/* Right Status Badge */}
+                <div className="flex flex-col items-end space-y-1">
+                  <div className={`bg-white/10 backdrop-blur-md px-3 py-1.5 rounded-2xl border transition-all text-xs font-bold flex items-center gap-2 ${
+                    currentTurnPlayerId === rightOpponent.id
+                      ? 'border-emerald-400 ring-2 ring-emerald-400/60 bg-emerald-500/20 shadow-[0_0_15px_rgba(52,211,153,0.5)]'
+                      : 'border-white/20'
+                  }`}>
+                    <div>
+                      <div className="text-[11px] font-bold">{rightOpponent.name}</div>
+                      <div className="text-[9px] text-white/70">{rightOpponent.cardCount} cards</div>
+                    </div>
+                    <div className="w-6 h-6 rounded-full bg-amber-500 text-white flex items-center justify-center text-[10px]">
+                      {rightOpponent.avatar || '👤'}
+                    </div>
+                  </div>
+                  <span className="flex items-center gap-1 text-[10px] text-emerald-400 font-bold bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" /> {rightOpponent.isConnected ? 'Online' : 'Offline'}
+                  </span>
                 </div>
-                <div className="w-6 h-6 rounded-full bg-amber-500 text-white flex items-center justify-center text-[10px]">👤</div>
-              </div>
-              <span className="flex items-center gap-1 text-[10px] text-emerald-400 font-bold bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" /> Online
-              </span>
-            </div>
 
-            {/* Player 4 Vertical Card Fan */}
-            <div className="flex flex-col -space-y-11 transform scale-75">
-              {Array.from({ length: Math.min(rightOpponent?.cardCount || 7, 7) }).map((_, idx) => (
-                <UnoCard key={idx} faceDown size="sm" />
-              ))}
-            </div>
+                {/* Right Player Vertical Card Fan */}
+                <div className="flex flex-col -space-y-11 transform scale-75">
+                  {Array.from({ length: Math.min(rightOpponent.cardCount || 7, 7) }).map((_, idx) => (
+                    <UnoCard key={idx} faceDown size="sm" />
+                  ))}
+                </div>
+              </>
+            ) : (
+              <div className="w-12 shrink-0 pointer-events-none" />
+            )}
           </div>
 
         </div>

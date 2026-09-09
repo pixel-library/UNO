@@ -44,8 +44,9 @@ export const UnoCard: React.FC<UnoCardProps> = ({
 }) => {
   const sizeConfig = SIZE_MAP[size] || SIZE_MAP.md;
   const colorConfig = COLOR_MAP[color] || COLOR_MAP.RED;
+  const isNumberDigit = /^[0-9]$/.test(value || '');
 
-  // Render Face-Down Card (Matching Reference 3: Black card, thick white border, red oval with yellow border & yellow 3D UNO text)
+  // Render Face-Down Card (Matching Reference Image)
   if (faceDown) {
     return (
       <div
@@ -54,12 +55,12 @@ export const UnoCard: React.FC<UnoCardProps> = ({
         className={`relative select-none ${sizeConfig.width} ${sizeConfig.height} bg-white ${sizeConfig.pad} ${sizeConfig.border} shadow-card transition-all duration-200 cursor-pointer hover:shadow-card-hover ${className}`}
       >
         <div className="w-full h-full bg-[#111111] rounded-[6px] flex items-center justify-center relative overflow-hidden border border-neutral-800 p-1">
-          {/* Inner tilted Red Oval with yellow border & yellow/white UNO logo */}
-          <div className="w-[88%] h-[72%] bg-[#E52521] rounded-full -rotate-[28deg] border-2 border-[#FCD116] flex items-center justify-center shadow-md">
-            <span className="font-black text-white tracking-tighter drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] font-sans italic text-center px-1" style={{ fontSize: size === 'xs' ? '8px' : size === 'sm' ? '12px' : size === 'md' ? '18px' : '26px' }}>
-              <span className="text-[#FCD116]">U</span>
-              <span className="text-white">N</span>
-              <span className="text-[#FCD116]">O</span>
+          {/* Inner tilted Red Oval with yellow border & yellow/white 3D UNO logo */}
+          <div className="w-[88%] h-[72%] bg-[#E52521] rounded-full -rotate-[28deg] border-2 border-[#FCD116] flex items-center justify-center shadow-lg">
+            <span className="font-black tracking-tighter drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)] font-sans italic text-center px-1" style={{ fontSize: size === 'xs' ? '9px' : size === 'sm' ? '13px' : size === 'md' ? '20px' : '28px' }}>
+              <span className="text-[#FCD116] drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">U</span>
+              <span className="text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">N</span>
+              <span className="text-[#FCD116] drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">O</span>
             </span>
           </div>
         </div>
@@ -67,7 +68,7 @@ export const UnoCard: React.FC<UnoCardProps> = ({
     );
   }
 
-  // Render Card Symbol
+  // Render Card Center Symbol
   const renderSymbol = () => {
     switch (value) {
       case 'SKIP':
@@ -87,17 +88,20 @@ export const UnoCard: React.FC<UnoCardProps> = ({
         return <span className="font-black italic tracking-tighter drop-shadow-[0_2px_2px_rgba(0,0,0,0.3)]">+2</span>;
       case 'WILD':
         return (
-          <div className="w-3/4 h-3/4 rounded-full overflow-hidden grid grid-cols-2 grid-rows-2 shadow-inner border border-white/50 transform -rotate-[28deg]">
-            <div className="bg-[#E52521]" />
-            <div className="bg-[#0082CA]" />
-            <div className="bg-[#FCD116]" />
-            <div className="bg-[#2D963F]" />
+          <div className="w-full h-full flex items-center justify-center relative">
+            <div className="w-[88%] h-[88%] rounded-full overflow-hidden grid grid-cols-2 grid-rows-2 shadow-inner border border-white/60 transform -rotate-[28deg]">
+              <div className="bg-[#E52521]" />
+              <div className="bg-[#0082CA]" />
+              <div className="bg-[#FCD116]" />
+              <div className="bg-[#2D963F]" />
+            </div>
+            <span className="absolute font-black italic tracking-tighter text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)] text-xl sm:text-2xl">WILD</span>
           </div>
         );
       case 'WILD_DRAW_FOUR':
         return (
-          <div className="w-full h-full flex flex-col items-center justify-center relative">
-            <div className="w-4/5 h-4/5 rounded-full overflow-hidden grid grid-cols-2 grid-rows-2 shadow-inner border border-white/50 transform -rotate-[28deg]">
+          <div className="w-full h-full flex items-center justify-center relative">
+            <div className="w-[88%] h-[88%] rounded-full overflow-hidden grid grid-cols-2 grid-rows-2 shadow-inner border border-white/60 transform -rotate-[28deg]">
               <div className="bg-[#E52521]" />
               <div className="bg-[#0082CA]" />
               <div className="bg-[#FCD116]" />
@@ -168,17 +172,19 @@ export const UnoCard: React.FC<UnoCardProps> = ({
       {/* Colored Inner Card Face */}
       <div className={`w-full h-full ${colorConfig.bg} rounded-[8px] relative overflow-hidden flex items-center justify-center p-1 border border-black/10`}>
         
-        {/* Top-Left Corner Value */}
-        <div className={`absolute top-1 left-1.5 font-black ${sizeConfig.cornerText} text-white drop-shadow-[0_1.5px_2px_rgba(0,0,0,0.9)] leading-none z-10 font-sans`}>
+        {/* Top-Left Corner Value with Underline for digits */}
+        <div className={`absolute top-1 left-1.5 font-black ${sizeConfig.cornerText} text-white drop-shadow-[0_1.5px_2px_rgba(0,0,0,0.9)] leading-none z-10 font-sans flex flex-col items-center`}>
           <span>{cornerLabel()}</span>
+          {isNumberDigit && <div className="w-[85%] h-[1.5px] bg-white rounded-full mt-[1px] opacity-90 shadow-sm" />}
         </div>
 
-        {/* Bottom-Right Corner Value (Rotated 180 deg) */}
-        <div className={`absolute bottom-1 right-1.5 font-black ${sizeConfig.cornerText} text-white drop-shadow-[0_1.5px_2px_rgba(0,0,0,0.9)] leading-none z-10 transform rotate-180 font-sans`}>
+        {/* Bottom-Right Corner Value (Rotated 180 deg) with Underline for digits */}
+        <div className={`absolute bottom-1 right-1.5 font-black ${sizeConfig.cornerText} text-white drop-shadow-[0_1.5px_2px_rgba(0,0,0,0.9)] leading-none z-10 transform rotate-180 font-sans flex flex-col items-center`}>
           <span>{cornerLabel()}</span>
+          {isNumberDigit && <div className="w-[85%] h-[1.5px] bg-white rounded-full mt-[1px] opacity-90 shadow-sm" />}
         </div>
 
-        {/* Tilted White Oval Center (Exact match to Reference 3!) */}
+        {/* Tilted White Oval Center */}
         <div className={`${sizeConfig.ovalWidth} ${sizeConfig.ovalHeight} bg-white rounded-full -rotate-[28deg] flex items-center justify-center shadow-[inset_0_2px_4px_rgba(0,0,0,0.15)] relative overflow-hidden`}>
           {/* Symbol Container */}
           <div className={`${colorConfig.text} ${sizeConfig.text} font-black flex items-center justify-center w-full h-full transform rotate-[28deg]`}>
