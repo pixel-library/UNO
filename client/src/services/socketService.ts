@@ -11,25 +11,31 @@ class SocketService {
 
   public getSocket(): Socket {
     if (!this.socket) {
+      const isLocalhost =
+        typeof window !== 'undefined' &&
+        (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+
       const socketUrl =
         import.meta.env.VITE_SOCKET_URL ||
-        window.location.origin;
+        (isLocalhost ? `${window.location.protocol}//${window.location.hostname}:5000` : window.location.origin);
 
       const realSocket = io(socketUrl, {
         transports: ['websocket', 'polling'],
         autoConnect: true,
         reconnection: true,
-        reconnectionAttempts: 5,
-        reconnectionDelay: 1000
+        reconnectionAttempts: 10,
+        reconnectionDelay: 500
       });
 
-      // Wrap socket to support client-side fallback if server is unreachable
+      // Wrap socket to support client-side fallback for single player vs AI
       this.socket = new Proxy(realSocket, {
         get: (target: any, prop: string) => {
           if (prop === 'emit') {
             return (eventName: string, ...args: any[]) => {
-              // If connected to server, emit via socket.io
-              if (target.connected) {
+              // Online multiplayer events must always be sent to backend server
+              const isOnlineEvent = ['room:create', 'room:join', 'game:sync', 'game:start'].includes(eventName);
+
+              if (target.connected || (isOnlineEvent && target.active !== false)) {
                 return target.emit(eventName, ...args);
               }
               // Offline / Local Execution Fallback when socket is disconnected

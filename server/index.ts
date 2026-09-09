@@ -134,7 +134,9 @@ io.on('connection', (socket) => {
     socket.join(`room_${roomCode}`);
     socketPlayerMap.set(socket.id, { roomCode, playerId, sessionId });
 
-    console.log(`[ROOM] Created room ${roomCode} for host ${valName.sanitizedName} (socket ${socket.id})`);
+    console.log(`[ROOM CREATE] Generated roomCode: "${roomCode}"`);
+    console.log(`[ROOM CREATE] Stored room key: "${roomCode}" for host "${valName.sanitizedName}" (socket ${socket.id})`);
+    console.log(`[ROOM CREATE] Current active room keys: [${Array.from(activeGames.keys()).join(', ')}]`);
 
     if (callback) {
       callback({
@@ -206,21 +208,26 @@ io.on('connection', (socket) => {
 
   // 2. Join Room
   socket.on('room:join', ({ roomCode, playerName }: { roomCode: string; playerName: string }, callback) => {
-    console.log(`[ROOM] Join request for code: "${roomCode}" from player: "${playerName}"`);
+    console.log(`[ROOM JOIN] Received roomCode: "${roomCode}" from player: "${playerName}"`);
     const valCode = validateRoomCode(roomCode);
     const valName = validatePlayerName(playerName);
 
     if (!valCode.valid || !valName.valid) {
       const err = valCode.error || valName.error;
-      console.log(`[ROOM] Join validation failed for code "${roomCode}": ${err}`);
+      console.log(`[ROOM JOIN] Validation failed for code "${roomCode}": ${err}`);
       if (callback) callback({ success: false, error: err });
       return;
     }
 
     const formattedCode = valCode.formattedCode!;
+    console.log(`[ROOM JOIN] Normalized roomCode: "${formattedCode}"`);
+    console.log(`[ROOM JOIN] Available server room keys: [${Array.from(activeGames.keys()).join(', ')}]`);
+
     const game = activeGames.get(formattedCode);
+    console.log(`[ROOM JOIN] Found room:`, !!game);
+
     if (!game) {
-      console.log(`[ROOM] Room not found for code: "${formattedCode}"`);
+      console.log(`[ROOM JOIN] FAIL: Room not found for code: "${formattedCode}"`);
       if (callback) callback({ success: false, error: 'Room not found. Check your room code.' });
       return;
     }
