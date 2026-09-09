@@ -95,6 +95,31 @@ function getGlobalLobbyChannel() {
       }
     });
 
+    globalLobbyChannel.on('broadcast', { event: 'room:start' }, (data: any) => {
+      const payload = data?.payload;
+      if (payload?.roomCode) {
+        let game = cloudGameCache.get(payload.roomCode);
+        if (!game) {
+          game = new UnoGame(payload.gameId || `game_${payload.roomCode}`, payload.roomCode);
+          cloudGameCache.set(payload.roomCode, game);
+          cloudGameCache.set(payload.gameId, game);
+        }
+        game.status = 'PLAYING';
+        if (Array.isArray(payload.players)) {
+          game.players = payload.players;
+        }
+
+        const myId = localStorage.getItem('uno_player_id') || game.players[0]?.id;
+        const privateState = game.getPrivateState(myId);
+        socketService.triggerLocalEvent('game:state', privateState);
+
+        const callbacks = stateUpdateCallbacks.get(payload.roomCode);
+        if (callbacks) {
+          callbacks.forEach(cb => cb(privateState));
+        }
+      }
+    });
+
     globalLobbyChannel.subscribe();
   }
   return globalLobbyChannel;
@@ -315,6 +340,23 @@ export const supabaseRoomService = {
       return { success: false, error: 'Game room not found.' };
     }
 
+    // Check DB status fallback if local game is still WAITING
+    if (game.status === 'WAITING' && formattedCode) {
+      try {
+        const { data: dbGame } = await supabase
+          .from('Game')
+          .select('status')
+          .eq('roomCode', formattedCode)
+          .single();
+
+        if (dbGame?.status === 'PLAYING') {
+          game.status = 'PLAYING';
+        }
+      } catch (err) {
+        // Silently ignore DB query error
+      }
+    }
+
     const pId = playerId || localStorage.getItem('uno_player_id') || game.players[0]?.id;
     const state = game.getPrivateState(pId);
     return { success: true, state };
@@ -460,10 +502,35 @@ export const supabaseRoomService = {
       return { success: false, error: 'Need at least 2 players to start.' };
     }
 
+    // Persist status to Supabase DB
+    try {
+      await supabase.from('Game').upsert({
+        id: game.id,
+        roomCode: game.roomCode,
+        status: 'PLAYING',
+        mode: 'CLASSIC'
+      });
+    } catch (dbErr) {
+      console.warn('[SUPABASE DB] Start game notice:', dbErr);
+    }
+
     const myId = localStorage.getItem('uno_player_id') || game.players[0]?.id;
     const state = game.getPrivateState(myId);
+
     if (game.roomCode) {
       this.broadcastState(game.roomCode);
+      if (globalLobbyChannel) {
+        globalLobbyChannel.send({
+          type: 'broadcast',
+          event: 'room:start',
+          payload: {
+            roomCode: game.roomCode,
+            gameId: game.id,
+            players: game.players,
+            publicState: game.getPublicState()
+          }
+        });
+      }
     }
     return { success: true, state };
   },
