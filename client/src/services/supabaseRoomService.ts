@@ -74,7 +74,7 @@ function getGlobalLobbyChannel() {
           if (myId) {
             socketService.triggerLocalEvent('game:state', game.getPrivateState(myId));
           }
-          this.broadcastState(game.roomCode);
+          supabaseRoomService.broadcastState(game.roomCode);
         }
       }
     });
