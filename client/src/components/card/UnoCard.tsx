@@ -160,7 +160,7 @@ export const UnoCard: React.FC<UnoCardProps> = ({
       style={style}
       className={`relative select-none ${sizeConfig.width} ${sizeConfig.height} bg-white ${sizeConfig.pad} ${sizeConfig.border} 
         transition-all duration-200 cursor-pointer shadow-card
-        ${playable ? 'ring-4 ring-uno-yellow ring-offset-2 scale-[1.03] z-20 shadow-xl' : ''}
+        ${playable ? 'ring-4 ring-emerald-400 ring-offset-2 ring-offset-transparent shadow-[0_0_20px_rgba(52,211,153,0.9)] scale-[1.03] z-20' : ''}
         ${selected ? '-translate-y-8 shadow-card-hover ring-4 ring-white ring-offset-2 z-30' : 'hover:-translate-y-4 hover:shadow-card-hover'}
         ${disabled ? 'opacity-60 grayscale cursor-not-allowed' : ''}
         ${className}`}

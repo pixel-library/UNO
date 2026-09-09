@@ -6,12 +6,10 @@ import { UnoCard } from '@/components/card/UnoCard';
 export const Home: React.FC = () => {
   const navigate = useNavigate();
 
-  const handleStartGame = (mode?: string) => {
+  const handleStartGame = () => {
     const storedName = localStorage.getItem('uno_player_name');
     if (!storedName) {
       navigate('/enter-name');
-    } else if (mode === 'computer') {
-      navigate('/computer');
     } else {
       navigate('/play');
     }
@@ -37,25 +35,17 @@ export const Home: React.FC = () => {
           </h1>
 
           <p className="text-lg text-neutral-600 max-w-xl mx-auto lg:mx-0 font-medium">
-            Challenge friends, play against the computer, and experience UNO your way. No login required — jump straight into the action!
+            Create or join a game room to play UNO with your friends in real time. No login required — jump straight into the action!
           </p>
 
           {/* Action Buttons */}
           <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 pt-2">
             <button
-              onClick={() => handleStartGame('online')}
-              className="w-full sm:w-auto bg-uno-yellow hover:bg-amber-400 text-uno-navy font-extrabold px-8 py-4 rounded-full text-base flex items-center justify-center gap-3 shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-0.5 active:translate-y-0"
+              onClick={handleStartGame}
+              className="w-full sm:w-auto bg-uno-yellow hover:bg-amber-400 text-uno-navy font-extrabold px-10 py-4 rounded-full text-base flex items-center justify-center gap-3 shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-0.5 active:translate-y-0"
             >
               <Play className="w-5 h-5 fill-current" />
-              PLAY ONLINE
-            </button>
-
-            <button
-              onClick={() => handleStartGame('computer')}
-              className="w-full sm:w-auto bg-white border-2 border-neutral-200 hover:border-uno-navy text-uno-navy font-bold px-8 py-4 rounded-full text-base flex items-center justify-center gap-3 shadow-sm hover:shadow-md transition-all"
-            >
-              <Monitor className="w-5 h-5" />
-              PLAY VS COMPUTER
+              PLAY NOW
             </button>
           </div>
 
@@ -128,65 +118,43 @@ export const Home: React.FC = () => {
           <h2 className="text-3xl font-extrabold text-uno-navy">PLAY YOUR WAY</h2>
           <p className="text-neutral-500 font-medium mt-2">Multiple game modes, endless fun.</p>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mt-12">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto mt-12">
             
-            {/* Card 1 */}
+            {/* Card 1: Create Game */}
             <div
-              onClick={() => handleStartGame('online')}
-              className="bg-white p-8 rounded-2xl border border-neutral-200/80 hover:border-uno-blue hover:shadow-lg transition-all text-left cursor-pointer group"
+              onClick={() => handleStartGame()}
+              className="bg-white p-8 rounded-3xl border border-neutral-200 hover:border-uno-blue hover:shadow-xl transition-all text-left cursor-pointer group flex flex-col justify-between"
             >
-              <div className="w-12 h-12 rounded-xl bg-blue-100 text-uno-blue flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                <Users className="w-6 h-6" />
+              <div>
+                <div className="w-14 h-14 rounded-2xl bg-blue-100 text-uno-blue flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                  <Users className="w-7 h-7" />
+                </div>
+                <h3 className="text-xl font-extrabold text-uno-navy">CREATE A GAME</h3>
+                <p className="text-sm text-neutral-500 mt-2">
+                  Set player count, configure custom house rules, and invite your friends.
+                </p>
               </div>
-              <h3 className="text-lg font-bold text-uno-navy">ONLINE MULTIPLAYER</h3>
-              <p className="text-sm text-neutral-500 mt-2">Play UNO with friends in real time from anywhere.</p>
-              <div className="mt-6 flex items-center text-xs font-bold text-uno-blue group-hover:translate-x-1 transition-transform">
-                START PLAYING <ArrowRight className="w-4 h-4 ml-1" />
-              </div>
-            </div>
-
-            {/* Card 2 */}
-            <div
-              onClick={() => handleStartGame('computer')}
-              className="bg-white p-8 rounded-2xl border border-neutral-200/80 hover:border-purple-500 hover:shadow-lg transition-all text-left cursor-pointer group"
-            >
-              <div className="w-12 h-12 rounded-xl bg-purple-100 text-purple-600 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                <Monitor className="w-6 h-6" />
-              </div>
-              <h3 className="text-lg font-bold text-uno-navy">VS COMPUTER</h3>
-              <p className="text-sm text-neutral-500 mt-2">Challenge intelligent AI opponents with 3 difficulty levels.</p>
-              <div className="mt-6 flex items-center text-xs font-bold text-purple-600 group-hover:translate-x-1 transition-transform">
-                PLAY AI <ArrowRight className="w-4 h-4 ml-1" />
-              </div>
-            </div>
-
-            {/* Card 3 */}
-            <div
-              onClick={() => handleStartGame('online')}
-              className="bg-white p-8 rounded-2xl border border-neutral-200/80 hover:border-emerald-500 hover:shadow-lg transition-all text-left cursor-pointer group"
-            >
-              <div className="w-12 h-12 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                <ShieldCheck className="w-6 h-6" />
-              </div>
-              <h3 className="text-lg font-bold text-uno-navy">PRIVATE ROOMS</h3>
-              <p className="text-sm text-neutral-500 mt-2">Create a room, set custom rules, and invite your friends with a code.</p>
-              <div className="mt-6 flex items-center text-xs font-bold text-emerald-600 group-hover:translate-x-1 transition-transform">
+              <div className="mt-8 flex items-center text-xs font-bold text-uno-blue group-hover:translate-x-1 transition-transform">
                 CREATE ROOM <ArrowRight className="w-4 h-4 ml-1" />
               </div>
             </div>
 
-            {/* Card 4 */}
+            {/* Card 2: Join Game */}
             <div
-              onClick={() => handleStartGame('online')}
-              className="bg-white p-8 rounded-2xl border border-neutral-200/80 hover:border-amber-500 hover:shadow-lg transition-all text-left cursor-pointer group"
+              onClick={() => handleStartGame()}
+              className="bg-white p-8 rounded-3xl border border-neutral-200 hover:border-emerald-500 hover:shadow-xl transition-all text-left cursor-pointer group flex flex-col justify-between"
             >
-              <div className="w-12 h-12 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                <Zap className="w-6 h-6" />
+              <div>
+                <div className="w-14 h-14 rounded-2xl bg-emerald-100 text-emerald-600 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                  <ShieldCheck className="w-7 h-7" />
+                </div>
+                <h3 className="text-xl font-extrabold text-uno-navy">JOIN A GAME</h3>
+                <p className="text-sm text-neutral-500 mt-2">
+                  Enter a room code or use an invite link to jump into your friend's game.
+                </p>
               </div>
-              <h3 className="text-lg font-bold text-uno-navy">QUICK PLAY</h3>
-              <p className="text-sm text-neutral-500 mt-2">Jump into an active open room instantly without waiting.</p>
-              <div className="mt-6 flex items-center text-xs font-bold text-amber-600 group-hover:translate-x-1 transition-transform">
-                MATCH NOW <ArrowRight className="w-4 h-4 ml-1" />
+              <div className="mt-8 flex items-center text-xs font-bold text-emerald-600 group-hover:translate-x-1 transition-transform">
+                JOIN WITH CODE <ArrowRight className="w-4 h-4 ml-1" />
               </div>
             </div>
 
@@ -340,7 +308,7 @@ export const Home: React.FC = () => {
           <p className="text-blue-100 max-w-md mt-3 font-medium">Grab your friends, join a room, and let the games begin!</p>
 
           <button
-            onClick={() => handleStartGame('online')}
+            onClick={handleStartGame}
             className="mt-8 bg-uno-yellow hover:bg-amber-400 text-uno-navy font-black px-10 py-4 rounded-full text-lg flex items-center gap-3 shadow-2xl transition-transform hover:scale-105 active:scale-100"
           >
             <Play className="w-6 h-6 fill-current" />

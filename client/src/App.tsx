@@ -5,14 +5,11 @@ import { Footer } from '@/components/common/Footer';
 import { Home } from '@/pages/Home';
 import { EnterName } from '@/pages/EnterName';
 import { Play } from '@/pages/Play';
-import { CreateGame } from '@/pages/CreateGame';
-import { JoinGame } from '@/pages/JoinGame';
 import { WaitingRoom } from '@/pages/WaitingRoom';
 import { GameScreen } from '@/pages/GameScreen';
 import { GameResult } from '@/pages/GameResult';
 import { Rules } from '@/pages/Rules';
 import { HowToPlay } from '@/pages/HowToPlay';
-import { Computer } from '@/pages/Computer';
 import { Settings } from '@/pages/Settings';
 
 export const App: React.FC = () => {
@@ -34,14 +31,13 @@ export const App: React.FC = () => {
                     <Route path="/" element={<Home />} />
                     <Route path="/enter-name" element={<EnterName />} />
                     <Route path="/play" element={<Play />} />
-                    <Route path="/create-game" element={<CreateGame />} />
-                    <Route path="/join-game" element={<JoinGame />} />
-                    <Route path="/join/:roomCode" element={<JoinGame />} />
+                    <Route path="/create-game" element={<Play />} />
+                    <Route path="/join-game" element={<Play />} />
+                    <Route path="/join/:roomCode" element={<Play />} />
                     <Route path="/room/:roomCode" element={<WaitingRoom />} />
                     <Route path="/game/:gameId/result" element={<GameResult />} />
                     <Route path="/rules" element={<Rules />} />
                     <Route path="/how-to-play" element={<HowToPlay />} />
-                    <Route path="/computer" element={<Computer />} />
                     <Route path="/settings" element={<Settings />} />
                   </Routes>
                 </main>
