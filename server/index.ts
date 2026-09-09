@@ -416,15 +416,35 @@ io.on('connection', (socket) => {
   });
 
   // 7. Chat Message
-  socket.on('chat:message', ({ text }: { text: string }) => {
-    const playerInfo = socketPlayerMap.get(socket.id);
-    if (!playerInfo || !text.trim()) return;
+  socket.on('chat:message', ({ text, roomCode, playerId }: { text: string; roomCode?: string; playerId?: string }) => {
+    if (!text || !text.trim()) return;
 
-    const game = activeGames.get(playerInfo.roomCode);
+    let playerInfo = socketPlayerMap.get(socket.id);
+    let targetRoomCode = playerInfo?.roomCode || (roomCode ? roomCode.trim().toUpperCase() : undefined);
+    let targetPlayerId = playerInfo?.playerId || playerId;
+
+    let game: UnoGame | undefined;
+    if (targetRoomCode) {
+      game = activeGames.get(targetRoomCode);
+    }
+    if (!game && targetPlayerId) {
+      game = Array.from(activeGames.values()).find(g => g.players.some(p => p.id === targetPlayerId));
+    }
+
     if (!game) return;
 
-    const sender = game.players.find(p => p.id === playerInfo.playerId);
+    let sender = game.players.find(p => p.id === targetPlayerId);
+    if (!sender && playerInfo) {
+      sender = game.players.find(p => p.id === playerInfo.playerId);
+    }
+    if (!sender) {
+      sender = game.players.find(p => !p.id.startsWith('bot_'));
+    }
     if (!sender) return;
+
+    // Bind socket mapping & join room channel
+    socketPlayerMap.set(socket.id, { roomCode: game.roomCode, playerId: sender.id, sessionId: sender.sessionId });
+    socket.join(`room_${game.roomCode}`);
 
     const msg = {
       id: `msg_${Date.now()}_${Math.random().toString(36).substring(2, 5)}`,
@@ -436,14 +456,16 @@ io.on('connection', (socket) => {
 
     game.chatMessages.push(msg);
 
-    // Ensure socket is joined to room channel
-    socket.join(`room_${game.roomCode}`);
-
-    // Broadcast chat message directly
+    // Broadcast chat message to room channel
     io.to(`room_${game.roomCode}`).emit('chat:message', msg);
 
-    // Also sync state so all clients have updated chatMessages history
-    broadcastGameState(game);
+    // Also broadcast to all socket IDs of players in this game
+    game.players.forEach((p) => {
+      const pSockets = Array.from(socketPlayerMap.entries())
+        .filter(([_, data]) => data.roomCode === game!.roomCode && data.playerId === p.id)
+        .map(([sId]) => sId);
+      pSockets.forEach(sId => io.to(sId).emit('chat:message', msg));
+    });
   });
 
   // 8. Disconnect

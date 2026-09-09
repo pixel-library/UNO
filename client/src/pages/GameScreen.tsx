@@ -220,8 +220,31 @@ export const GameScreen: React.FC = () => {
   const handleSendChat = (e: React.FormEvent) => {
     e.preventDefault();
     if (!chatInput.trim()) return;
+
+    const myId = localStorage.getItem('uno_player_id') || '';
+    const myName = localStorage.getItem('uno_player_name') || 'Player';
+    const textToSend = chatInput.trim();
+
+    const localMsg: ChatMessage = {
+      id: `msg_${Date.now()}_${Math.random().toString(36).substring(2, 5)}`,
+      senderId: myId,
+      senderName: myName,
+      text: textToSend,
+      timestamp: Date.now()
+    };
+
+    setChatMessages((prev) => {
+      if (prev.some(m => m.id === localMsg.id)) return prev;
+      return [...prev, localMsg];
+    });
+
     const socket = socketService.getSocket();
-    socket.emit('chat:message', { text: chatInput });
+    socket.emit('chat:message', {
+      text: textToSend,
+      roomCode: gameState?.roomCode,
+      playerId: myId
+    });
+
     setChatInput('');
   };
 
