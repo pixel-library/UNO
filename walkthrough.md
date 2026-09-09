@@ -40,5 +40,7 @@ We have successfully built a complete, production-ready, real-time online UNO ga
 - **Unit Tests**: 6/6 Vitest unit tests passed (`npx vitest run`).
 - **Frontend Build**: Vite production bundle compiled cleanly (`npm run build:client`).
 - **Server Compilation**: TypeScript server build succeeded with 0 errors (`npm run build:server`).
-- **Real-Time Multiplayer Chat**: Synchronized across all connected players in Socket.io mode, local engine fallback, and Supabase Realtime broadcast channels.
-- **3 & 4 Player Mobile View Layout**: Optimized Left, Right, and Center table elements for small viewports (<640px) to prevent overlapping cards, squished piles, or visual clipping while preserving desktop/tablet views (`≥640px`). All changes pushed to `main` branch (`commit 299eb2c`).
+- **Playable Drawn Card Retention**: When a player draws a card on their turn and that card matches top discard, turn is kept on current player so they can immediately play it.
+- **Mobile Multi-Row Hand Layout**: When hand size exceeds 7 cards on mobile view (<640px), cards automatically split into 2 spacious, easily-tappable rows with size="sm" cards.
+- **Mobile Board Opponent Visibility**: Enhanced Top, Left, and Right opponent status badges to display complete player names, avatars, card counts, and turn glow rings without cutoffs or truncation.
+- **Realtime Chat Sync**: Registered chat:message and game:state listeners before Realtime channel subscription so messages are delivered cross-browser instantly. All changes committed and pushed to `main` branch (`commit c11c08d`).
