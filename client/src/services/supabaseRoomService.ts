@@ -7,6 +7,7 @@ import { socketService } from './socketService';
 // In-memory active cloud games cache for fast local access across browsers
 const cloudGameCache = new Map<string, UnoGame>();
 const realTimeChannels = new Map<string, any>();
+const stateUpdateCallbacks = new Map<string, Set<(state: any) => void>>();
 
 function getGameFromCache(roomCode?: string): UnoGame | undefined {
   const code = roomCode?.trim().toUpperCase() || localStorage.getItem('uno_room_code') || undefined;
