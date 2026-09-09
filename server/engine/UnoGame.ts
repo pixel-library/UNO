@@ -229,6 +229,17 @@ export class UnoGame {
     return { success: false, message: 'Cannot call UNO with more than 2 cards' };
   }
 
+  public passTurn(playerId: string): { success: boolean; error?: string } {
+    const currentPlayer = this.getCurrentPlayer();
+    if (currentPlayer.id !== playerId) {
+      return { success: false, error: 'Not your turn' };
+    }
+
+    this.lastActionMessage = `${currentPlayer.name} passed turn`;
+    this.advanceTurn();
+    return { success: true };
+  }
+
   private applyCardAction(card: Card): void {
     const activePlayers = this.players.filter(p => !p.isSpectator);
 

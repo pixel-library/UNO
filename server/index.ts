@@ -408,6 +408,34 @@ io.on('connection', (socket) => {
     }
   });
 
+  // 5b. Pass / End Turn
+  socket.on('game:passTurn', (payload: any, callback: any) => {
+    let cb = typeof payload === 'function' ? payload : callback;
+    let payloadData = typeof payload === 'object' ? payload : {};
+
+    let playerInfo = socketPlayerMap.get(socket.id);
+    let playerId = payloadData?.playerId || playerInfo?.playerId || socket.data?.playerId;
+    let roomCode = payloadData?.roomCode ? String(payloadData.roomCode).trim().toUpperCase() : (playerInfo?.roomCode || socket.data?.roomCode);
+
+    let game = roomCode ? activeGames.get(roomCode) : undefined;
+    if (!game && playerId) {
+      game = Array.from(activeGames.values()).find(g => g.players.some(p => p.id === playerId));
+    }
+
+    if (!game || !playerId) {
+      if (cb) cb({ success: false, error: 'Game not found' });
+      return;
+    }
+
+    const result = game.passTurn(playerId);
+    if (cb) cb(result);
+
+    if (result.success) {
+      broadcastGameState(game);
+      checkAndExecuteAIMove(game);
+    }
+  });
+
   // 6. Call UNO
   socket.on('game:callUno', (_, callback) => {
     let playerInfo = socketPlayerMap.get(socket.id);

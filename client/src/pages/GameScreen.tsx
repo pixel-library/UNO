@@ -217,7 +217,24 @@ export const GameScreen: React.FC = () => {
     const pendingTimer = setTimeout(() => setIsActionPending(false), 1200);
 
     const socket = socketService.getSocket();
-    socket.emit('game:drawCard', {}, (res: any) => {
+    const myId = localStorage.getItem('uno_player_id');
+    socket.emit('game:drawCard', { roomCode: gameState?.roomCode, playerId: myId }, (res: any) => {
+      clearTimeout(pendingTimer);
+      setIsActionPending(false);
+    });
+  };
+
+  // Pass / End Turn Handler
+  const handlePassTurn = () => {
+    if (isActionPending) return;
+    setIsActionPending(true);
+    audioService.playButtonClick();
+
+    const pendingTimer = setTimeout(() => setIsActionPending(false), 1200);
+
+    const socket = socketService.getSocket();
+    const myId = localStorage.getItem('uno_player_id');
+    socket.emit('game:passTurn', { roomCode: gameState?.roomCode, playerId: myId }, (res: any) => {
       clearTimeout(pendingTimer);
       setIsActionPending(false);
     });
@@ -717,6 +734,36 @@ export const GameScreen: React.FC = () => {
             {/* BOTTOM CENTER: Fanned Player Hand & Player Status Pill */}
             <div className="flex flex-col items-center w-full lg:max-w-[70vw] z-30 flex-1 px-1">
               
+              {/* Action Bar (Draw / End Turn / UNO) when it is player's turn */}
+              {isMyTurn && (
+                <div className="flex items-center justify-center gap-2 mb-1 z-40">
+                  <button
+                    onClick={handleDrawCard}
+                    disabled={isActionPending}
+                    className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 disabled:opacity-50 text-white font-extrabold px-3.5 py-1.5 rounded-xl text-xs flex items-center gap-1.5 shadow-lg transition-transform hover:scale-105 active:scale-95 border border-amber-300/40"
+                  >
+                    <Zap className="w-3.5 h-3.5" /> DRAW CARD
+                  </button>
+
+                  <button
+                    onClick={handlePassTurn}
+                    disabled={isActionPending}
+                    className="bg-gradient-to-r from-sky-500 to-sky-600 hover:from-sky-400 hover:to-sky-500 disabled:opacity-50 text-white font-extrabold px-3.5 py-1.5 rounded-xl text-xs flex items-center gap-1.5 shadow-lg transition-transform hover:scale-105 active:scale-95 border border-sky-300/40"
+                  >
+                    <ArrowRight className="w-3.5 h-3.5" /> END TURN
+                  </button>
+
+                  {displayHand.length <= 2 && (
+                    <button
+                      onClick={handleCallUno}
+                      className="bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white font-black px-3.5 py-1.5 rounded-xl text-xs flex items-center gap-1.5 shadow-xl transition-transform hover:scale-110 active:scale-95 border border-yellow-400 animate-bounce"
+                    >
+                      🔥 UNO!
+                    </button>
+                  )}
+                </div>
+              )}
+
               {/* Player Hand Container */}
               <div className="w-full flex items-center justify-center overflow-x-auto overflow-y-visible pt-2 sm:pt-8 pb-1 px-1 scrollbar-none touch-pan-x">
                 {isMobile && displayHand.length > 7 ? (
