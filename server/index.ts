@@ -42,6 +42,8 @@ function broadcastGameState(game: UnoGame) {
   
   // Send masked private state to each connected player
   game.players.forEach((player) => {
+    if (player.id.startsWith('bot_')) return;
+
     const playerSockets = Array.from(socketPlayerMap.entries())
       .filter(([_, data]) => data.roomCode === game.roomCode && data.playerId === player.id)
       .map(([sId, _]) => sId);
@@ -51,13 +53,10 @@ function broadcastGameState(game: UnoGame) {
       playerSockets.forEach((sId) => {
         io.to(sId).emit('game:state', privateState);
       });
-    } else {
-      // Fallback: broadcast private state to room channel if socket ID mapping was reconnected
-      io.to(`room_${game.roomCode}`).emit('game:state', privateState);
     }
   });
 
-  // Also broadcast public state to room roomCode channel for spectators
+  // Also broadcast public state to room roomCode channel for spectators and UI status
   io.to(`room_${game.roomCode}`).emit('game:publicState', publicState);
 }
 

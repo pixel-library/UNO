@@ -66,7 +66,10 @@ export const GameScreen: React.FC = () => {
       });
     };
 
-    socket.on('game:state', (newState: PlayerPrivateState) => {
+    socket.on('game:state', (newState: PlayerPrivateState & { targetPlayerId?: string }) => {
+      if (newState.targetPlayerId && myId && newState.targetPlayerId !== myId) {
+        return;
+      }
       setGameState(newState);
       if (newState.chatMessages && newState.chatMessages.length > 0) {
         setChatMessages((prev) => {
@@ -352,7 +355,8 @@ export const GameScreen: React.FC = () => {
   const currentIdx = typeof gameState?.currentPlayerIndex === 'number' ? gameState.currentPlayerIndex : 0;
   const currentTurnPlayerId = activePlayers[currentIdx]?.id;
   const isMyTurn = currentTurnPlayerId === myId;
-  const displayHand: Card[] = Array.isArray(gameState?.hand) ? gameState.hand : [];
+  const displayHand: Card[] = (Array.isArray(gameState?.hand) ? gameState.hand : [])
+    .filter(c => c && c.id && c.color && c.value);
   const topDiscard: Card = gameState?.topDiscardCard || { id: 'disc_1', color: 'GREEN', value: '2', score: 2 };
 
   // Discard pile glow color based on active game color
@@ -772,7 +776,7 @@ export const GameScreen: React.FC = () => {
                       
                       const overlapMargin = isMobile
                         ? (total <= 4 ? '-ml-2' : '-ml-4')
-                        : (total <= 4 ? '-ml-1 sm:-ml-2' : total <= 7 ? '-ml-4 sm:-ml-6' : total <= 11 ? '-ml-7 sm:-ml-10' : '-ml-10 sm:-ml-14');
+                        : (total <= 4 ? '-ml-2 sm:-ml-3' : total <= 7 ? '-ml-4 sm:-ml-7' : total <= 11 ? '-ml-7 sm:-ml-12' : '-ml-10 sm:-ml-16');
 
                       const isPlayable = isMyTurn && (
                         card.color === 'WILD' ||
@@ -780,7 +784,7 @@ export const GameScreen: React.FC = () => {
                         card.value === topDiscard.value
                       );
 
-                      const cardSize = (isMobile || total > 7) ? 'sm' : 'md';
+                      const cardSize = isMobile ? 'sm' : 'md';
 
                       return (
                         <div

@@ -193,8 +193,8 @@ export class UnoGame {
     }
 
     const drawnCard = this.deck.draw();
-    if (!drawnCard) {
-      return { success: false, error: 'No cards left in deck' };
+    if (!drawnCard || !drawnCard.id || !drawnCard.color || !drawnCard.value) {
+      return { success: false, error: 'No valid cards left in deck' };
     }
 
     const hand = this.playerHands.get(playerId) || [];
@@ -253,7 +253,7 @@ export class UnoGame {
       case 'DRAW_TWO':
         const nextP2 = this.getNextPlayer();
         const penaltyHand2 = this.playerHands.get(nextP2.id) || [];
-        const drawnCards2 = this.deck.drawMultiple(2);
+        const drawnCards2 = this.deck.drawMultiple(2, this.discardPile);
         penaltyHand2.push(...drawnCards2);
         nextP2.cardCount = penaltyHand2.length;
         this.advanceTurnIndex(); // Skip penalty player's turn
@@ -263,7 +263,7 @@ export class UnoGame {
       case 'WILD_DRAW_FOUR':
         const nextP4 = this.getNextPlayer();
         const penaltyHand4 = this.playerHands.get(nextP4.id) || [];
-        const drawnCards4 = this.deck.drawMultiple(4);
+        const drawnCards4 = this.deck.drawMultiple(4, this.discardPile);
         penaltyHand4.push(...drawnCards4);
         nextP4.cardCount = penaltyHand4.length;
         this.advanceTurnIndex(); // Skip penalty player's turn
@@ -337,12 +337,14 @@ export class UnoGame {
     };
   }
 
-  public getPrivateState(playerId: string): PlayerPrivateState {
+  public getPrivateState(playerId: string): PlayerPrivateState & { targetPlayerId?: string } {
     const publicState = this.getPublicState();
-    const hand = this.playerHands.get(playerId) || [];
+    const rawHand = this.playerHands.get(playerId) || [];
+    const hand = rawHand.filter(c => c && c.id && c.color && c.value);
     return {
       ...publicState,
-      hand
+      hand,
+      targetPlayerId: playerId
     };
   }
 }

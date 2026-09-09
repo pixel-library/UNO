@@ -73,21 +73,26 @@ export class Deck {
     return this.cards.pop();
   }
 
-  public drawMultiple(count: number): Card[] {
+  public drawMultiple(count: number, discardPile?: Card[]): Card[] {
     const drawn: Card[] = [];
     for (let i = 0; i < count; i++) {
+      if (this.cards.length === 0 && discardPile && discardPile.length > 1) {
+        this.reshuffleFromDiscard(discardPile);
+      }
       const card = this.draw();
-      if (card) drawn.push(card);
+      if (card && card.id && card.color && card.value) {
+        drawn.push(card);
+      }
     }
     return drawn;
   }
 
   public reshuffleFromDiscard(discardPile: Card[]): void {
-    if (discardPile.length <= 1) return;
+    if (!discardPile || discardPile.length <= 1) return;
 
     // Keep top discard card
     const topCard = discardPile.pop()!;
-    const remaining = [...discardPile];
+    const remaining = [...discardPile].filter(c => c && c.id && c.color && c.value);
     discardPile.length = 0;
     discardPile.push(topCard);
 
