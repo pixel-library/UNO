@@ -3,6 +3,7 @@ import { UnoGame } from '../../../server/engine/UnoGame';
 import { AIPlayer } from '../../../server/engine/AIPlayer';
 import { validatePlayerName, validateRoomCode } from '../../../shared/validation/roomValidator';
 import { GameSettings, MovePayload } from '../../../shared/types/game';
+import { supabaseRoomService } from './supabaseRoomService';
 
 class SocketService {
   private socket: Socket | null = null;
@@ -104,21 +105,14 @@ class SocketService {
 
     if (eventName === 'room:create') {
       const { playerName, settings } = args[0] || {};
-      const valName = validatePlayerName(playerName || 'Player');
-      const roomCode = Math.random().toString(36).substring(2, 8).toUpperCase();
-      const gameId = `game_${Date.now()}`;
-      const game = new UnoGame(gameId, roomCode, settings);
-      const playerId = localStorage.getItem('uno_player_id') || `player_${Math.random().toString(36).substring(2, 9)}`;
-      const sessionId = `sess_${Math.random().toString(36).substring(2, 9)}`;
-      localStorage.setItem('uno_player_id', playerId);
-
-      game.addPlayer(playerId, sessionId, valName.sanitizedName || 'Player', true);
-      this.localGames.set(roomCode, game);
-      this.localGames.set(gameId, game);
-
-      const state = game.getPrivateState(playerId);
-      if (ackCallback) ackCallback({ success: true, roomCode, gameId, playerId, sessionId, state });
-      setTimeout(() => this.triggerLocalEvent('game:state', state), 50);
+      supabaseRoomService.createCloudRoom(playerName || 'Player', settings).then(res => {
+        if (ackCallback) ackCallback(res);
+        if (res.success && res.roomCode) {
+          supabaseRoomService.onStateUpdate(res.roomCode, (state) => {
+            this.triggerLocalEvent('game:state', state);
+          });
+        }
+      });
       return;
     }
 
@@ -155,53 +149,27 @@ class SocketService {
 
     if (eventName === 'room:join') {
       const { roomCode, playerName } = args[0] || {};
-      const valCode = validateRoomCode(roomCode || '');
-      const formattedCode = valCode.formattedCode || (roomCode || '').toUpperCase();
-      let game = this.localGames.get(formattedCode);
-
-      if (!game) {
-        if (ackCallback) ackCallback({ success: false, error: 'Room not found. Check your room code.' });
-        return;
-      }
-
-      const valName = validatePlayerName(playerName || 'Guest');
-      const playerId = localStorage.getItem('uno_player_id') || `player_${Math.random().toString(36).substring(2, 9)}`;
-      const sessionId = `sess_${Math.random().toString(36).substring(2, 9)}`;
-      localStorage.setItem('uno_player_id', playerId);
-
-      const player = game.addPlayer(playerId, sessionId, valName.sanitizedName || 'Guest', game.players.length === 0);
-      if (!player) {
-        if (ackCallback) ackCallback({ success: false, error: 'Room is full.' });
-        return;
-      }
-
-      const state = game.getPrivateState(playerId);
-      if (ackCallback) ackCallback({ success: true, roomCode: formattedCode, gameId: game.id, playerId, sessionId, state });
-      setTimeout(() => this.triggerLocalEvent('game:state', state), 50);
+      supabaseRoomService.joinCloudRoom(roomCode || '', playerName || 'Guest').then(res => {
+        if (ackCallback) ackCallback(res);
+        if (res.success && res.roomCode) {
+          supabaseRoomService.onStateUpdate(res.roomCode, (state) => {
+            this.triggerLocalEvent('game:state', state);
+          });
+        }
+      });
       return;
     }
 
     if (eventName === 'game:sync') {
       const { roomCode, gameId, playerId } = args[0] || {};
-      let game = roomCode ? this.localGames.get(roomCode) : undefined;
-      if (!game && gameId) game = this.localGames.get(gameId);
-      if (!game && this.localGames.size > 0) game = Array.from(this.localGames.values())[0];
-
-      if (!game) {
-        if (ackCallback) ackCallback({ success: false, error: 'Game not found' });
-        return;
-      }
-
-      const activeGame = game;
-      const pId = playerId || localStorage.getItem('uno_player_id') || activeGame.players.find(p => !p.id.startsWith('bot_'))?.id || activeGame.players[0]?.id;
-      const state = activeGame.getPrivateState(pId);
-      if (ackCallback) ackCallback({ success: true, state });
-      setTimeout(() => {
-        this.triggerLocalEvent('game:state', state);
-        if (game!.status === 'PLAYING' && game!.getCurrentPlayer().id.startsWith('bot_')) {
-          this.checkAndExecuteLocalAIMove(game!);
+      supabaseRoomService.syncCloudRoom(roomCode, gameId, playerId).then(res => {
+        if (ackCallback) ackCallback(res);
+        if (res.success && res.state?.roomCode) {
+          supabaseRoomService.onStateUpdate(res.state.roomCode, (state) => {
+            this.triggerLocalEvent('game:state', state);
+          });
         }
-      }, 50);
+      });
       return;
     }
 
