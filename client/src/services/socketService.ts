@@ -185,7 +185,12 @@ class SocketService {
         }
         this.checkAndExecuteLocalAIMove(game);
       } else {
-        if (ackCallback) ackCallback({ success: false, error: 'Game not found' });
+        supabaseRoomService.startCloudRoom().then(res => {
+          if (ackCallback) ackCallback(res);
+          if (res.success && res.state) {
+            this.triggerLocalEvent('game:state', res.state);
+          }
+        });
       }
       return;
     }
@@ -203,6 +208,10 @@ class SocketService {
           this.triggerLocalEvent('game:state', state);
           this.checkAndExecuteLocalAIMove(game);
         }
+      } else {
+        supabaseRoomService.playCloudCard(payload).then(res => {
+          if (ackCallback) ackCallback(res);
+        });
       }
       return;
     }
@@ -219,6 +228,10 @@ class SocketService {
           this.triggerLocalEvent('game:state', state);
           this.checkAndExecuteLocalAIMove(game);
         }
+      } else {
+        supabaseRoomService.drawCloudCard().then(res => {
+          if (ackCallback) ackCallback(res);
+        });
       }
       return;
     }
@@ -233,6 +246,10 @@ class SocketService {
           const state = game.getPrivateState(humanPlayer.id);
           this.triggerLocalEvent('game:state', state);
         }
+      } else {
+        supabaseRoomService.callCloudUno().then(res => {
+          if (ackCallback) ackCallback(res);
+        });
       }
       return;
     }
@@ -248,6 +265,10 @@ class SocketService {
           this.triggerLocalEvent('game:state', state);
         }
         this.checkAndExecuteLocalAIMove(game);
+      } else {
+        supabaseRoomService.rematchCloudRoom().then(res => {
+          if (ackCallback) ackCallback(res);
+        });
       }
       return;
     }

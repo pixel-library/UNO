@@ -307,14 +307,26 @@ export const supabaseRoomService = {
   /**
    * Broadcast state update to all connected clients in the room
    */
-  broadcastState(roomCode: string, state: any) {
+  broadcastState(roomCode: string, customState?: any) {
     const formattedCode = roomCode.trim().toUpperCase();
+    const game = cloudGameCache.get(formattedCode);
     const channel = realTimeChannels.get(formattedCode) || this.setupRealtimeChannel(formattedCode);
-    if (channel) {
+    if (channel && game) {
+      const handsObj: Record<string, any[]> = {};
+      game.playerHands.forEach((hand, pid) => {
+        handsObj[pid] = hand;
+      });
+
+      const payload = {
+        publicState: game.getPublicState(),
+        hands: handsObj,
+        customState
+      };
+
       channel.send({
         type: 'broadcast',
         event: 'game:state',
-        payload: state
+        payload
       });
     }
   },
@@ -327,8 +339,38 @@ export const supabaseRoomService = {
     const channel = realTimeChannels.get(formattedCode) || this.setupRealtimeChannel(formattedCode);
 
     channel.on('broadcast', { event: 'game:state' }, (data: any) => {
-      if (data?.payload) {
-        callback(data.payload);
+      const payload = data?.payload;
+      if (payload) {
+        let game = cloudGameCache.get(formattedCode);
+        if (payload.publicState) {
+          if (!game) {
+            game = new UnoGame(payload.publicState.id, formattedCode, payload.publicState.settings);
+            cloudGameCache.set(formattedCode, game);
+            cloudGameCache.set(payload.publicState.id, game);
+          }
+          game.status = payload.publicState.status;
+          game.players = payload.publicState.players;
+          game.currentPlayerIndex = payload.publicState.currentPlayerIndex;
+          game.direction = payload.publicState.direction;
+          game.currentColor = payload.publicState.currentColor;
+          game.winner = payload.publicState.winner;
+          game.turnStartedAt = payload.publicState.turnStartedAt;
+          game.lastActionMessage = payload.publicState.lastActionMessage;
+          if (payload.publicState.topDiscardCard) {
+            game.discardPile = [payload.publicState.topDiscardCard];
+          }
+          if (payload.hands) {
+            Object.entries(payload.hands).forEach(([pid, handArr]) => {
+              game!.playerHands.set(pid, handArr as any[]);
+            });
+          }
+
+          const myId = localStorage.getItem('uno_player_id') || game.players[0]?.id;
+          const privateState = game.getPrivateState(myId);
+          callback(privateState);
+        } else if (payload.hand) {
+          callback(payload);
+        }
       }
     });
 
@@ -336,5 +378,90 @@ export const supabaseRoomService = {
       channel.unsubscribe();
       realTimeChannels.delete(formattedCode);
     };
+  },
+
+  /**
+   * Start cloud game match
+   */
+  async startCloudRoom(): Promise<{ success: boolean; state?: PlayerPrivateState; error?: string }> {
+    const game = Array.from(cloudGameCache.values())[0];
+    if (!game) {
+      return { success: false, error: 'Need at least 2 players to start.' };
+    }
+
+    const started = game.startGame();
+    if (!started) {
+      return { success: false, error: 'Need at least 2 players to start.' };
+    }
+
+    const myId = localStorage.getItem('uno_player_id') || game.players[0]?.id;
+    const state = game.getPrivateState(myId);
+    if (game.roomCode) {
+      this.broadcastState(game.roomCode);
+    }
+    return { success: true, state };
+  },
+
+  /**
+   * Play card in cloud match
+   */
+  async playCloudCard(payload: any): Promise<{ success: boolean; error?: string }> {
+    const game = Array.from(cloudGameCache.values())[0];
+    if (game && payload?.cardId) {
+      const myId = localStorage.getItem('uno_player_id') || game.getCurrentPlayer().id;
+      const result = game.playCard(myId, payload.cardId, payload.chosenColor);
+      if (result.success && game.roomCode) {
+        this.broadcastState(game.roomCode);
+      }
+      return result;
+    }
+    return { success: false, error: 'Game not found' };
+  },
+
+  /**
+   * Draw card in cloud match
+   */
+  async drawCloudCard(): Promise<{ success: boolean; drawnCard?: any; error?: string }> {
+    const game = Array.from(cloudGameCache.values())[0];
+    if (game) {
+      const myId = localStorage.getItem('uno_player_id') || game.getCurrentPlayer().id;
+      const result = game.drawCard(myId);
+      if (result.success && game.roomCode) {
+        this.broadcastState(game.roomCode);
+      }
+      return result;
+    }
+    return { success: false, error: 'Game not found' };
+  },
+
+  /**
+   * Call UNO in cloud match
+   */
+  async callCloudUno(): Promise<{ success: boolean; message: string }> {
+    const game = Array.from(cloudGameCache.values())[0];
+    if (game) {
+      const myId = localStorage.getItem('uno_player_id') || game.players[0].id;
+      const result = game.callUno(myId);
+      if (result.success && game.roomCode) {
+        this.broadcastState(game.roomCode);
+      }
+      return result;
+    }
+    return { success: false, message: 'Game not found' };
+  },
+
+  /**
+   * Rematch cloud match
+   */
+  async rematchCloudRoom(): Promise<{ success: boolean; error?: string }> {
+    const game = Array.from(cloudGameCache.values())[0];
+    if (game) {
+      game.startGame();
+      if (game.roomCode) {
+        this.broadcastState(game.roomCode);
+      }
+      return { success: true };
+    }
+    return { success: false, error: 'Game not found' };
   }
 };
