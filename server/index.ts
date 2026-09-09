@@ -36,28 +36,47 @@ function generateRoomCode(): string {
   return code;
 }
 
-// Helper: Broadcast game state to room with masked private hands
 function broadcastGameState(game: UnoGame) {
   const publicState = game.getPublicState();
-  
-  // Send masked private state to each connected player
+  const roomName = `room_${game.roomCode}`;
+
+  // Send masked private state to each connected human player
   game.players.forEach((player) => {
     if (player.id.startsWith('bot_')) return;
 
-    const playerSockets = Array.from(socketPlayerMap.entries())
+    // Find socket entries in socketPlayerMap for this player
+    let pSockets = Array.from(socketPlayerMap.entries())
       .filter(([_, data]) => data.roomCode === game.roomCode && data.playerId === player.id)
-      .map(([sId, _]) => sId);
+      .map(([sId]) => sId);
+
+    // If socketPlayerMap has no match, search connected sockets in this room channel
+    if (pSockets.length === 0) {
+      const roomSocketIds = io.sockets.adapter.rooms.get(roomName);
+      if (roomSocketIds) {
+        for (const sId of roomSocketIds) {
+          const clientSocket = io.sockets.sockets.get(sId);
+          if (clientSocket && clientSocket.data?.playerId === player.id) {
+            pSockets.push(sId);
+            // Re-bind to socketPlayerMap for future broadcasts
+            socketPlayerMap.set(sId, { roomCode: game.roomCode, playerId: player.id, sessionId: player.sessionId });
+          }
+        }
+      }
+    }
 
     const privateState = game.getPrivateState(player.id);
-    if (playerSockets.length > 0) {
-      playerSockets.forEach((sId) => {
+    if (pSockets.length > 0) {
+      pSockets.forEach((sId) => {
         io.to(sId).emit('game:state', privateState);
       });
+    } else {
+      // Emergency fallback: emit to room channel with targetPlayerId guard so player's client picks up state
+      io.to(roomName).emit('game:state', privateState);
     }
   });
 
-  // Also broadcast public state to room roomCode channel for spectators and UI status
-  io.to(`room_${game.roomCode}`).emit('game:publicState', publicState);
+  // Also broadcast public state to room channel for spectators and UI status
+  io.to(roomName).emit('game:publicState', publicState);
 }
 
 // Helper: Trigger AI move if current player is an AI bot
@@ -131,6 +150,8 @@ io.on('connection', (socket) => {
     activeGames.set(roomCode, game);
 
     socket.join(`room_${roomCode}`);
+    socket.data.playerId = playerId;
+    socket.data.roomCode = roomCode;
     socketPlayerMap.set(socket.id, { roomCode, playerId, sessionId });
 
     console.log(`[ROOM CREATE] Generated roomCode: "${roomCode}"`);
@@ -183,6 +204,8 @@ io.on('connection', (socket) => {
     activeGames.set(roomCode, game);
 
     socket.join(`room_${roomCode}`);
+    socket.data.playerId = humanId;
+    socket.data.roomCode = roomCode;
     socketPlayerMap.set(socket.id, { roomCode, playerId: humanId, sessionId });
 
     console.log(`[ROOM] Created VS AI room ${roomCode} for player ${valName.sanitizedName}`);
@@ -257,6 +280,8 @@ io.on('connection', (socket) => {
     }
 
     socket.join(`room_${formattedCode}`);
+    socket.data.playerId = playerId;
+    socket.data.roomCode = formattedCode;
     socketPlayerMap.set(socket.id, { roomCode: formattedCode, playerId, sessionId });
 
     console.log(`[ROOM] Player ${valName.sanitizedName} (${playerId}) joined room ${formattedCode}. Players: ${game.players.length}/${game.settings.maxPlayers}`);
@@ -310,6 +335,8 @@ io.on('connection', (socket) => {
     }
 
     // Re-bind socket & room mapping
+    socket.data.playerId = player.id;
+    socket.data.roomCode = game.roomCode;
     socketPlayerMap.set(socket.id, { roomCode: game.roomCode, playerId: player.id, sessionId: player.sessionId });
     socket.join(`room_${game.roomCode}`);
 
@@ -333,13 +360,21 @@ io.on('connection', (socket) => {
 
   // 4. Play Card
   socket.on('game:playCard', (payload: MovePayload, callback) => {
-    const playerInfo = socketPlayerMap.get(socket.id);
-    if (!playerInfo) return;
+    let playerInfo = socketPlayerMap.get(socket.id);
+    let playerId = playerInfo?.playerId || socket.data?.playerId;
+    let roomCode = playerInfo?.roomCode || socket.data?.roomCode;
 
-    const game = activeGames.get(playerInfo.roomCode);
-    if (!game || !payload.cardId) return;
+    let game = roomCode ? activeGames.get(roomCode) : undefined;
+    if (!game && playerId) {
+      game = Array.from(activeGames.values()).find(g => g.players.some(p => p.id === playerId));
+    }
 
-    const result = game.playCard(playerInfo.playerId, payload.cardId, payload.chosenColor);
+    if (!game || !payload.cardId || !playerId) {
+      if (callback) callback({ success: false, error: 'Game or action invalid' });
+      return;
+    }
+
+    const result = game.playCard(playerId, payload.cardId, payload.chosenColor);
     if (callback) callback(result);
 
     if (result.success) {
@@ -350,13 +385,21 @@ io.on('connection', (socket) => {
 
   // 5. Draw Card
   socket.on('game:drawCard', (_, callback) => {
-    const playerInfo = socketPlayerMap.get(socket.id);
-    if (!playerInfo) return;
+    let playerInfo = socketPlayerMap.get(socket.id);
+    let playerId = playerInfo?.playerId || socket.data?.playerId;
+    let roomCode = playerInfo?.roomCode || socket.data?.roomCode;
 
-    const game = activeGames.get(playerInfo.roomCode);
-    if (!game) return;
+    let game = roomCode ? activeGames.get(roomCode) : undefined;
+    if (!game && playerId) {
+      game = Array.from(activeGames.values()).find(g => g.players.some(p => p.id === playerId));
+    }
 
-    const result = game.drawCard(playerInfo.playerId);
+    if (!game || !playerId) {
+      if (callback) callback({ success: false, error: 'Game not found' });
+      return;
+    }
+
+    const result = game.drawCard(playerId);
     if (callback) callback(result);
 
     if (result.success) {
@@ -367,13 +410,21 @@ io.on('connection', (socket) => {
 
   // 6. Call UNO
   socket.on('game:callUno', (_, callback) => {
-    const playerInfo = socketPlayerMap.get(socket.id);
-    if (!playerInfo) return;
+    let playerInfo = socketPlayerMap.get(socket.id);
+    let playerId = playerInfo?.playerId || socket.data?.playerId;
+    let roomCode = playerInfo?.roomCode || socket.data?.roomCode;
 
-    const game = activeGames.get(playerInfo.roomCode);
-    if (!game) return;
+    let game = roomCode ? activeGames.get(roomCode) : undefined;
+    if (!game && playerId) {
+      game = Array.from(activeGames.values()).find(g => g.players.some(p => p.id === playerId));
+    }
 
-    const result = game.callUno(playerInfo.playerId);
+    if (!game || !playerId) {
+      if (callback) callback({ success: false, error: 'Game not found' });
+      return;
+    }
+
+    const result = game.callUno(playerId);
     if (callback) callback(result);
 
     if (result.success) {
@@ -413,6 +464,8 @@ io.on('connection', (socket) => {
       const targetPlayer = game.players.find(p => p.id === pId);
       if (targetPlayer) {
         targetPlayer.isConnected = true;
+        socket.data.playerId = pId;
+        socket.data.roomCode = game.roomCode;
         socketPlayerMap.set(socket.id, { roomCode: game.roomCode, playerId: pId, sessionId: targetPlayer.sessionId });
         socket.join(`room_${game.roomCode}`);
       }
