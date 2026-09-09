@@ -498,26 +498,28 @@ export const GameScreen: React.FC = () => {
           {/* Left Opponent */}
           <div className="flex items-center gap-1 sm:gap-3 shrink-0 min-w-0 sm:min-w-[90px] lg:min-w-[120px]">
             {leftOpponent ? (
-              <>
-                {/* Left Player Angled Card Fan */}
-                <div className="relative flex flex-col items-center justify-center min-w-0 sm:min-w-[60px]">
-                  <div className="flex -space-x-8 transform rotate-90 scale-65 sm:scale-75 lg:scale-90 origin-center py-2 sm:py-4">
-                    {Array.from({ length: Math.min(leftOpponent.cardCount || 7, 8) }).map((_, idx, arr) => {
-                      const total = arr.length;
-                      const mid = (total - 1) / 2;
-                      const arcAngle = (idx - mid) * 4;
-                      return (
-                        <div
-                          key={idx}
-                          className="transition-transform duration-200"
-                          style={{ transform: `rotate(${arcAngle}deg)` }}
-                        >
-                          <UnoCard faceDown size="sm" />
-                        </div>
-                      );
-                    })}
+              <div className="flex flex-col sm:flex-row items-center gap-1 sm:gap-3 shrink-0">
+                {/* Left Player Angled Card Fan (Desktop / Tablet only) */}
+                {!isMobile && (
+                  <div className="relative flex flex-col items-center justify-center min-w-0 sm:min-w-[60px]">
+                    <div className="flex -space-x-8 transform rotate-90 scale-75 lg:scale-90 origin-center py-2 sm:py-4">
+                      {Array.from({ length: Math.min(leftOpponent.cardCount || 7, 8) }).map((_, idx, arr) => {
+                        const total = arr.length;
+                        const mid = (total - 1) / 2;
+                        const arcAngle = (idx - mid) * 4;
+                        return (
+                          <div
+                            key={idx}
+                            className="transition-transform duration-200"
+                            style={{ transform: `rotate(${arcAngle}deg)` }}
+                          >
+                            <UnoCard faceDown size="sm" />
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
-                </div>
+                )}
 
                 {/* Left Status Badge */}
                 <div className="flex flex-col items-start space-y-0.5">
@@ -526,28 +528,28 @@ export const GameScreen: React.FC = () => {
                       ? 'border-emerald-400 ring-2 ring-emerald-400/60 bg-emerald-500/20 shadow-[0_0_15px_rgba(52,211,153,0.5)]'
                       : 'border-white/20'
                   }`}>
-                    <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-purple-500 text-white flex items-center justify-center text-[10px]">
+                    <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-purple-500 text-white flex items-center justify-center text-[10px] font-bold">
                       {leftOpponent.avatar || '👤'}
                     </div>
-                    <div className="hidden sm:block">
-                      <div className="text-[11px] font-bold truncate max-w-[60px] sm:max-w-none">{leftOpponent.name}</div>
-                      <div className="text-[9px] text-white/70">{leftOpponent.cardCount} cards</div>
+                    <div className="text-left">
+                      <div className="text-[10px] sm:text-[11px] font-bold truncate max-w-[45px] sm:max-w-none text-white">{leftOpponent.name}</div>
+                      <div className="text-[8px] sm:text-[9px] text-white/70">{leftOpponent.cardCount} cards</div>
                     </div>
                   </div>
                 </div>
-              </>
+              </div>
             ) : (
-              <div className="w-4 sm:w-12 shrink-0 pointer-events-none" />
+              <div className="w-2 sm:w-12 shrink-0 pointer-events-none" />
             )}
           </div>
 
           {/* --------------------------------------------------------- */}
           {/* CENTER TABLE AREA                                         */}
           {/* --------------------------------------------------------- */}
-          <div className="relative px-2 sm:px-6 py-2 sm:py-4 flex flex-col items-center justify-center">
+          <div className="relative px-1 sm:px-6 py-1 sm:py-4 flex flex-col items-center justify-center">
             
             {/* Piles Container: DRAW PILE on Left, DISCARD PILE on Right */}
-            <div className="flex items-center gap-4 sm:gap-8 lg:gap-14 z-10">
+            <div className="flex items-center gap-3 sm:gap-8 lg:gap-14 z-10">
               
               {/* DRAW PILE */}
               <div
@@ -556,25 +558,25 @@ export const GameScreen: React.FC = () => {
               >
                 <div className="relative transform transition-transform group-hover:scale-105 active:scale-95">
                   <div className="absolute top-1 left-1 w-full h-full">
-                    <UnoCard faceDown size="md" />
+                    <UnoCard faceDown size={isMobile ? 'sm' : 'md'} />
                   </div>
-                  <UnoCard faceDown size="md" />
+                  <UnoCard faceDown size={isMobile ? 'sm' : 'md'} />
                 </div>
 
-                <div className="mt-2 sm:mt-3 text-center">
-                  <span className="text-[10px] sm:text-xs font-bold tracking-wider text-white/90 uppercase block">DRAW</span>
+                <div className="mt-1 sm:mt-3 text-center">
+                  <span className="text-[9px] sm:text-xs font-bold tracking-wider text-white/90 uppercase block">DRAW</span>
                   <span className="text-xs sm:text-sm font-black text-white">{gameState.drawPileCount || 73}</span>
                 </div>
               </div>
 
               {/* DISCARD PILE with Color Glowing Aura Ring */}
               <div className="flex flex-col items-center">
-                <div className={`rounded-2xl p-1 transition-all ${discardGlowClass}`}>
-                  <UnoCard color={topDiscard.color} value={topDiscard.value} size="md" />
+                <div className={`rounded-xl sm:rounded-2xl p-0.5 sm:p-1 transition-all ${discardGlowClass}`}>
+                  <UnoCard color={topDiscard.color} value={topDiscard.value} size={isMobile ? 'sm' : 'md'} />
                 </div>
 
-                <div className="mt-2 sm:mt-3 text-center">
-                  <span className="text-[10px] sm:text-xs font-bold tracking-wider text-white/90 uppercase block">DISCARD</span>
+                <div className="mt-1 sm:mt-3 text-center">
+                  <span className="text-[9px] sm:text-xs font-bold tracking-wider text-white/90 uppercase block">DISCARD</span>
                   <span className="text-xs sm:text-sm font-black text-white">{gameState.discardPileCount || 1}</span>
                 </div>
               </div>
@@ -582,9 +584,9 @@ export const GameScreen: React.FC = () => {
             </div>
 
             {/* YOUR TURN INDICATOR */}
-            <div className="mt-3 sm:mt-6 z-10 flex items-center gap-2">
-              <span className={`w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full ${isMyTurn ? 'bg-emerald-400 animate-ping' : 'bg-white/40'}`} />
-              <span className="font-extrabold text-xs sm:text-base tracking-widest text-white uppercase">
+            <div className="mt-2 sm:mt-6 z-10 flex items-center gap-1.5 sm:gap-2">
+              <span className={`w-2 h-2 sm:w-3 sm:h-3 rounded-full ${isMyTurn ? 'bg-emerald-400 animate-ping' : 'bg-white/40'}`} />
+              <span className="font-extrabold text-[10px] sm:text-base tracking-widest text-white uppercase">
                 {isMyTurn ? 'YOUR TURN' : 'WAITING'}
               </span>
             </div>
@@ -594,7 +596,7 @@ export const GameScreen: React.FC = () => {
           {/* Right Opponent */}
           <div className="flex items-center gap-1 sm:gap-3 shrink-0 min-w-0 sm:min-w-[90px] lg:min-w-[120px] justify-end">
             {rightOpponent ? (
-              <>
+              <div className="flex flex-col sm:flex-row items-center gap-1 sm:gap-3 shrink-0">
                 {/* Right Status Badge */}
                 <div className="flex flex-col items-end space-y-0.5">
                   <div className={`bg-white/10 backdrop-blur-md px-1.5 py-1 sm:px-3 sm:py-1.5 rounded-xl sm:rounded-2xl border transition-all text-xs font-bold flex items-center gap-1.5 ${
@@ -602,38 +604,40 @@ export const GameScreen: React.FC = () => {
                       ? 'border-emerald-400 ring-2 ring-emerald-400/60 bg-emerald-500/20 shadow-[0_0_15px_rgba(52,211,153,0.5)]'
                       : 'border-white/20'
                   }`}>
-                    <div className="hidden sm:block text-right">
-                      <div className="text-[11px] font-bold truncate max-w-[60px] sm:max-w-none">{rightOpponent.name}</div>
-                      <div className="text-[9px] text-white/70">{rightOpponent.cardCount} cards</div>
+                    <div className="text-right">
+                      <div className="text-[10px] sm:text-[11px] font-bold truncate max-w-[45px] sm:max-w-none text-white">{rightOpponent.name}</div>
+                      <div className="text-[8px] sm:text-[9px] text-white/70">{rightOpponent.cardCount} cards</div>
                     </div>
-                    <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-amber-500 text-white flex items-center justify-center text-[10px]">
+                    <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-amber-500 text-white flex items-center justify-center text-[10px] font-bold">
                       {rightOpponent.avatar || '👤'}
                     </div>
                   </div>
                 </div>
 
-                {/* Right Player Angled Card Fan */}
-                <div className="relative flex flex-col items-center justify-center min-w-0 sm:min-w-[60px]">
-                  <div className="flex -space-x-8 transform -rotate-90 scale-65 sm:scale-75 lg:scale-90 origin-center py-2 sm:py-4">
-                    {Array.from({ length: Math.min(rightOpponent.cardCount || 7, 8) }).map((_, idx, arr) => {
-                      const total = arr.length;
-                      const mid = (total - 1) / 2;
-                      const arcAngle = (idx - mid) * 4;
-                      return (
-                        <div
-                          key={idx}
-                          className="transition-transform duration-200"
-                          style={{ transform: `rotate(${arcAngle}deg)` }}
-                        >
-                          <UnoCard faceDown size="sm" />
-                        </div>
-                      );
-                    })}
+                {/* Right Player Angled Card Fan (Desktop / Tablet only) */}
+                {!isMobile && (
+                  <div className="relative flex flex-col items-center justify-center min-w-0 sm:min-w-[60px]">
+                    <div className="flex -space-x-8 transform -rotate-90 scale-75 lg:scale-90 origin-center py-2 sm:py-4">
+                      {Array.from({ length: Math.min(rightOpponent.cardCount || 7, 8) }).map((_, idx, arr) => {
+                        const total = arr.length;
+                        const mid = (total - 1) / 2;
+                        const arcAngle = (idx - mid) * 4;
+                        return (
+                          <div
+                            key={idx}
+                            className="transition-transform duration-200"
+                            style={{ transform: `rotate(${arcAngle}deg)` }}
+                          >
+                            <UnoCard faceDown size="sm" />
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
-                </div>
-              </>
+                )}
+              </div>
             ) : (
-              <div className="w-4 sm:w-12 shrink-0 pointer-events-none" />
+              <div className="w-2 sm:w-12 shrink-0 pointer-events-none" />
             )}
           </div>
 
