@@ -405,13 +405,24 @@ export const GameScreen: React.FC = () => {
       {/* ------------------------------------------------------------- */}
       <main className="relative flex-1 w-full max-w-7xl mx-auto flex flex-col items-center justify-between px-4 py-1 overflow-hidden">
 
-        {/* Top Opponent Fanned Hand Resting Above Table */}
-        <div className="z-10 -mt-2 h-14 flex items-center justify-center">
+        {/* Top Opponent Angled Hand Resting Above Table */}
+        <div className="z-10 -mt-2 h-16 flex items-center justify-center">
           {topOpponent && (
-            <div className="flex -space-x-8 transform scale-75">
-              {Array.from({ length: Math.min(topOpponent.cardCount || 7, 8) }).map((_, idx) => (
-                <UnoCard key={idx} faceDown size="sm" />
-              ))}
+            <div className="flex -space-x-8 transform scale-90">
+              {Array.from({ length: Math.min(topOpponent.cardCount || 7, 10) }).map((_, idx, arr) => {
+                const total = arr.length;
+                const mid = (total - 1) / 2;
+                const arcAngle = (idx - mid) * 4;
+                return (
+                  <div
+                    key={idx}
+                    className="transition-transform duration-200 hover:scale-110"
+                    style={{ transform: `rotate(${arcAngle}deg) rotate(180deg)` }}
+                  >
+                    <UnoCard faceDown size="sm" />
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>
@@ -425,11 +436,24 @@ export const GameScreen: React.FC = () => {
           <div className="flex items-center gap-3 shrink-0 min-w-[120px]">
             {leftOpponent ? (
               <>
-                {/* Left Player Vertical Card Fan */}
-                <div className="flex flex-col -space-y-11 transform scale-75">
-                  {Array.from({ length: Math.min(leftOpponent.cardCount || 7, 7) }).map((_, idx) => (
-                    <UnoCard key={idx} faceDown size="sm" />
-                  ))}
+                {/* Left Player Angled Card Fan (Inward 90° rotation) */}
+                <div className="relative flex flex-col items-center justify-center min-w-[70px]">
+                  <div className="flex -space-x-8 transform rotate-90 scale-90 origin-center py-4">
+                    {Array.from({ length: Math.min(leftOpponent.cardCount || 7, 8) }).map((_, idx, arr) => {
+                      const total = arr.length;
+                      const mid = (total - 1) / 2;
+                      const arcAngle = (idx - mid) * 4;
+                      return (
+                        <div
+                          key={idx}
+                          className="transition-transform duration-200"
+                          style={{ transform: `rotate(${arcAngle}deg)` }}
+                        >
+                          <UnoCard faceDown size="sm" />
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
 
                 {/* Left Status Badge */}
@@ -534,11 +558,24 @@ export const GameScreen: React.FC = () => {
                   </span>
                 </div>
 
-                {/* Right Player Vertical Card Fan */}
-                <div className="flex flex-col -space-y-11 transform scale-75">
-                  {Array.from({ length: Math.min(rightOpponent.cardCount || 7, 7) }).map((_, idx) => (
-                    <UnoCard key={idx} faceDown size="sm" />
-                  ))}
+                {/* Right Player Angled Card Fan (Inward -90° rotation) */}
+                <div className="relative flex flex-col items-center justify-center min-w-[70px]">
+                  <div className="flex -space-x-8 transform -rotate-90 scale-90 origin-center py-4">
+                    {Array.from({ length: Math.min(rightOpponent.cardCount || 7, 8) }).map((_, idx, arr) => {
+                      const total = arr.length;
+                      const mid = (total - 1) / 2;
+                      const arcAngle = (idx - mid) * 4;
+                      return (
+                        <div
+                          key={idx}
+                          className="transition-transform duration-200"
+                          style={{ transform: `rotate(${arcAngle}deg)` }}
+                        >
+                          <UnoCard faceDown size="sm" />
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               </>
             ) : (
@@ -553,7 +590,7 @@ export const GameScreen: React.FC = () => {
         {/* ----------------------------------------------------------- */}
         <div className="w-full flex items-end justify-between px-2 sm:px-4 z-20 pb-2 shrink-0">
           
-          {/* BOTTOM LEFT: Integrated Chat Box Widget (Matching Image 1) */}
+          {/* BOTTOM LEFT: Integrated Chat Box Widget */}
           <div className="w-64 sm:w-72 bg-[#092248]/90 backdrop-blur-md border border-white/15 rounded-2xl p-3 shadow-2xl flex flex-col space-y-2 shrink-0">
             <div className="flex items-center justify-between border-b border-white/10 pb-1.5">
               <span className="font-bold text-xs text-white">Chat</span>
@@ -590,22 +627,29 @@ export const GameScreen: React.FC = () => {
           </div>
 
           {/* BOTTOM CENTER: Fanned Player Hand & Player Status Pill */}
-          <div className="flex flex-col items-center max-w-[50vw] sm:max-w-[60vw]">
+          <div className="flex flex-col items-center max-w-[55vw] sm:max-w-[65vw] z-30">
             
-            {/* Player Hand with Green Highlight on Playable Cards */}
-            <div className="flex items-center justify-center overflow-visible pb-2">
+            {/* Player Hand with Green Highlight & Hover Zoom */}
+            <div className="w-full flex items-center justify-center overflow-x-auto overflow-y-visible pt-10 pb-4 px-4 scrollbar-none">
               <div
-                className={`flex items-center justify-center ${
-                  displayHand.length > 12 ? '-space-x-8 sm:-space-x-10' :
-                  displayHand.length > 8 ? '-space-x-6 sm:-space-x-8' :
-                  '-space-x-4 sm:-space-x-6'
-                } transition-all duration-300`}
+                className="flex items-center justify-center transition-all duration-300 py-2 px-2"
+                style={{
+                  minWidth: 'max-content'
+                }}
               >
                 {displayHand.map((card, idx) => {
                   const isSelected = selectedCardId === card.id;
                   const total = displayHand.length;
                   const mid = (total - 1) / 2;
-                  const angle = total > 1 ? (idx - mid) * Math.min(3.5, 25 / total) : 0;
+                  
+                  // Smooth fan angle calculation
+                  const angle = total > 1 ? (idx - mid) * Math.min(3.5, 30 / total) : 0;
+                  
+                  // Calculate dynamic negative spacing so cards overlap neatly
+                  const overlapMargin = total <= 5 ? '-ml-2 sm:-ml-3' :
+                                        total <= 10 ? '-ml-6 sm:-ml-8' :
+                                        total <= 15 ? '-ml-10 sm:-ml-12' :
+                                        '-ml-12 sm:-ml-14';
 
                   // Check if card is playable
                   const isPlayable = isMyTurn && (
@@ -617,13 +661,16 @@ export const GameScreen: React.FC = () => {
                   return (
                     <div
                       key={card.id || idx}
-                      className="transition-transform duration-200 hover:z-40 hover:-translate-y-6"
-                      style={{ transform: `rotate(${angle}deg)` }}
+                      className={`group relative transition-all duration-200 ease-out ${idx > 0 ? overlapMargin : ''} hover:z-50 hover:-translate-y-12 hover:scale-125 hover:rotate-0`}
+                      style={{
+                        transform: `rotate(${angle}deg)`,
+                        zIndex: isSelected ? 40 : idx + 1
+                      }}
                     >
                       <UnoCard
                         color={card.color}
                         value={card.value}
-                        size={displayHand.length > 10 ? 'sm' : 'md'}
+                        size="md"
                         playable={isPlayable}
                         selected={isSelected}
                         onClick={() => handleCardClick(card)}
@@ -634,8 +681,8 @@ export const GameScreen: React.FC = () => {
               </div>
             </div>
 
-            {/* Player Pill below hand (Matching Image 1: Player: You • 7 Cards • Online) */}
-            <div className="bg-white/10 backdrop-blur-md px-4 py-1 rounded-full border border-white/20 flex items-center gap-2.5 text-xs font-bold z-10">
+            {/* Player Pill below hand */}
+            <div className="bg-white/10 backdrop-blur-md px-4 py-1 rounded-full border border-white/20 flex items-center gap-2.5 text-xs font-bold z-10 -mt-1">
               <div className="w-5 h-5 rounded-full bg-sky-500 text-white flex items-center justify-center text-[10px]">👤</div>
               <span>Player: You</span>
               <span className="text-white/60">{displayHand.length} Cards</span>
