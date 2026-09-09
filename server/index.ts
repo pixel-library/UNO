@@ -47,9 +47,14 @@ function broadcastGameState(game: UnoGame) {
       .map(([sId, _]) => sId);
 
     const privateState = game.getPrivateState(player.id);
-    playerSockets.forEach((sId) => {
-      io.to(sId).emit('game:state', privateState);
-    });
+    if (playerSockets.length > 0) {
+      playerSockets.forEach((sId) => {
+        io.to(sId).emit('game:state', privateState);
+      });
+    } else {
+      // Fallback: broadcast private state to room channel if socket ID mapping was reconnected
+      io.to(`room_${game.roomCode}`).emit('game:state', privateState);
+    }
   });
 
   // Also broadcast public state to room roomCode channel for spectators
@@ -286,7 +291,12 @@ io.on('connection', (socket) => {
 
     console.log(`[ROOM] Game started in room ${game.roomCode}`);
 
-    if (callback) callback({ success: true });
+    if (callback) {
+      callback({
+        success: true,
+        state: game.getPrivateState(player.id)
+      });
+    }
     broadcastGameState(game);
     checkAndExecuteAIMove(game);
   });

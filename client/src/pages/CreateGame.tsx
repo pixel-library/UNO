@@ -16,6 +16,7 @@ export const CreateGame: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleCreate = () => {
+    if (isSubmitting) return;
     const playerName = localStorage.getItem('uno_player_name');
     if (!playerName) {
       navigate('/enter-name');
@@ -23,41 +24,61 @@ export const CreateGame: React.FC = () => {
     }
 
     setIsSubmitting(true);
-    const socket = socketService.getSocket();
-
-    socket.emit(
-      'room:create',
-      {
-        playerName,
-        settings: {
-          maxPlayers,
-          startingCards: 7,
-          turnTimerSeconds,
-          allowSpectators,
-          enableChat,
-          houseRules: {
-            stacking,
-            jumpIn: false,
-            sevenZero: false,
-            forcePlay,
-            drawUntilPlayable: false,
-            multipleCardPlay: false,
-            customCards
-          }
-        }
-      },
-      (res: any) => {
+    let handled = false;
+    const timer = setTimeout(() => {
+      if (!handled) {
+        handled = true;
         setIsSubmitting(false);
-        if (res?.success) {
-          if (res.playerId) {
-            localStorage.setItem('uno_player_id', res.playerId);
-          }
-          navigate(`/room/${res.roomCode}`);
-        } else {
-          alert(res?.error || 'Failed to create room');
-        }
+        alert('Room creation timed out. Please try again.');
       }
-    );
+    }, 4000);
+
+    try {
+      const socket = socketService.getSocket();
+      socket.emit(
+        'room:create',
+        {
+          playerName,
+          settings: {
+            maxPlayers,
+            startingCards: 7,
+            turnTimerSeconds,
+            allowSpectators,
+            enableChat,
+            houseRules: {
+              stacking,
+              jumpIn: false,
+              sevenZero: false,
+              forcePlay,
+              drawUntilPlayable: false,
+              multipleCardPlay: false,
+              customCards
+            }
+          }
+        },
+        (res: any) => {
+          if (handled) return;
+          handled = true;
+          clearTimeout(timer);
+          setIsSubmitting(false);
+          if (res?.success) {
+            if (res.playerId) {
+              localStorage.setItem('uno_player_id', res.playerId);
+            }
+            navigate(`/room/${res.roomCode}`);
+          } else {
+            alert(res?.error || 'Failed to create room');
+          }
+        }
+      );
+    } catch (err) {
+      if (!handled) {
+        handled = true;
+        clearTimeout(timer);
+        setIsSubmitting(false);
+        alert('An unexpected error occurred while creating room.');
+      }
+    }
   };
 
   return (

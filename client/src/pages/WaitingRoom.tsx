@@ -128,11 +128,18 @@ export const WaitingRoom: React.FC = () => {
     }
   };
 
+  const [isStarting, setIsStarting] = useState(false);
+
   const handleStartGame = () => {
+    if (isStarting) return;
+    setIsStarting(true);
     const socket = socketService.getSocket();
     socket.emit('game:start', {}, (res: any) => {
+      setIsStarting(false);
       if (res?.success) {
-        navigate(`/game/${gameState?.id || 'game_active'}`);
+        navigate(`/game/${gameState?.id || res?.state?.id || 'game_active'}`, {
+          state: { initialGameState: res?.state }
+        });
       } else {
         alert(res?.error || 'Could not start game');
       }
@@ -253,11 +260,11 @@ export const WaitingRoom: React.FC = () => {
             {isHost ? (
               <button
                 onClick={handleStartGame}
-                disabled={players.length < 2}
+                disabled={players.length < 2 || isStarting}
                 className="w-full sm:w-auto bg-uno-yellow hover:bg-amber-400 disabled:opacity-50 text-uno-navy font-black px-10 py-4 rounded-2xl text-base flex items-center justify-center gap-2 shadow-lg transition-transform hover:scale-105 active:scale-100"
               >
                 <Play className="w-5 h-5 fill-current" />
-                {players.length < 2 ? 'WAITING FOR PLAYERS...' : 'START GAME'}
+                {isStarting ? 'STARTING MATCH...' : players.length < 2 ? 'WAITING FOR PLAYERS...' : 'START GAME'}
               </button>
             ) : (
               <div className="w-full text-center py-3 bg-neutral-100 rounded-xl text-xs font-bold text-neutral-500">

@@ -28,12 +28,11 @@ class SocketService {
         get: (target: any, prop: string) => {
           if (prop === 'emit') {
             return (eventName: string, ...args: any[]) => {
-              // Socket.IO buffers emissions natively when connecting/reconnecting.
-              // Always pass emit to target unless target is explicitly disconnected without pending reconnection.
-              if (target.connected || target.active !== false) {
+              // If connected to server, emit via socket.io
+              if (target.connected) {
                 return target.emit(eventName, ...args);
               }
-              // Offline / Static Client Fallback Execution when server is not connected
+              // Offline / Local Execution Fallback when socket is disconnected
               return this.handleLocalEmit(eventName, args);
             };
           }
@@ -206,13 +205,15 @@ class SocketService {
       const game = Array.from(this.localGames.values())[0];
       if (game) {
         game.startGame();
-        if (ackCallback) ackCallback({ success: true });
         const humanPlayer = game.players.find(p => !p.id.startsWith('bot_')) || game.players[0];
-        if (humanPlayer) {
-          const state = game.getPrivateState(humanPlayer.id);
+        const state = humanPlayer ? game.getPrivateState(humanPlayer.id) : null;
+        if (ackCallback) ackCallback({ success: true, state });
+        if (state) {
           this.triggerLocalEvent('game:state', state);
         }
         this.checkAndExecuteLocalAIMove(game);
+      } else {
+        if (ackCallback) ackCallback({ success: false, error: 'Game not found' });
       }
       return;
     }

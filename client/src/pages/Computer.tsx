@@ -10,6 +10,7 @@ export const Computer: React.FC = () => {
   const [isStarting, setIsStarting] = useState(false);
 
   const handleStartVsAI = () => {
+    if (isStarting) return;
     const playerName = localStorage.getItem('uno_player_name');
     if (!playerName) {
       navigate('/enter-name');
@@ -17,19 +18,39 @@ export const Computer: React.FC = () => {
     }
 
     setIsStarting(true);
-    const socket = socketService.getSocket();
-
-    socket.emit('room:createVsAI', { playerName, difficulty }, (res: any) => {
-      setIsStarting(false);
-      if (res?.success) {
-        if (res.playerId) {
-          localStorage.setItem('uno_player_id', res.playerId);
-        }
-        navigate(`/game/${res.gameId}`, { state: { initialGameState: res.state } });
-      } else {
-        alert(res?.error || 'Failed to start AI match');
+    let handled = false;
+    const timer = setTimeout(() => {
+      if (!handled) {
+        handled = true;
+        setIsStarting(false);
+        alert('Match start timed out. Please try again.');
       }
-    });
+    }, 4000);
+
+    try {
+      const socket = socketService.getSocket();
+      socket.emit('room:createVsAI', { playerName, difficulty }, (res: any) => {
+        if (handled) return;
+        handled = true;
+        clearTimeout(timer);
+        setIsStarting(false);
+        if (res?.success) {
+          if (res.playerId) {
+            localStorage.setItem('uno_player_id', res.playerId);
+          }
+          navigate(`/game/${res.gameId}`, { state: { initialGameState: res.state } });
+        } else {
+          alert(res?.error || 'Failed to start AI match');
+        }
+      });
+    } catch (err) {
+      if (!handled) {
+        handled = true;
+        clearTimeout(timer);
+        setIsStarting(false);
+        alert('An unexpected error occurred while starting AI match.');
+      }
+    }
   };
 
   return (

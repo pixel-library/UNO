@@ -13,6 +13,7 @@ export const JoinGame: React.FC = () => {
 
   const handleJoin = (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmitting) return;
     const cleanCode = code.trim().toUpperCase();
     const validation = validateRoomCode(cleanCode);
 
@@ -28,19 +29,39 @@ export const JoinGame: React.FC = () => {
     }
 
     setIsSubmitting(true);
-    const socket = socketService.getSocket();
-
-    socket.emit('room:join', { roomCode: validation.formattedCode!, playerName }, (res: any) => {
-      setIsSubmitting(false);
-      if (res?.success) {
-        if (res.playerId) {
-          localStorage.setItem('uno_player_id', res.playerId);
-        }
-        navigate(`/room/${res.roomCode}`);
-      } else {
-        setError(res?.error || 'Could not join room');
+    let handled = false;
+    const timer = setTimeout(() => {
+      if (!handled) {
+        handled = true;
+        setIsSubmitting(false);
+        setError('Room join timed out. Please check the code and try again.');
       }
-    });
+    }, 4000);
+
+    try {
+      const socket = socketService.getSocket();
+      socket.emit('room:join', { roomCode: validation.formattedCode!, playerName }, (res: any) => {
+        if (handled) return;
+        handled = true;
+        clearTimeout(timer);
+        setIsSubmitting(false);
+        if (res?.success) {
+          if (res.playerId) {
+            localStorage.setItem('uno_player_id', res.playerId);
+          }
+          navigate(`/room/${res.roomCode}`);
+        } else {
+          setError(res?.error || 'Could not join room');
+        }
+      });
+    } catch (err) {
+      if (!handled) {
+        handled = true;
+        clearTimeout(timer);
+        setIsSubmitting(false);
+        setError('An unexpected error occurred while joining room.');
+      }
+    }
   };
 
   return (

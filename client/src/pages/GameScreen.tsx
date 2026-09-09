@@ -27,15 +27,24 @@ export const GameScreen: React.FC = () => {
   // Action pending state for race condition protection
   const [isActionPending, setIsActionPending] = useState(false);
 
+  const [syncError, setSyncError] = useState<string | null>(null);
+
   // Connect to Socket.IO and listen for game state updates
   useEffect(() => {
     const socket = socketService.getSocket();
     const myId = localStorage.getItem('uno_player_id');
 
+    let syncTimer: any;
+
     const handleSync = () => {
       socket.emit('game:sync', { playerId: myId, gameId }, (res: any) => {
         if (res?.success && res?.state) {
           setGameState(res.state);
+          setSyncError(null);
+        } else {
+          if (!gameState) {
+            setSyncError(res?.error || 'Could not synchronize with game room.');
+          }
         }
       });
     };
@@ -43,6 +52,7 @@ export const GameScreen: React.FC = () => {
     socket.on('game:state', (newState: PlayerPrivateState) => {
       setGameState(newState);
       setIsActionPending(false);
+      setSyncError(null);
     });
 
     socket.on('chat:message', (msg: ChatMessage) => {
@@ -54,7 +64,14 @@ export const GameScreen: React.FC = () => {
     // Initial sync
     handleSync();
 
+    syncTimer = setTimeout(() => {
+      if (!gameState) {
+        handleSync();
+      }
+    }, 2500);
+
     return () => {
+      clearTimeout(syncTimer);
       socket.off('game:state');
       socket.off('chat:message');
       socket.off('connect', handleSync);
@@ -188,19 +205,50 @@ export const GameScreen: React.FC = () => {
     socket.emit('game:rematch');
   };
 
-  // Loading Screen if game state not ready
+  // Loading / Retry Screen if game state not ready
   if (!gameState) {
     return (
-      <div className="w-full h-screen bg-gradient-to-b from-[#0055A5] via-[#004282] to-[#002D5A] text-white flex flex-col items-center justify-center space-y-6">
-        <div className="bg-[#E52521] border-2 border-[#FCD116] px-5 py-2 rounded-2xl shadow-2xl animate-pulse transform -rotate-3">
+      <div className="w-full h-screen bg-gradient-to-b from-[#0055A5] via-[#004282] to-[#002D5A] text-white flex flex-col items-center justify-center p-4 space-y-6">
+        <div className="bg-[#E52521] border-2 border-[#FCD116] px-5 py-2 rounded-2xl shadow-2xl transform -rotate-3">
           <span className="font-black text-3xl italic tracking-tighter">
             <span className="text-[#FCD116]">U</span>N<span className="text-[#FCD116]">O</span>
           </span>
         </div>
-        <div className="text-center space-y-2">
-          <h2 className="text-xl font-bold tracking-wide">Connecting to Game Table...</h2>
-          <p className="text-xs text-white/60">Dealing cards and establishing server synchronization</p>
-        </div>
+
+        {syncError ? (
+          <div className="bg-white/10 backdrop-blur-md border border-white/20 p-6 rounded-3xl max-w-sm w-full text-center space-y-4 shadow-xl">
+            <h2 className="text-lg font-extrabold text-red-300">Unable to Start Match</h2>
+            <p className="text-xs text-white/80">{syncError}</p>
+            <div className="flex gap-3 pt-2">
+              <button
+                onClick={() => {
+                  setSyncError(null);
+                  const socket = socketService.getSocket();
+                  const myId = localStorage.getItem('uno_player_id');
+                  socket.emit('game:sync', { playerId: myId, gameId }, (res: any) => {
+                    if (res?.success && res?.state) setGameState(res.state);
+                    else setSyncError(res?.error || 'Game not found.');
+                  });
+                }}
+                className="flex-1 bg-uno-yellow text-uno-navy font-bold py-2.5 rounded-xl text-xs hover:bg-amber-400 transition-colors"
+              >
+                Retry
+              </button>
+              <button
+                onClick={() => navigate('/play')}
+                className="flex-1 bg-white/20 hover:bg-white/30 text-white font-bold py-2.5 rounded-xl text-xs transition-colors"
+              >
+                Return Home
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="text-center space-y-2">
+            <div className="w-8 h-8 border-4 border-uno-yellow border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+            <h2 className="text-xl font-bold tracking-wide">Connecting to Game Table...</h2>
+            <p className="text-xs text-white/60">Dealing cards and establishing server synchronization</p>
+          </div>
+        )}
       </div>
     );
   }
