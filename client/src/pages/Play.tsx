@@ -217,7 +217,7 @@ export const Play: React.FC = () => {
         {/* ----------------------------------------------------------- */}
         {/* LEFT CARD: CREATE PRIVATE GAME                              */}
         {/* ----------------------------------------------------------- */}
-        <div className="w-full md:w-[380px] bg-white rounded-3xl p-7 border border-neutral-200/90 shadow-lg hover:shadow-xl transition-shadow flex flex-col justify-between z-10 space-y-6">
+        <div className="w-full md:w-[380px] bg-white rounded-3xl p-5 sm:p-7 border border-neutral-200/90 shadow-lg hover:shadow-xl transition-shadow flex flex-col justify-between z-10 space-y-6">
           
           <div>
             <h2 className="text-lg font-bold text-[#111827] tracking-wide uppercase text-left mb-6">
@@ -375,7 +375,7 @@ export const Play: React.FC = () => {
             </div>
           </div>
 
-          {/* CREATE GAME Button (Matching Image 2 blue outline button) */}
+          {/* CREATE GAME Button */}
           <div className="pt-4">
             <button
               onClick={handleCreateGame}
@@ -391,7 +391,7 @@ export const Play: React.FC = () => {
         {/* ----------------------------------------------------------- */}
         {/* RIGHT CARD: JOIN A GAME                                     */}
         {/* ----------------------------------------------------------- */}
-        <div className="w-full md:w-[380px] bg-white rounded-3xl p-7 border border-neutral-200/90 shadow-lg hover:shadow-xl transition-shadow flex flex-col justify-between z-10 min-h-[460px]">
+        <div className="w-full md:w-[380px] bg-white rounded-3xl p-5 sm:p-7 border border-neutral-200/90 shadow-lg hover:shadow-xl transition-shadow flex flex-col justify-between z-10 min-h-[460px]">
           
           <div className="space-y-8">
             <h2 className="text-lg font-bold text-[#111827] tracking-wide uppercase text-center">

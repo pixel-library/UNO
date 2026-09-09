@@ -70,11 +70,11 @@ export const Rules: React.FC = () => {
               <span>REVERSE</span>
             </div>
 
-            <div className="grid grid-cols-12 gap-4 items-center">
-              <div className="col-span-4 flex justify-center">
+            <div className="flex flex-row items-center gap-4">
+              <div className="shrink-0 flex justify-center">
                 <UnoCard color="RED" value="REVERSE" size="sm" />
               </div>
-              <div className="col-span-8 space-y-2">
+              <div className="flex-1 space-y-2">
                 <h4 className="text-sm font-bold text-uno-navy">REVERSE</h4>
                 <p className="text-xs text-neutral-600 leading-relaxed font-medium">
                   The direction of the game is reversed. This card can only be played on a matching color or on another "Reverse" card.
@@ -90,11 +90,11 @@ export const Rules: React.FC = () => {
               <span>SKIP</span>
             </div>
 
-            <div className="grid grid-cols-12 gap-4 items-center">
-              <div className="col-span-4 flex justify-center">
+            <div className="flex flex-row items-center gap-4">
+              <div className="shrink-0 flex justify-center">
                 <UnoCard color="YELLOW" value="SKIP" size="sm" />
               </div>
-              <div className="col-span-8 space-y-2">
+              <div className="flex-1 space-y-2">
                 <h4 className="text-sm font-bold text-uno-navy">SKIP</h4>
                 <p className="text-xs text-neutral-600 leading-relaxed font-medium">
                   The next player has their turn skipped. This card can only be played on a matching color or on another "Skip" card.
@@ -110,11 +110,11 @@ export const Rules: React.FC = () => {
               <span>SKIP WILD</span>
             </div>
 
-            <div className="grid grid-cols-12 gap-4 items-center">
-              <div className="col-span-4 flex justify-center">
+            <div className="flex flex-row items-center gap-4">
+              <div className="shrink-0 flex justify-center">
                 <UnoCard color="WILD" value="SKIP_WILD" size="sm" />
               </div>
-              <div className="col-span-8 space-y-2">
+              <div className="flex-1 space-y-2">
                 <h4 className="text-sm font-bold text-uno-navy">SKIP WILD (House Rule)</h4>
                 <p className="text-xs text-neutral-600 leading-relaxed font-medium">
                   Choose the active game color AND skip the next player's turn immediately.
@@ -130,11 +130,11 @@ export const Rules: React.FC = () => {
               <span>REPLAY</span>
             </div>
 
-            <div className="grid grid-cols-12 gap-4 items-center">
-              <div className="col-span-4 flex justify-center">
+            <div className="flex flex-row items-center gap-4">
+              <div className="shrink-0 flex justify-center">
                 <UnoCard color="YELLOW" value="REPLAY" size="sm" />
               </div>
-              <div className="col-span-8 space-y-2">
+              <div className="flex-1 space-y-2">
                 <h4 className="text-sm font-bold text-uno-navy">REPLAY (House Rule)</h4>
                 <p className="text-xs text-neutral-600 leading-relaxed font-medium">
                   When played, you immediately get to take another turn. Can be chained with multiple Replay cards!
@@ -150,11 +150,11 @@ export const Rules: React.FC = () => {
               <span>WILD</span>
             </div>
 
-            <div className="grid grid-cols-12 gap-4 items-center">
-              <div className="col-span-4 flex justify-center">
+            <div className="flex flex-row items-center gap-4">
+              <div className="shrink-0 flex justify-center">
                 <UnoCard color="WILD" value="WILD" size="sm" />
               </div>
-              <div className="col-span-8 space-y-2">
+              <div className="flex-1 space-y-2">
                 <h4 className="text-sm font-bold text-uno-navy">WILD</h4>
                 <p className="text-xs text-neutral-600 leading-relaxed font-medium">
                   Choose the active game color (Red, Yellow, Green, or Blue). Can be played on any card regardless of color or symbol.
@@ -170,11 +170,11 @@ export const Rules: React.FC = () => {
               <span># CARD</span>
             </div>
 
-            <div className="grid grid-cols-12 gap-4 items-center">
-              <div className="col-span-4 flex justify-center">
+            <div className="flex flex-row items-center gap-4">
+              <div className="shrink-0 flex justify-center">
                 <UnoCard color="GREEN" value="HASH" size="sm" />
               </div>
-              <div className="col-span-8 space-y-2">
+              <div className="flex-1 space-y-2">
                 <h4 className="text-sm font-bold text-uno-navy"># (House Rule)</h4>
                 <p className="text-xs text-neutral-600 leading-relaxed font-medium">
                   Choose any number between 0 and 9. This card matches cards of the chosen number.
@@ -190,11 +190,11 @@ export const Rules: React.FC = () => {
               <span># WILD</span>
             </div>
 
-            <div className="grid grid-cols-12 gap-4 items-center">
-              <div className="col-span-4 flex justify-center">
+            <div className="flex flex-row items-center gap-4">
+              <div className="shrink-0 flex justify-center">
                 <UnoCard color="WILD" value="HASH_WILD" size="sm" />
               </div>
-              <div className="col-span-8 space-y-2">
+              <div className="flex-1 space-y-2">
                 <h4 className="text-sm font-bold text-uno-navy"># WILD (House Rule)</h4>
                 <p className="text-xs text-neutral-600 leading-relaxed font-medium">
                   Choose a color AND a number between 0 and 9 to set both active conditions.
@@ -210,11 +210,11 @@ export const Rules: React.FC = () => {
               <span>-1 CARD</span>
             </div>
 
-            <div className="grid grid-cols-12 gap-4 items-center">
-              <div className="col-span-4 flex justify-center">
+            <div className="flex flex-row items-center gap-4">
+              <div className="shrink-0 flex justify-center">
                 <UnoCard color="BLUE" value="MINUS_ONE" size="sm" />
               </div>
-              <div className="col-span-8 space-y-2">
+              <div className="flex-1 space-y-2">
                 <h4 className="text-sm font-bold text-uno-navy">-1 (House Rule)</h4>
                 <p className="text-xs text-neutral-600 leading-relaxed font-medium">
                   Choose 1 extra card from your hand to discard directly to the bottom of the draw deck!
@@ -230,11 +230,11 @@ export const Rules: React.FC = () => {
               <span>-2 WILD</span>
             </div>
 
-            <div className="grid grid-cols-12 gap-4 items-center">
-              <div className="col-span-4 flex justify-center">
+            <div className="flex flex-row items-center gap-4">
+              <div className="shrink-0 flex justify-center">
                 <UnoCard color="WILD" value="MINUS_TWO_WILD" size="sm" />
               </div>
-              <div className="col-span-8 space-y-2">
+              <div className="flex-1 space-y-2">
                 <h4 className="text-sm font-bold text-uno-navy">-2 WILD (House Rule)</h4>
                 <p className="text-xs text-neutral-600 leading-relaxed font-medium">
                   Choose game color AND select 2 cards from your hand to discard to the deck bottom.

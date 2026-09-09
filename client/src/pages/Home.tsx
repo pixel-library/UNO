@@ -61,7 +61,7 @@ export const Home: React.FC = () => {
         </div>
 
         {/* Right Hero Cards Visual Composition */}
-        <div className="lg:col-span-6 relative flex items-center justify-center pt-8 lg:pt-0">
+        <div className="lg:col-span-6 relative flex items-center justify-center pt-4 lg:pt-0 overflow-hidden sm:overflow-visible">
           
           {/* Background colorful blur strokes */}
           <div className="absolute w-72 h-72 bg-uno-yellow/20 rounded-full blur-3xl -top-10 -left-10" />
@@ -73,15 +73,15 @@ export const Home: React.FC = () => {
           </div>
 
           {/* Dynamic Uno Cards Fan */}
-          <div className="relative w-[340px] h-[340px] sm:w-[420px] sm:h-[420px] flex items-center justify-center">
+          <div className="relative w-[300px] h-[300px] sm:w-[420px] sm:h-[420px] flex items-center justify-center scale-75 sm:scale-100">
             
             {/* Card 1: Red Draw Two */}
-            <div className="absolute transform -rotate-[24deg] -translate-x-28 -translate-y-6 shadow-2xl transition-transform duration-300 hover:scale-105 hover:z-30">
+            <div className="absolute transform -rotate-[24deg] -translate-x-24 sm:-translate-x-28 -translate-y-6 shadow-2xl transition-transform duration-300 hover:scale-105 hover:z-30">
               <UnoCard color="RED" value="DRAW_TWO" size="lg" />
             </div>
 
             {/* Card 2: Blue Reverse */}
-            <div className="absolute transform -rotate-[12deg] -translate-x-14 -translate-y-12 shadow-2xl transition-transform duration-300 hover:scale-105 hover:z-30">
+            <div className="absolute transform -rotate-[12deg] -translate-x-12 sm:-translate-x-14 -translate-y-12 shadow-2xl transition-transform duration-300 hover:scale-105 hover:z-30">
               <UnoCard color="BLUE" value="REVERSE" size="lg" />
             </div>
 
@@ -91,12 +91,12 @@ export const Home: React.FC = () => {
             </div>
 
             {/* Card 4: Green Skip */}
-            <div className="absolute transform rotate-[14deg] translate-x-14 -translate-y-12 shadow-2xl transition-transform duration-300 hover:scale-105 hover:z-30">
+            <div className="absolute transform rotate-[14deg] translate-x-12 sm:translate-x-14 -translate-y-12 shadow-2xl transition-transform duration-300 hover:scale-105 hover:z-30">
               <UnoCard color="GREEN" value="SKIP" size="lg" />
             </div>
 
             {/* Card 5: Wild */}
-            <div className="absolute transform rotate-[26deg] translate-x-28 -translate-y-6 shadow-2xl transition-transform duration-300 hover:scale-105 hover:z-30">
+            <div className="absolute transform rotate-[26deg] translate-x-24 sm:translate-x-28 -translate-y-6 shadow-2xl transition-transform duration-300 hover:scale-105 hover:z-30">
               <UnoCard color="WILD" value="WILD" size="lg" />
             </div>
 
@@ -169,8 +169,8 @@ export const Home: React.FC = () => {
         <div className="bg-gradient-to-r from-blue-50 via-sky-50 to-blue-50 rounded-3xl p-8 sm:p-14 border border-blue-100 grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
           
           {/* Left Cards Stack */}
-          <div className="lg:col-span-6 flex justify-center">
-            <div className="flex -space-x-8 sm:-space-x-12 transform -rotate-3">
+          <div className="lg:col-span-6 flex justify-center overflow-hidden py-4 sm:py-0">
+            <div className="flex -space-x-5 sm:-space-x-12 transform -rotate-3 scale-75 sm:scale-100">
               <UnoCard color="RED" value="7" size="md" />
               <UnoCard color="BLUE" value="REVERSE" size="md" />
               <UnoCard color="YELLOW" value="3" size="md" />

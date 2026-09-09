@@ -47,8 +47,8 @@ export const HowToPlay: React.FC = () => {
             </div>
           </div>
 
-          <div className="lg:col-span-5 flex justify-center">
-            <div className="flex -space-x-8 transform -rotate-3">
+          <div className="lg:col-span-5 flex justify-center overflow-hidden py-4 sm:py-0">
+            <div className="flex -space-x-8 transform -rotate-3 scale-75 sm:scale-100">
               <UnoCard color="RED" value="7" size="md" />
               <UnoCard color="BLUE" value="REVERSE" size="md" />
               <UnoCard color="YELLOW" value="SKIP" size="md" />
@@ -64,15 +64,15 @@ export const HowToPlay: React.FC = () => {
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14 space-y-12">
         
         {/* Step 1: Objective */}
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-center bg-neutral-50 p-8 rounded-3xl border border-neutral-200/80">
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-6 sm:gap-8 items-center bg-neutral-50 p-5 sm:p-8 rounded-3xl border border-neutral-200/80">
           <div className="md:col-span-3 flex justify-center">
-            <div className="w-20 h-20 rounded-3xl bg-amber-100 text-amber-600 flex items-center justify-center text-3xl font-black">
+            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-3xl bg-amber-100 text-amber-600 flex items-center justify-center text-2xl sm:text-3xl font-black">
               🎯
             </div>
           </div>
-          <div className="md:col-span-9 space-y-2">
+          <div className="md:col-span-9 space-y-2 text-center md:text-left">
             <span className="text-xs font-bold text-amber-600 uppercase tracking-widest">THE OBJECTIVE</span>
-            <h2 className="text-2xl font-extrabold text-uno-navy">Be the First to Empty Your Hand</h2>
+            <h2 className="text-xl sm:text-2xl font-extrabold text-uno-navy">Be the First to Empty Your Hand</h2>
             <p className="text-sm text-neutral-600 font-medium leading-relaxed">
               The goal of UNO is to get rid of all your cards before any of your opponents do. Match cards by color or value, execute strategic action cards, call UNO when you have 1 card left, and win the match!
             </p>
@@ -80,15 +80,15 @@ export const HowToPlay: React.FC = () => {
         </div>
 
         {/* Step 2: Setup & Dealing */}
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-center bg-neutral-50 p-8 rounded-3xl border border-neutral-200/80">
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-6 sm:gap-8 items-center bg-neutral-50 p-5 sm:p-8 rounded-3xl border border-neutral-200/80">
           <div className="md:col-span-3 flex justify-center">
-            <div className="w-20 h-20 rounded-3xl bg-blue-100 text-uno-blue flex items-center justify-center text-3xl font-black">
+            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-3xl bg-blue-100 text-uno-blue flex items-center justify-center text-2xl sm:text-3xl font-black">
               🎴
             </div>
           </div>
-          <div className="md:col-span-9 space-y-2">
+          <div className="md:col-span-9 space-y-2 text-center md:text-left">
             <span className="text-xs font-bold text-uno-blue uppercase tracking-widest">GAME SETUP</span>
-            <h2 className="text-2xl font-extrabold text-uno-navy">Dealing 7 Cards Each</h2>
+            <h2 className="text-xl sm:text-2xl font-extrabold text-uno-navy">Dealing 7 Cards Each</h2>
             <p className="text-sm text-neutral-600 font-medium leading-relaxed">
               Every player (2 to 4 players, human or AI) is dealt 7 face-down cards. The top card of the remaining deck is placed face-up to form the Discard Pile. The active turn direction starts Clockwise (CW).
             </p>
@@ -96,19 +96,19 @@ export const HowToPlay: React.FC = () => {
         </div>
 
         {/* Step 3: Turn Flow & Matching Rules */}
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-center bg-neutral-50 p-8 rounded-3xl border border-neutral-200/80">
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-6 sm:gap-8 items-center bg-neutral-50 p-5 sm:p-8 rounded-3xl border border-neutral-200/80">
           <div className="md:col-span-3 flex justify-center">
-            <div className="w-20 h-20 rounded-3xl bg-emerald-100 text-uno-green flex items-center justify-center text-3xl font-black">
+            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-3xl bg-emerald-100 text-uno-green flex items-center justify-center text-2xl sm:text-3xl font-black">
               🔄
             </div>
           </div>
-          <div className="md:col-span-9 space-y-2">
+          <div className="md:col-span-9 space-y-2 text-center md:text-left">
             <span className="text-xs font-bold text-uno-green uppercase tracking-widest">MATCHING CARDS</span>
-            <h2 className="text-2xl font-extrabold text-uno-navy">Matching Color, Number, or Symbol</h2>
+            <h2 className="text-xl sm:text-2xl font-extrabold text-uno-navy">Matching Color, Number, or Symbol</h2>
             <p className="text-sm text-neutral-600 font-medium leading-relaxed">
               On your turn, you must play a card from your hand that matches the top discard card by:
             </p>
-            <ul className="list-disc list-inside text-xs text-neutral-600 font-semibold space-y-1 pt-1">
+            <ul className="list-disc list-inside text-xs text-neutral-600 font-semibold space-y-1 pt-1 text-left">
               <li><strong>Matching Color</strong> (e.g. Red on Red)</li>
               <li><strong>Matching Number or Symbol</strong> (e.g. Yellow 7 on Blue 7, or Green Skip on Blue Skip)</li>
               <li><strong>Playing a Wild Card</strong> (Wild or Wild Draw Four can be played on any card!)</li>
@@ -117,15 +117,15 @@ export const HowToPlay: React.FC = () => {
         </div>
 
         {/* Step 4: Drawing Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-center bg-neutral-50 p-8 rounded-3xl border border-neutral-200/80">
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-6 sm:gap-8 items-center bg-neutral-50 p-5 sm:p-8 rounded-3xl border border-neutral-200/80">
           <div className="md:col-span-3 flex justify-center">
-            <div className="w-20 h-20 rounded-3xl bg-purple-100 text-purple-600 flex items-center justify-center text-3xl font-black">
+            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-3xl bg-purple-100 text-purple-600 flex items-center justify-center text-2xl sm:text-3xl font-black">
               📥
             </div>
           </div>
-          <div className="md:col-span-9 space-y-2">
+          <div className="md:col-span-9 space-y-2 text-center md:text-left">
             <span className="text-xs font-bold text-purple-600 uppercase tracking-widest">DRAWING CARDS</span>
-            <h2 className="text-2xl font-extrabold text-uno-navy">When You Cannot (or Choose Not to) Play</h2>
+            <h2 className="text-xl sm:text-2xl font-extrabold text-uno-navy">When You Cannot (or Choose Not to) Play</h2>
             <p className="text-sm text-neutral-600 font-medium leading-relaxed">
               If you don't have a matching card on your turn, click the <strong>Draw Card</strong> button to draw 1 card from the deck. If the drawn card is playable, you can play it immediately or end your turn.
             </p>
@@ -133,15 +133,15 @@ export const HowToPlay: React.FC = () => {
         </div>
 
         {/* Step 5: Calling UNO & Winning */}
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-center bg-neutral-50 p-8 rounded-3xl border border-neutral-200/80">
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-6 sm:gap-8 items-center bg-neutral-50 p-5 sm:p-8 rounded-3xl border border-neutral-200/80">
           <div className="md:col-span-3 flex justify-center">
-            <div className="w-20 h-20 rounded-3xl bg-red-100 text-uno-red flex items-center justify-center text-3xl font-black">
+            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-3xl bg-red-100 text-uno-red flex items-center justify-center text-2xl sm:text-3xl font-black">
               ⚡
             </div>
           </div>
-          <div className="md:col-span-9 space-y-2">
+          <div className="md:col-span-9 space-y-2 text-center md:text-left">
             <span className="text-xs font-bold text-uno-red uppercase tracking-widest">UNO CALL & WINNING</span>
-            <h2 className="text-2xl font-extrabold text-uno-navy">Calling UNO at 1 Card Remaining</h2>
+            <h2 className="text-xl sm:text-2xl font-extrabold text-uno-navy">Calling UNO at 1 Card Remaining</h2>
             <p className="text-sm text-neutral-600 font-medium leading-relaxed">
               When you play your second-to-last card and have only <strong>1 card remaining</strong>, press the prominent <strong>UNO!</strong> button immediately. The first player to reach 0 cards wins the match!
             </p>
