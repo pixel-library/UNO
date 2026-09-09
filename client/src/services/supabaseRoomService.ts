@@ -1,15 +1,74 @@
 import { supabase } from './supabaseClient';
 import { UnoGame } from '../../../server/engine/UnoGame';
-import { GameSettings, GamePublicState, PlayerPrivateState } from '@shared/types/game';
+import { GameSettings, PlayerPrivateState } from '@shared/types/game';
 import { validatePlayerName, validateRoomCode } from '@shared/validation/roomValidator';
 
-// In-memory active cloud games cache for fast local access
+// In-memory active cloud games cache for fast local access across browsers
 const cloudGameCache = new Map<string, UnoGame>();
 const realTimeChannels = new Map<string, any>();
 
+// Global lobby channel for real-time cross-browser room discovery
+let globalLobbyChannel: any = null;
+
+function getGlobalLobbyChannel() {
+  if (!globalLobbyChannel) {
+    globalLobbyChannel = supabase.channel('global_lobby', {
+      config: { broadcast: { self: true } }
+    });
+
+    globalLobbyChannel.on('broadcast', { event: 'room:announce' }, (data: any) => {
+      const payload = data?.payload;
+      if (payload?.roomCode && payload?.gameId && !cloudGameCache.has(payload.roomCode)) {
+        console.log(`[GLOBAL LOBBY] Received room announcement for ${payload.roomCode}`);
+        const game = new UnoGame(payload.gameId, payload.roomCode, payload.settings);
+        if (Array.isArray(payload.players)) {
+          payload.players.forEach((p: any) => {
+            game.addPlayer(p.id, p.sessionId || `sess_${p.id}`, p.name, p.isHost, p.isSpectator);
+          });
+        }
+        cloudGameCache.set(payload.roomCode, game);
+        cloudGameCache.set(payload.gameId, game);
+      }
+    });
+
+    globalLobbyChannel.on('broadcast', { event: 'room:request' }, (data: any) => {
+      const payload = data?.payload;
+      if (payload?.roomCode) {
+        const game = cloudGameCache.get(payload.roomCode);
+        const myId = localStorage.getItem('uno_player_id');
+        const isHost = game?.players.some(p => p.id === myId && p.isHost);
+
+        // Host responds with authoritative room state
+        if (game && isHost) {
+          if (payload.playerName && payload.playerId) {
+            game.addPlayer(payload.playerId, `sess_${payload.playerId}`, payload.playerName, false);
+          }
+          globalLobbyChannel.send({
+            type: 'broadcast',
+            event: 'room:response',
+            payload: {
+              roomCode: game.roomCode,
+              gameId: game.id,
+              players: game.players,
+              status: game.status,
+              targetPlayerId: payload.playerId
+            }
+          });
+        }
+      }
+    });
+
+    globalLobbyChannel.subscribe();
+  }
+  return globalLobbyChannel;
+}
+
+// Initialize global lobby listener immediately on module load
+getGlobalLobbyChannel();
+
 export const supabaseRoomService = {
   /**
-   * Create a new online game room in Supabase DB and initialize Realtime channel
+   * Create a new online game room in Supabase DB & Realtime channel
    */
   async createCloudRoom(
     playerName: string,
@@ -38,30 +97,30 @@ export const supabaseRoomService = {
       cloudGameCache.set(roomCode, game);
       cloudGameCache.set(gameId, game);
 
-      // Persist to Supabase Game & GamePlayer tables
+      // Announce room on Global Realtime Lobby
+      const lobby = getGlobalLobbyChannel();
+      lobby.send({
+        type: 'broadcast',
+        event: 'room:announce',
+        payload: {
+          roomCode,
+          gameId,
+          hostName: valName.sanitizedName!,
+          players: game.players,
+          settings
+        }
+      });
+
+      // Attempt DB save silently
       try {
         await supabase.from('Game').upsert({
           id: gameId,
           roomCode,
           status: 'WAITING',
-          mode: 'CLASSIC',
-          direction: 'CW',
-          currentColor: 'RED',
-          activeStackCount: 0
-        });
-
-        await supabase.from('GamePlayer').upsert({
-          id: hostId,
-          gameId,
-          sessionId,
-          name: valName.sanitizedName!,
-          cardCount: 0,
-          score: 0,
-          isHost: true,
-          isSpectator: false
+          mode: 'CLASSIC'
         });
       } catch (dbErr) {
-        console.warn('[SUPABASE] Cloud DB save fallback notice:', dbErr);
+        console.warn('[SUPABASE DB] Save notice:', dbErr);
       }
 
       const state = game.getPrivateState(hostId);
@@ -82,7 +141,7 @@ export const supabaseRoomService = {
   },
 
   /**
-   * Join an existing online game room by room code from Supabase DB or cache
+   * Join an existing online game room by room code from Realtime lobby or DB
    */
   async joinCloudRoom(
     roomCode: string,
@@ -99,67 +158,82 @@ export const supabaseRoomService = {
       const formattedCode = valCode.formattedCode!;
       let game = cloudGameCache.get(formattedCode);
 
-      // If game not in local cache, query Supabase Game table
+      const playerId = localStorage.getItem('uno_player_id') || `player_${Math.random().toString(36).substring(2, 9)}`;
+      const sessionId = `sess_${Math.random().toString(36).substring(2, 9)}`;
+      localStorage.setItem('uno_player_id', playerId);
+
+      // If game not in local cache, send room:request on global_lobby
       if (!game) {
-        const { data: gameData, error: gameErr } = await supabase
-          .from('Game')
-          .select('id, roomCode, status')
-          .eq('roomCode', formattedCode)
-          .single();
+        const lobby = getGlobalLobbyChannel();
+        let resolved = false;
 
-        if (gameErr || !gameData) {
-          return { success: false, error: 'Room not found. Check your room code.' };
-        }
+        const responsePromise = new Promise<UnoGame | null>((resolve) => {
+          const handler = (data: any) => {
+            const payload = data?.payload;
+            if (payload?.roomCode === formattedCode && payload?.targetPlayerId === playerId) {
+              resolved = true;
+              const g = new UnoGame(payload.gameId || `game_${formattedCode}`, formattedCode);
+              if (Array.isArray(payload.players)) {
+                payload.players.forEach((p: any) => {
+                  g.addPlayer(p.id, p.sessionId || `sess_${p.id}`, p.name, p.isHost, p.isSpectator);
+                });
+              }
+              cloudGameCache.set(formattedCode, g);
+              cloudGameCache.set(g.id, g);
+              resolve(g);
+            }
+          };
 
-        if (gameData.status === 'PLAYING') {
-          return { success: false, error: 'Game already in progress.' };
-        }
+          lobby.on('broadcast', { event: 'room:response' }, handler);
 
-        // Fetch existing players from GamePlayer table
-        const { data: playersData } = await supabase
-          .from('GamePlayer')
-          .select('id, sessionId, name, isHost, isSpectator')
-          .eq('gameId', gameData.id);
-
-        game = new UnoGame(gameData.id, formattedCode, { maxPlayers: 4 });
-        if (playersData && playersData.length > 0) {
-          playersData.forEach(p => {
-            game!.addPlayer(p.id, p.sessionId, p.name, p.isHost, p.isSpectator);
+          // Request room state from host
+          lobby.send({
+            type: 'broadcast',
+            event: 'room:request',
+            payload: { roomCode: formattedCode, playerName: valName.sanitizedName, playerId }
           });
+
+          // Timeout after 1.5 seconds if host doesn't respond via Realtime
+          setTimeout(() => {
+            if (!resolved) resolve(null);
+          }, 1500);
+        });
+
+        game = (await responsePromise) || undefined;
+      }
+
+      // If still not found, try DB lookup
+      if (!game) {
+        try {
+          const { data: gameData } = await supabase
+            .from('Game')
+            .select('id, roomCode, status')
+            .eq('roomCode', formattedCode)
+            .single();
+
+          if (gameData) {
+            game = new UnoGame(gameData.id, formattedCode, { maxPlayers: 4 });
+            cloudGameCache.set(formattedCode, game);
+            cloudGameCache.set(gameData.id, game);
+          }
+        } catch (err) {
+          console.warn('[SUPABASE DB] Query fallback notice:', err);
         }
-        cloudGameCache.set(formattedCode, game);
-        cloudGameCache.set(gameData.id, game);
+      }
+
+      if (!game) {
+        return { success: false, error: 'Room not found. Check your room code.' };
       }
 
       if (game.status === 'PLAYING') {
         return { success: false, error: 'Game already in progress.' };
       }
 
-      const playerId = localStorage.getItem('uno_player_id') || `player_${Math.random().toString(36).substring(2, 9)}`;
-      const sessionId = `sess_${Math.random().toString(36).substring(2, 9)}`;
-      localStorage.setItem('uno_player_id', playerId);
-
       let existingPlayer = game.players.find(p => p.id === playerId || p.name.toLowerCase() === valName.sanitizedName!.toLowerCase());
       if (!existingPlayer) {
         const added = game.addPlayer(playerId, sessionId, valName.sanitizedName!, game.players.length === 0);
         if (!added) {
           return { success: false, error: 'Room is full.' };
-        }
-
-        // Persist new player to Supabase GamePlayer table
-        try {
-          await supabase.from('GamePlayer').upsert({
-            id: playerId,
-            gameId: game.id,
-            sessionId,
-            name: valName.sanitizedName!,
-            cardCount: 0,
-            score: 0,
-            isHost: game.players.length === 1,
-            isSpectator: false
-          });
-        } catch (dbErr) {
-          console.warn('[SUPABASE] Cloud player save notice:', dbErr);
         }
       }
 
@@ -194,7 +268,6 @@ export const supabaseRoomService = {
     if (!game && gameId) game = cloudGameCache.get(gameId);
 
     if (!game && formattedCode) {
-      // Query Supabase DB as fallback
       const joinRes = await this.joinCloudRoom(formattedCode, localStorage.getItem('uno_player_name') || 'Player');
       if (joinRes.success && joinRes.state) {
         return { success: true, state: joinRes.state };
@@ -253,7 +326,7 @@ export const supabaseRoomService = {
     const formattedCode = roomCode.trim().toUpperCase();
     const channel = realTimeChannels.get(formattedCode) || this.setupRealtimeChannel(formattedCode);
 
-    const subscription = channel.on('broadcast', { event: 'game:state' }, (data: any) => {
+    channel.on('broadcast', { event: 'game:state' }, (data: any) => {
       if (data?.payload) {
         callback(data.payload);
       }

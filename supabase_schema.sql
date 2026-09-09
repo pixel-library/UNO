@@ -57,3 +57,9 @@ CREATE TABLE IF NOT EXISTS "GameSession" (
 CREATE INDEX IF NOT EXISTS "idx_game_roomcode" ON "Game"("roomCode");
 CREATE INDEX IF NOT EXISTS "idx_gameplayer_gameid" ON "GamePlayer"("gameId");
 CREATE INDEX IF NOT EXISTS "idx_gamemove_gameid" ON "GameMove"("gameId");
+
+-- Disable Row Level Security for public game access
+ALTER TABLE "Game" DISABLE ROW LEVEL SECURITY;
+ALTER TABLE "GamePlayer" DISABLE ROW LEVEL SECURITY;
+ALTER TABLE "GameMove" DISABLE ROW LEVEL SECURITY;
+ALTER TABLE "GameSession" DISABLE ROW LEVEL SECURITY;
