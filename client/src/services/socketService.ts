@@ -32,13 +32,11 @@ class SocketService {
         get: (target: any, prop: string) => {
           if (prop === 'emit') {
             return (eventName: string, ...args: any[]) => {
-              // Online multiplayer events must always be sent to backend server
-              const isOnlineEvent = ['room:create', 'room:join', 'game:sync', 'game:start'].includes(eventName);
-
-              if (target.connected || (isOnlineEvent && target.active !== false)) {
+              // If connected to server, emit via socket.io. Otherwise fallback to local engine.
+              if (target.connected) {
                 return target.emit(eventName, ...args);
               }
-              // Offline / Local Execution Fallback when socket is disconnected
+              // Offline / Local Execution Fallback when socket is disconnected or on static host
               return this.handleLocalEmit(eventName, args);
             };
           }
