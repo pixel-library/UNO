@@ -172,13 +172,15 @@ export const GameScreen: React.FC = () => {
     }
 
     setIsActionPending(true);
+    const pendingTimer = setTimeout(() => setIsActionPending(false), 1200);
+
     const socket = socketService.getSocket();
     socket.emit('game:playCard', { cardId: card.id }, (res: any) => {
+      clearTimeout(pendingTimer);
+      setIsActionPending(false);
       if (res?.success) {
         audioService.playCardSound();
         setSelectedCardId(null);
-      } else {
-        setIsActionPending(false);
       }
     });
   };
@@ -188,15 +190,17 @@ export const GameScreen: React.FC = () => {
     if (!pendingWildCardId || isActionPending) return;
 
     setIsActionPending(true);
+    const pendingTimer = setTimeout(() => setIsActionPending(false), 1200);
+
     const socket = socketService.getSocket();
     socket.emit('game:playCard', { cardId: pendingWildCardId, chosenColor: color }, (res: any) => {
+      clearTimeout(pendingTimer);
+      setIsActionPending(false);
       if (res?.success) {
         audioService.playCardSound();
         setShowColorPicker(false);
         setPendingWildCardId(null);
         setSelectedCardId(null);
-      } else {
-        setIsActionPending(false);
       }
     });
   };
@@ -206,11 +210,13 @@ export const GameScreen: React.FC = () => {
     if (isActionPending) return;
     setIsActionPending(true);
     audioService.playDrawSound();
+
+    const pendingTimer = setTimeout(() => setIsActionPending(false), 1200);
+
     const socket = socketService.getSocket();
     socket.emit('game:drawCard', {}, (res: any) => {
-      if (!res?.success) {
-        setIsActionPending(false);
-      }
+      clearTimeout(pendingTimer);
+      setIsActionPending(false);
     });
   };
 
@@ -707,60 +713,97 @@ export const GameScreen: React.FC = () => {
             {/* BOTTOM CENTER: Fanned Player Hand & Player Status Pill */}
             <div className="flex flex-col items-center w-full lg:max-w-[70vw] z-30 flex-1 px-1">
               
-              {/* Player Hand with Green Highlight & Hover Zoom */}
-              <div className="w-full flex items-center justify-center overflow-x-auto overflow-y-visible pt-4 sm:pt-8 pb-2 px-2 scrollbar-none touch-pan-x">
-                <div
-                  className="flex items-center justify-center transition-all duration-300 py-2 px-1"
-                  style={{
-                    minWidth: 'max-content'
-                  }}
-                >
-                  {displayHand.map((card, idx) => {
-                    const isSelected = selectedCardId === card.id;
-                    const total = displayHand.length;
-                    const mid = (total - 1) / 2;
-                    
-                    // Smooth fan angle calculation
-                    const angle = isMobile
-                      ? (total > 1 ? (idx - mid) * Math.min(2, 16 / total) : 0)
-                      : (total > 1 ? (idx - mid) * Math.min(3, 24 / total) : 0);
-                    
-                    // Dynamic negative spacing so cards overlap neatly without hiding values
-                    const overlapMargin = isMobile
-                      ? (total <= 4 ? '-ml-2' : total <= 7 ? '-ml-4' : total <= 11 ? '-ml-6' : '-ml-8')
-                      : (total <= 4 ? '-ml-1 sm:-ml-2' : total <= 7 ? '-ml-4 sm:-ml-6' : total <= 11 ? '-ml-7 sm:-ml-10' : '-ml-10 sm:-ml-14');
+              {/* Player Hand Container */}
+              <div className="w-full flex items-center justify-center overflow-x-auto overflow-y-visible pt-2 sm:pt-8 pb-1 px-1 scrollbar-none touch-pan-x">
+                {isMobile && displayHand.length > 7 ? (
+                  /* Mobile Multi-Row Layout for > 7 Cards */
+                  <div className="w-full flex flex-col items-center justify-center gap-1.5 py-1 px-0.5">
+                    {[
+                      displayHand.slice(0, Math.ceil(displayHand.length / 2)),
+                      displayHand.slice(Math.ceil(displayHand.length / 2))
+                    ].map((rowCards, rowIndex) => (
+                      <div key={rowIndex} className="flex items-center justify-center">
+                        {rowCards.map((card, idx) => {
+                          const isSelected = selectedCardId === card.id;
+                          const totalInRow = rowCards.length;
+                          const overlapMargin = totalInRow <= 4 ? '-ml-1' : totalInRow <= 6 ? '-ml-2.5' : '-ml-4';
+                          const isPlayable = isMyTurn && (
+                            card.color === 'WILD' ||
+                            card.color === gameState.currentColor ||
+                            card.value === topDiscard.value
+                          );
 
-                    // Check if card is playable
-                    const isPlayable = isMyTurn && (
-                      card.color === 'WILD' ||
-                      card.color === gameState.currentColor ||
-                      card.value === topDiscard.value
-                    );
-
-                    // Dynamic card size: size="sm" on mobile view (<640px) or when hand size > 7
-                    const cardSize = (isMobile || total > 7) ? 'sm' : 'md';
-
-                    return (
-                      <div
-                        key={card.id || idx}
-                        className={`group relative transition-all duration-200 ease-out ${idx > 0 ? overlapMargin : ''} hover:z-50 hover:-translate-y-6 sm:hover:-translate-y-10 hover:scale-110 sm:hover:scale-125 hover:rotate-0`}
-                        style={{
-                          transform: `rotate(${angle}deg)`,
-                          zIndex: isSelected ? 40 : idx + 1
-                        }}
-                      >
-                        <UnoCard
-                          color={card.color}
-                          value={card.value}
-                          size={cardSize}
-                          playable={isPlayable}
-                          selected={isSelected}
-                          onClick={() => handleCardClick(card)}
-                        />
+                          return (
+                            <div
+                              key={card.id || `${rowIndex}_${idx}`}
+                              className={`group relative transition-all duration-200 ease-out ${idx > 0 ? overlapMargin : ''} hover:z-50 active:scale-105`}
+                              style={{ zIndex: isSelected ? 40 : idx + 1 }}
+                            >
+                              <UnoCard
+                                color={card.color}
+                                value={card.value}
+                                size="sm"
+                                playable={isPlayable}
+                                selected={isSelected}
+                                onClick={() => handleCardClick(card)}
+                              />
+                            </div>
+                          );
+                        })}
                       </div>
-                    );
-                  })}
-                </div>
+                    ))}
+                  </div>
+                ) : (
+                  /* Single Row Fanned Layout for Desktop/Tablet or <= 7 Cards */
+                  <div
+                    className="flex items-center justify-center transition-all duration-300 py-2 px-1"
+                    style={{
+                      minWidth: 'max-content'
+                    }}
+                  >
+                    {displayHand.map((card, idx) => {
+                      const isSelected = selectedCardId === card.id;
+                      const total = displayHand.length;
+                      const mid = (total - 1) / 2;
+                      
+                      const angle = isMobile
+                        ? (total > 1 ? (idx - mid) * Math.min(2, 16 / total) : 0)
+                        : (total > 1 ? (idx - mid) * Math.min(3, 24 / total) : 0);
+                      
+                      const overlapMargin = isMobile
+                        ? (total <= 4 ? '-ml-2' : '-ml-4')
+                        : (total <= 4 ? '-ml-1 sm:-ml-2' : total <= 7 ? '-ml-4 sm:-ml-6' : total <= 11 ? '-ml-7 sm:-ml-10' : '-ml-10 sm:-ml-14');
+
+                      const isPlayable = isMyTurn && (
+                        card.color === 'WILD' ||
+                        card.color === gameState.currentColor ||
+                        card.value === topDiscard.value
+                      );
+
+                      const cardSize = (isMobile || total > 7) ? 'sm' : 'md';
+
+                      return (
+                        <div
+                          key={card.id || idx}
+                          className={`group relative transition-all duration-200 ease-out ${idx > 0 ? overlapMargin : ''} hover:z-50 hover:-translate-y-6 sm:hover:-translate-y-10 hover:scale-110 sm:hover:scale-125 hover:rotate-0`}
+                          style={{
+                            transform: `rotate(${angle}deg)`,
+                            zIndex: isSelected ? 40 : idx + 1
+                          }}
+                        >
+                          <UnoCard
+                            color={card.color}
+                            value={card.value}
+                            size={cardSize}
+                            playable={isPlayable}
+                            selected={isSelected}
+                            onClick={() => handleCardClick(card)}
+                          />
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
 
               {/* Player Pill below hand */}

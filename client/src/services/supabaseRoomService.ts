@@ -338,6 +338,55 @@ export const supabaseRoomService = {
       }
     });
 
+    channel.on('broadcast', { event: 'game:state' }, (data: any) => {
+      const payload = data?.payload;
+      if (payload) {
+        let game = cloudGameCache.get(formattedCode);
+        if (payload.publicState) {
+          if (!game) {
+            game = new UnoGame(payload.publicState.id, formattedCode, payload.publicState.settings);
+            cloudGameCache.set(formattedCode, game);
+            cloudGameCache.set(payload.publicState.id, game);
+          }
+          game.status = payload.publicState.status;
+          game.players = payload.publicState.players;
+          game.currentPlayerIndex = payload.publicState.currentPlayerIndex;
+          game.direction = payload.publicState.direction;
+          game.currentColor = payload.publicState.currentColor;
+          game.winner = payload.publicState.winner;
+          game.turnStartedAt = payload.publicState.turnStartedAt;
+          game.lastActionMessage = payload.publicState.lastActionMessage;
+          if (payload.publicState.chatMessages) {
+            game.chatMessages = payload.publicState.chatMessages;
+            payload.publicState.chatMessages.forEach((m: any) => {
+              socketService.triggerLocalEvent('chat:message', m);
+            });
+          }
+          if (payload.publicState.topDiscardCard) {
+            game.discardPile = [payload.publicState.topDiscardCard];
+          }
+          if (payload.hands) {
+            Object.entries(payload.hands).forEach(([pid, handArr]) => {
+              game!.playerHands.set(pid, handArr as any[]);
+            });
+          }
+
+          const myId = localStorage.getItem('uno_player_id') || game.players[0]?.id;
+          const privateState = game.getPrivateState(myId);
+
+          const callbacks = stateUpdateCallbacks.get(formattedCode);
+          if (callbacks) {
+            callbacks.forEach(cb => cb(privateState));
+          }
+        } else if (payload.hand) {
+          const callbacks = stateUpdateCallbacks.get(formattedCode);
+          if (callbacks) {
+            callbacks.forEach(cb => cb(payload));
+          }
+        }
+      }
+    });
+
     channel.subscribe((status: string) => {
       console.log(`[SUPABASE REALTIME] Subscribed to room_${formattedCode}: ${status}`);
     });
@@ -378,50 +427,15 @@ export const supabaseRoomService = {
    */
   onStateUpdate(roomCode: string, callback: (state: any) => void): () => void {
     const formattedCode = roomCode.trim().toUpperCase();
-    const channel = realTimeChannels.get(formattedCode) || this.setupRealtimeChannel(formattedCode);
+    if (!stateUpdateCallbacks.has(formattedCode)) {
+      stateUpdateCallbacks.set(formattedCode, new Set());
+    }
+    stateUpdateCallbacks.get(formattedCode)!.add(callback);
 
-    channel.on('broadcast', { event: 'game:state' }, (data: any) => {
-      const payload = data?.payload;
-      if (payload) {
-        let game = cloudGameCache.get(formattedCode);
-        if (payload.publicState) {
-          if (!game) {
-            game = new UnoGame(payload.publicState.id, formattedCode, payload.publicState.settings);
-            cloudGameCache.set(formattedCode, game);
-            cloudGameCache.set(payload.publicState.id, game);
-          }
-          game.status = payload.publicState.status;
-          game.players = payload.publicState.players;
-          game.currentPlayerIndex = payload.publicState.currentPlayerIndex;
-          game.direction = payload.publicState.direction;
-          game.currentColor = payload.publicState.currentColor;
-          game.winner = payload.publicState.winner;
-          game.turnStartedAt = payload.publicState.turnStartedAt;
-          game.lastActionMessage = payload.publicState.lastActionMessage;
-          if (payload.publicState.chatMessages) {
-            game.chatMessages = payload.publicState.chatMessages;
-          }
-          if (payload.publicState.topDiscardCard) {
-            game.discardPile = [payload.publicState.topDiscardCard];
-          }
-          if (payload.hands) {
-            Object.entries(payload.hands).forEach(([pid, handArr]) => {
-              game!.playerHands.set(pid, handArr as any[]);
-            });
-          }
-
-          const myId = localStorage.getItem('uno_player_id') || game.players[0]?.id;
-          const privateState = game.getPrivateState(myId);
-          callback(privateState);
-        } else if (payload.hand) {
-          callback(payload);
-        }
-      }
-    });
+    this.setupRealtimeChannel(formattedCode);
 
     return () => {
-      channel.unsubscribe();
-      realTimeChannels.delete(formattedCode);
+      stateUpdateCallbacks.get(formattedCode)?.delete(callback);
     };
   },
 

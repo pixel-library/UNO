@@ -207,13 +207,12 @@ export class UnoGame {
 
     this.lastActionMessage = `${currentPlayer.name} drew a card`;
 
-    // Force play rule check
-    if (this.settings.houseRules.forcePlay && this.isPlayable(drawnCard)) {
-      return { success: true, drawnCard };
+    // If drawn card is playable, keep turn on current player so they can play it immediately
+    const canPlayDrawn = this.isPlayable(drawnCard);
+    if (!canPlayDrawn) {
+      this.advanceTurn();
     }
 
-    // Pass turn to next player
-    this.advanceTurn();
     return { success: true, drawnCard };
   }
 
