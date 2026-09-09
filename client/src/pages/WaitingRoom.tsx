@@ -134,7 +134,7 @@ export const WaitingRoom: React.FC = () => {
     if (isStarting) return;
     setIsStarting(true);
     const socket = socketService.getSocket();
-    socket.emit('game:start', {}, (res: any) => {
+    socket.emit('game:start', { roomCode: formattedRoomCode || gameState?.roomCode }, (res: any) => {
       setIsStarting(false);
       if (res?.success) {
         navigate(`/game/${gameState?.id || res?.state?.id || 'game_active'}`, {

@@ -174,7 +174,9 @@ class SocketService {
     }
 
     if (eventName === 'game:start') {
-      const game = Array.from(this.localGames.values())[0];
+      const { roomCode } = args[0] || {};
+      const targetRoomCode = roomCode || localStorage.getItem('uno_room_code');
+      const game = targetRoomCode ? this.localGames.get(targetRoomCode) : Array.from(this.localGames.values())[0];
       if (game) {
         game.startGame();
         const humanPlayer = game.players.find(p => !p.id.startsWith('bot_')) || game.players[0];
@@ -185,7 +187,7 @@ class SocketService {
         }
         this.checkAndExecuteLocalAIMove(game);
       } else {
-        supabaseRoomService.startCloudRoom().then(res => {
+        supabaseRoomService.startCloudRoom(targetRoomCode || undefined).then(res => {
           if (ackCallback) ackCallback(res);
           if (res.success && res.state) {
             this.triggerLocalEvent('game:state', res.state);

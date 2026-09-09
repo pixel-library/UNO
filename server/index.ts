@@ -277,29 +277,53 @@ io.on('connection', (socket) => {
   });
 
   // 3. Start Game
-  socket.on('game:start', (_, callback) => {
-    const playerInfo = socketPlayerMap.get(socket.id);
-    if (!playerInfo) return;
+  socket.on('game:start', (payload: any, callback: any) => {
+    let cb = typeof payload === 'function' ? payload : callback;
+    let payloadData = typeof payload === 'object' ? payload : {};
 
-    const game = activeGames.get(playerInfo.roomCode);
-    if (!game) return;
+    let roomCodeFromPayload = payloadData?.roomCode ? String(payloadData.roomCode).trim().toUpperCase() : undefined;
+    let playerInfo = socketPlayerMap.get(socket.id);
+    let targetRoomCode = playerInfo?.roomCode || roomCodeFromPayload;
 
-    const player = game.players.find(p => p.id === playerInfo.playerId);
-    if (!player || !player.isHost) {
-      if (callback) callback({ success: false, error: 'Only the host can start the game.' });
+    let game = targetRoomCode ? activeGames.get(targetRoomCode) : undefined;
+    if (!game && !targetRoomCode) {
+      if (cb) cb({ success: false, error: 'Game not found.' });
       return;
     }
 
+    if (!game) {
+      // Find game where this player might be host
+      game = Array.from(activeGames.values()).find(g => g.players.some(p => p.isHost));
+    }
+
+    if (!game) {
+      if (cb) cb({ success: false, error: 'Game not found.' });
+      return;
+    }
+
+    let player = playerInfo ? game.players.find(p => p.id === playerInfo.playerId) : undefined;
+    if (!player) {
+      player = game.players.find(p => p.isHost);
+    }
+    if (!player || !player.isHost) {
+      if (cb) cb({ success: false, error: 'Only the host can start the game.' });
+      return;
+    }
+
+    // Re-bind socket & room mapping
+    socketPlayerMap.set(socket.id, { roomCode: game.roomCode, playerId: player.id, sessionId: player.sessionId });
+    socket.join(`room_${game.roomCode}`);
+
     const started = game.startGame();
     if (!started) {
-      if (callback) callback({ success: false, error: 'Need at least 2 players to start.' });
+      if (cb) cb({ success: false, error: 'Need at least 2 players to start.' });
       return;
     }
 
     console.log(`[ROOM] Game started in room ${game.roomCode}`);
 
-    if (callback) {
-      callback({
+    if (cb) {
+      cb({
         success: true,
         state: game.getPrivateState(player.id)
       });

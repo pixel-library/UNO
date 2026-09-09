@@ -8,6 +8,20 @@ import { socketService } from './socketService';
 const cloudGameCache = new Map<string, UnoGame>();
 const realTimeChannels = new Map<string, any>();
 
+function getGameFromCache(roomCode?: string): UnoGame | undefined {
+  const code = roomCode?.trim().toUpperCase() || localStorage.getItem('uno_room_code') || undefined;
+  if (code && cloudGameCache.has(code)) {
+    return cloudGameCache.get(code);
+  }
+  const myId = localStorage.getItem('uno_player_id');
+  if (myId) {
+    const found = Array.from(cloudGameCache.values()).find(g => g.players.some(p => p.id === myId));
+    if (found) return found;
+  }
+  const all = Array.from(cloudGameCache.values());
+  return all.length > 0 ? all[all.length - 1] : undefined;
+}
+
 // Global lobby channel for real-time cross-browser room discovery
 let globalLobbyChannel: any = null;
 
@@ -414,8 +428,8 @@ export const supabaseRoomService = {
   /**
    * Start cloud game match
    */
-  async startCloudRoom(): Promise<{ success: boolean; state?: PlayerPrivateState; error?: string }> {
-    const game = Array.from(cloudGameCache.values())[0];
+  async startCloudRoom(roomCode?: string): Promise<{ success: boolean; state?: PlayerPrivateState; error?: string }> {
+    const game = getGameFromCache(roomCode);
     if (!game) {
       return { success: false, error: 'Need at least 2 players to start.' };
     }
@@ -437,7 +451,7 @@ export const supabaseRoomService = {
    * Play card in cloud match
    */
   async playCloudCard(payload: any): Promise<{ success: boolean; error?: string }> {
-    const game = Array.from(cloudGameCache.values())[0];
+    const game = getGameFromCache();
     if (game && payload?.cardId) {
       const myId = localStorage.getItem('uno_player_id') || game.getCurrentPlayer().id;
       const result = game.playCard(myId, payload.cardId, payload.chosenColor);
@@ -453,7 +467,7 @@ export const supabaseRoomService = {
    * Draw card in cloud match
    */
   async drawCloudCard(): Promise<{ success: boolean; drawnCard?: any; error?: string }> {
-    const game = Array.from(cloudGameCache.values())[0];
+    const game = getGameFromCache();
     if (game) {
       const myId = localStorage.getItem('uno_player_id') || game.getCurrentPlayer().id;
       const result = game.drawCard(myId);
@@ -469,7 +483,7 @@ export const supabaseRoomService = {
    * Call UNO in cloud match
    */
   async callCloudUno(): Promise<{ success: boolean; message: string }> {
-    const game = Array.from(cloudGameCache.values())[0];
+    const game = getGameFromCache();
     if (game) {
       const myId = localStorage.getItem('uno_player_id') || game.players[0].id;
       const result = game.callUno(myId);
@@ -485,7 +499,7 @@ export const supabaseRoomService = {
    * Rematch cloud match
    */
   async rematchCloudRoom(): Promise<{ success: boolean; error?: string }> {
-    const game = Array.from(cloudGameCache.values())[0];
+    const game = getGameFromCache();
     if (game) {
       game.startGame();
       if (game.roomCode) {
@@ -505,8 +519,7 @@ export const supabaseRoomService = {
     playerId?: string,
     customMsgId?: string
   ): Promise<{ success: boolean; msg?: any }> {
-    const formattedCode = roomCode ? roomCode.trim().toUpperCase() : undefined;
-    let game = formattedCode ? cloudGameCache.get(formattedCode) : Array.from(cloudGameCache.values())[0];
+    let game = getGameFromCache(roomCode);
     if (!game) return { success: false };
 
     const myId = playerId || localStorage.getItem('uno_player_id') || game.players[0]?.id;
