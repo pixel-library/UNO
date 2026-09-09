@@ -588,143 +588,138 @@ export const GameScreen: React.FC = () => {
         </div>
 
         {/* ----------------------------------------------------------- */}
-        {/* BOTTOM AREA: CHAT WIDGET, PLAYER HAND, & ACTION BUTTONS     */}
+        {/* BOTTOM AREA: ACTION BUTTONS, PLAYER HAND & CHAT            */}
         {/* ----------------------------------------------------------- */}
-        <div className="w-full flex items-end justify-between px-1 sm:px-4 z-20 pb-2 shrink-0 gap-2">
+        <div className="w-full flex flex-col items-center z-20 pb-2 shrink-0 relative px-1 sm:px-4">
           
-          {/* BOTTOM LEFT: Desktop-Only Inline Chat Box Widget */}
-          <div className="hidden lg:flex w-64 lg:w-72 bg-[#092248]/90 backdrop-blur-md border border-white/15 rounded-2xl p-3 shadow-2xl flex-col space-y-2 shrink-0">
-            <div className="flex items-center justify-between border-b border-white/10 pb-1.5">
-              <span className="font-bold text-xs text-white">Chat</span>
-              <button className="text-white/60 hover:text-white text-xs font-mono">•••</button>
-            </div>
-
-            {/* Chat Messages Window */}
-            <div className="h-20 overflow-y-auto space-y-1.5 text-[11px] pr-1">
-              {chatMessages.length === 0 ? (
-                <p className="text-white/40 italic text-center py-2 text-[10px]">Type a message below...</p>
-              ) : (
-                chatMessages.map((msg) => (
-                  <div key={msg.id} className="bg-white/5 px-2 py-1 rounded-lg">
-                    <span className="font-bold text-sky-300">{msg.senderName}: </span>
-                    <span className="text-white/90">{msg.text}</span>
-                  </div>
-                ))
-              )}
-            </div>
-
-            {/* Chat Input */}
-            <form onSubmit={handleSendChat} className="relative">
-              <input
-                type="text"
-                value={chatInput}
-                onChange={(e) => setChatInput(e.target.value)}
-                placeholder="Type a message..."
-                className="w-full bg-white/10 border border-white/20 rounded-xl pl-3 pr-8 py-1.5 text-xs text-white placeholder:text-white/40 focus:outline-none focus:border-sky-400"
-              />
-              <button type="submit" className="absolute right-2 top-2 text-white/70 hover:text-sky-300">
-                <Send className="w-3.5 h-3.5" />
-              </button>
-            </form>
-          </div>
-
-          {/* BOTTOM CENTER: Fanned Player Hand & Player Status Pill */}
-          <div className="flex flex-col items-center max-w-full sm:max-w-[75vw] lg:max-w-[65vw] z-30 flex-1 px-1 sm:px-2">
-            
-            {/* Player Hand with Green Highlight & Hover Zoom */}
-            <div className="w-full flex items-center justify-center overflow-x-auto overflow-y-visible pt-6 sm:pt-10 pb-2 sm:pb-4 px-2 scrollbar-none touch-pan-x">
-              <div
-                className="flex items-center justify-center transition-all duration-300 py-2 px-1"
-                style={{
-                  minWidth: 'max-content'
-                }}
-              >
-                {displayHand.map((card, idx) => {
-                  const isSelected = selectedCardId === card.id;
-                  const total = displayHand.length;
-                  const mid = (total - 1) / 2;
-                  
-                  // Smooth fan angle calculation
-                  const angle = total > 1 ? (idx - mid) * Math.min(3.5, 30 / total) : 0;
-                  
-                  // Calculate dynamic negative spacing for mobile/desktop overlap
-                  const overlapMargin = total <= 5 ? '-ml-2 sm:-ml-3' :
-                                        total <= 8 ? '-ml-4 sm:-ml-6' :
-                                        total <= 12 ? '-ml-7 sm:-ml-10' :
-                                        '-ml-9 sm:-ml-14';
-
-                  // Check if card is playable
-                  const isPlayable = isMyTurn && (
-                    card.color === 'WILD' ||
-                    card.color === gameState.currentColor ||
-                    card.value === topDiscard.value
-                  );
-
-                  return (
-                    <div
-                      key={card.id || idx}
-                      className={`group relative transition-all duration-200 ease-out ${idx > 0 ? overlapMargin : ''} hover:z-50 hover:-translate-y-6 sm:hover:-translate-y-12 hover:scale-110 sm:hover:scale-125 hover:rotate-0`}
-                      style={{
-                        transform: `rotate(${angle}deg)`,
-                        zIndex: isSelected ? 40 : idx + 1
-                      }}
-                    >
-                      <UnoCard
-                        color={card.color}
-                        value={card.value}
-                        size="md"
-                        playable={isPlayable}
-                        selected={isSelected}
-                        onClick={() => handleCardClick(card)}
-                      />
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Player Pill below hand */}
-            <div className="bg-white/10 backdrop-blur-md px-3 py-0.5 sm:px-4 sm:py-1 rounded-full border border-white/20 flex items-center gap-2 text-[10px] sm:text-xs font-bold z-10 -mt-1">
-              <div className="w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-sky-500 text-white flex items-center justify-center text-[9px] sm:text-[10px]">👤</div>
-              <span>You</span>
-              <span className="text-white/60">{displayHand.length} Cards</span>
-              <span className="hidden sm:flex items-center gap-1 text-emerald-400 text-[10px]">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" /> Online
-              </span>
-            </div>
-
-          </div>
-
-          {/* BOTTOM RIGHT: 3D UNO! Capsule Button + DRAW CARD & END TURN Pills */}
-          <div className="flex flex-col space-y-1.5 sm:space-y-2 items-end shrink-0 z-30">
-            
-            {/* Glowing 3D Capsule UNO! Button */}
+          {/* PROMINENT CENTERED ACTION TOOLBAR: DRAW CARD & END TURN */}
+          <div className="flex items-center gap-3 z-30 mb-1">
             <button
-              onClick={handleCallUno}
-              className="relative bg-gradient-to-r from-sky-400 via-blue-500 to-sky-400 hover:from-sky-500 hover:to-blue-600 border-2 border-sky-300 text-white font-black px-4 py-1.5 sm:px-8 sm:py-2.5 rounded-full text-sm sm:text-lg shadow-[0_0_20px_rgba(56,189,248,0.6)] flex items-center justify-center gap-1.5 transform hover:scale-105 active:scale-95 transition-all tracking-wider"
+              onClick={handleDrawCard}
+              disabled={!isMyTurn || isActionPending}
+              className="bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 border-2 border-sky-300/60 text-white font-extrabold px-5 py-1.5 sm:px-6 sm:py-2 rounded-full text-xs sm:text-sm shadow-[0_0_15px_rgba(56,189,248,0.5)] transition-all active:scale-95 disabled:opacity-40 flex items-center gap-1.5 cursor-pointer"
             >
-              <span>UNO!</span>
-              <span className="text-sky-200 text-xs">✨</span>
+              <span>📥</span> DRAW CARD
             </button>
 
-            {/* Side-by-Side Pills: DRAW CARD & END TURN */}
-            <div className="flex items-center gap-1.5 sm:gap-2">
-              <button
-                onClick={handleDrawCard}
-                disabled={!isMyTurn || isActionPending}
-                className="bg-[#0b2750] hover:bg-sky-900 border border-sky-400/40 text-sky-200 disabled:opacity-50 font-extrabold px-2.5 py-1 sm:px-3.5 sm:py-1.5 rounded-full text-[10px] sm:text-xs transition-all shadow-md active:scale-95"
-              >
-                DRAW
-              </button>
+            <button
+              onClick={handleDrawCard}
+              disabled={!isMyTurn || isActionPending}
+              className="bg-sky-950/80 hover:bg-sky-900 border border-sky-400/40 text-sky-200 disabled:opacity-40 font-extrabold px-4 py-1.5 sm:px-5 sm:py-2 rounded-full text-xs sm:text-sm transition-all shadow-md active:scale-95 flex items-center gap-1.5 cursor-pointer"
+            >
+              <span>➔</span> END TURN
+            </button>
+          </div>
 
-              <button
-                onClick={handleDrawCard}
-                disabled={!isMyTurn || isActionPending}
-                className="bg-[#0b2750] hover:bg-sky-900 border border-sky-400/40 text-sky-200 disabled:opacity-50 font-extrabold px-2.5 py-1 sm:px-3.5 sm:py-1.5 rounded-full text-[10px] sm:text-xs transition-all shadow-md active:scale-95"
-              >
-                END TURN
-              </button>
+          <div className="w-full flex items-end justify-between gap-2">
+            {/* BOTTOM LEFT: Desktop-Only Inline Chat Box Widget */}
+            <div className="hidden lg:flex w-64 lg:w-72 bg-[#092248]/90 backdrop-blur-md border border-white/15 rounded-2xl p-3 shadow-2xl flex-col space-y-2 shrink-0">
+              <div className="flex items-center justify-between border-b border-white/10 pb-1.5">
+                <span className="font-bold text-xs text-white">Chat</span>
+                <button className="text-white/60 hover:text-white text-xs font-mono">•••</button>
+              </div>
+
+              {/* Chat Messages Window */}
+              <div className="h-20 overflow-y-auto space-y-1.5 text-[11px] pr-1">
+                {chatMessages.length === 0 ? (
+                  <p className="text-white/40 italic text-center py-2 text-[10px]">Type a message below...</p>
+                ) : (
+                  chatMessages.map((msg) => (
+                    <div key={msg.id} className="bg-white/5 px-2 py-1 rounded-lg">
+                      <span className="font-bold text-sky-300">{msg.senderName}: </span>
+                      <span className="text-white/90">{msg.text}</span>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              {/* Chat Input */}
+              <form onSubmit={handleSendChat} className="relative">
+                <input
+                  type="text"
+                  value={chatInput}
+                  onChange={(e) => setChatInput(e.target.value)}
+                  placeholder="Type a message..."
+                  className="w-full bg-white/10 border border-white/20 rounded-xl pl-3 pr-8 py-1.5 text-xs text-white placeholder:text-white/40 focus:outline-none focus:border-sky-400"
+                />
+                <button type="submit" className="absolute right-2 top-2 text-white/70 hover:text-sky-300">
+                  <Send className="w-3.5 h-3.5" />
+                </button>
+              </form>
             </div>
+
+            {/* BOTTOM CENTER: Fanned Player Hand & Player Status Pill */}
+            <div className="flex flex-col items-center w-full lg:max-w-[70vw] z-30 flex-1 px-1">
+              
+              {/* Player Hand with Green Highlight & Hover Zoom */}
+              <div className="w-full flex items-center justify-center overflow-x-auto overflow-y-visible pt-4 sm:pt-8 pb-2 px-2 scrollbar-none touch-pan-x">
+                <div
+                  className="flex items-center justify-center transition-all duration-300 py-2 px-1"
+                  style={{
+                    minWidth: 'max-content'
+                  }}
+                >
+                  {displayHand.map((card, idx) => {
+                    const isSelected = selectedCardId === card.id;
+                    const total = displayHand.length;
+                    const mid = (total - 1) / 2;
+                    
+                    // Smooth fan angle calculation
+                    const angle = total > 1 ? (idx - mid) * Math.min(3, 24 / total) : 0;
+                    
+                    // Dynamic negative spacing so cards overlap neatly without hiding values
+                    const overlapMargin = total <= 4 ? '-ml-1 sm:-ml-2' :
+                                          total <= 7 ? '-ml-4 sm:-ml-6' :
+                                          total <= 11 ? '-ml-7 sm:-ml-10' :
+                                          '-ml-10 sm:-ml-14';
+
+                    // Check if card is playable
+                    const isPlayable = isMyTurn && (
+                      card.color === 'WILD' ||
+                      card.color === gameState.currentColor ||
+                      card.value === topDiscard.value
+                    );
+
+                    // Dynamic card size: size="sm" when hand size > 7 or screen is small
+                    const cardSize = total > 7 ? 'sm' : 'md';
+
+                    return (
+                      <div
+                        key={card.id || idx}
+                        className={`group relative transition-all duration-200 ease-out ${idx > 0 ? overlapMargin : ''} hover:z-50 hover:-translate-y-6 sm:hover:-translate-y-10 hover:scale-110 sm:hover:scale-125 hover:rotate-0`}
+                        style={{
+                          transform: `rotate(${angle}deg)`,
+                          zIndex: isSelected ? 40 : idx + 1
+                        }}
+                      >
+                        <UnoCard
+                          color={card.color}
+                          value={card.value}
+                          size={cardSize}
+                          playable={isPlayable}
+                          selected={isSelected}
+                          onClick={() => handleCardClick(card)}
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Player Pill below hand */}
+              <div className="bg-white/10 backdrop-blur-md px-3 py-0.5 sm:px-4 sm:py-1 rounded-full border border-white/20 flex items-center gap-2 text-[10px] sm:text-xs font-bold z-10 my-0.5">
+                <div className="w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-sky-500 text-white flex items-center justify-center text-[9px] sm:text-[10px]">👤</div>
+                <span>You</span>
+                <span className="text-white/60">{displayHand.length} Cards</span>
+                <span className="hidden sm:flex items-center gap-1 text-emerald-400 text-[10px]">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" /> Online
+                </span>
+              </div>
+
+            </div>
+
+            {/* Desktop right filler to maintain balance */}
+            <div className="hidden lg:block w-64 lg:w-72 shrink-0 pointer-events-none" />
 
           </div>
 
