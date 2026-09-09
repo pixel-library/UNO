@@ -2,6 +2,7 @@ import { supabase } from './supabaseClient';
 import { UnoGame } from '../../../server/engine/UnoGame';
 import { GameSettings, PlayerPrivateState } from '@shared/types/game';
 import { validatePlayerName, validateRoomCode } from '@shared/validation/roomValidator';
+import { socketService } from './socketService';
 
 // In-memory active cloud games cache for fast local access across browsers
 const cloudGameCache = new Map<string, UnoGame>();
@@ -55,6 +56,21 @@ function getGlobalLobbyChannel() {
             }
           });
         }
+      }
+    });
+
+    globalLobbyChannel.on('broadcast', { event: 'chat:message' }, (data: any) => {
+      const payload = data?.payload;
+      const msg = payload?.msg || payload;
+      if (msg && msg.text && msg.senderId) {
+        const roomCode = payload?.roomCode;
+        if (roomCode) {
+          const game = cloudGameCache.get(roomCode);
+          if (game && !game.chatMessages.some(m => m.id === msg.id)) {
+            game.chatMessages.push(msg);
+          }
+        }
+        socketService.triggerLocalEvent('chat:message', msg);
       }
     });
 
@@ -296,6 +312,18 @@ export const supabaseRoomService = {
       config: { broadcast: { self: true } }
     });
 
+    channel.on('broadcast', { event: 'chat:message' }, (data: any) => {
+      const payload = data?.payload;
+      const msg = payload?.msg || payload;
+      if (msg && msg.text && msg.senderId) {
+        const game = cloudGameCache.get(formattedCode);
+        if (game && !game.chatMessages.some(m => m.id === msg.id)) {
+          game.chatMessages.push(msg);
+        }
+        socketService.triggerLocalEvent('chat:message', msg);
+      }
+    });
+
     channel.subscribe((status: string) => {
       console.log(`[SUPABASE REALTIME] Subscribed to room_${formattedCode}: ${status}`);
     });
@@ -356,6 +384,9 @@ export const supabaseRoomService = {
           game.winner = payload.publicState.winner;
           game.turnStartedAt = payload.publicState.turnStartedAt;
           game.lastActionMessage = payload.publicState.lastActionMessage;
+          if (payload.publicState.chatMessages) {
+            game.chatMessages = payload.publicState.chatMessages;
+          }
           if (payload.publicState.topDiscardCard) {
             game.discardPile = [payload.publicState.topDiscardCard];
           }
@@ -463,5 +494,56 @@ export const supabaseRoomService = {
       return { success: true };
     }
     return { success: false, error: 'Game not found' };
+  },
+
+  /**
+   * Send chat message in cloud match
+   */
+  async sendCloudChat(
+    text: string,
+    roomCode?: string,
+    playerId?: string,
+    customMsgId?: string
+  ): Promise<{ success: boolean; msg?: any }> {
+    const formattedCode = roomCode ? roomCode.trim().toUpperCase() : undefined;
+    let game = formattedCode ? cloudGameCache.get(formattedCode) : Array.from(cloudGameCache.values())[0];
+    if (!game) return { success: false };
+
+    const myId = playerId || localStorage.getItem('uno_player_id') || game.players[0]?.id;
+    const sender = game.players.find(p => p.id === myId) || game.players[0];
+    if (!sender) return { success: false };
+
+    const msg = {
+      id: customMsgId || `msg_${Date.now()}_${Math.random().toString(36).substring(2, 5)}`,
+      senderId: sender.id,
+      senderName: sender.name,
+      text: text.trim().substring(0, 100),
+      timestamp: Date.now()
+    };
+
+    if (!game.chatMessages.some(m => m.id === msg.id)) {
+      game.chatMessages.push(msg);
+    }
+
+    const channel = realTimeChannels.get(game.roomCode) || this.setupRealtimeChannel(game.roomCode);
+    if (channel) {
+      channel.send({
+        type: 'broadcast',
+        event: 'chat:message',
+        payload: msg
+      });
+    }
+
+    if (globalLobbyChannel) {
+      globalLobbyChannel.send({
+        type: 'broadcast',
+        event: 'chat:message',
+        payload: { roomCode: game.roomCode, msg }
+      });
+    }
+
+    socketService.triggerLocalEvent('chat:message', msg);
+    this.broadcastState(game.roomCode);
+    return { success: true, msg };
   }
 };

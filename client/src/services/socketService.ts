@@ -66,7 +66,7 @@ class SocketService {
     return this.socket!;
   }
 
-  private triggerLocalEvent(eventName: string, payload: any) {
+  public triggerLocalEvent(eventName: string, payload: any) {
     const listeners = this.eventListeners.get(eventName);
     if (listeners) {
       listeners.forEach(fn => fn(payload));
@@ -250,6 +250,33 @@ class SocketService {
         supabaseRoomService.callCloudUno().then(res => {
           if (ackCallback) ackCallback(res);
         });
+      }
+      return;
+    }
+
+    if (eventName === 'chat:message') {
+      const { text, roomCode, playerId, id } = args[0] || {};
+      const localGame = Array.from(this.localGames.values())[0];
+      if (localGame && text) {
+        const myId = playerId || localStorage.getItem('uno_player_id') || localGame.players[0]?.id;
+        const sender = localGame.players.find(p => p.id === myId) || localGame.players[0];
+        const msg = {
+          id: id || `msg_${Date.now()}_${Math.random().toString(36).substring(2, 5)}`,
+          senderId: sender?.id || 'player',
+          senderName: sender?.name || 'Player',
+          text: text.trim().substring(0, 100),
+          timestamp: Date.now()
+        };
+        if (!localGame.chatMessages.some(m => m.id === msg.id)) {
+          localGame.chatMessages.push(msg);
+        }
+        this.triggerLocalEvent('chat:message', msg);
+        const humanPlayer = localGame.players.find(p => !p.id.startsWith('bot_')) || localGame.players[0];
+        if (humanPlayer) {
+          this.triggerLocalEvent('game:state', localGame.getPrivateState(humanPlayer.id));
+        }
+      } else if (text) {
+        supabaseRoomService.sendCloudChat(text, roomCode, playerId, id);
       }
       return;
     }

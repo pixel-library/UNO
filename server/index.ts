@@ -5,7 +5,7 @@ import path from 'path';
 import { UnoGame } from './engine/UnoGame';
 import { AIPlayer } from './engine/AIPlayer';
 import { validatePlayerName, validateRoomCode } from '../shared/validation/roomValidator';
-import { GameSettings, MovePayload } from '../shared/types/game';
+import { GameSettings, MovePayload, ChatMessage } from '../shared/types/game';
 
 const app = express();
 const server = http.createServer(app);
@@ -416,7 +416,7 @@ io.on('connection', (socket) => {
   });
 
   // 7. Chat Message
-  socket.on('chat:message', ({ text, roomCode, playerId }: { text: string; roomCode?: string; playerId?: string }) => {
+  socket.on('chat:message', ({ text, roomCode, playerId, id }: { text: string; roomCode?: string; playerId?: string; id?: string }) => {
     if (!text || !text.trim()) return;
 
     let playerInfo = socketPlayerMap.get(socket.id);
@@ -446,15 +446,17 @@ io.on('connection', (socket) => {
     socketPlayerMap.set(socket.id, { roomCode: game.roomCode, playerId: sender.id, sessionId: sender.sessionId });
     socket.join(`room_${game.roomCode}`);
 
-    const msg = {
-      id: `msg_${Date.now()}_${Math.random().toString(36).substring(2, 5)}`,
+    const msg: ChatMessage = {
+      id: id || `msg_${Date.now()}_${Math.random().toString(36).substring(2, 5)}`,
       senderId: sender.id,
       senderName: sender.name,
       text: text.trim().substring(0, 100),
       timestamp: Date.now()
     };
 
-    game.chatMessages.push(msg);
+    if (!game.chatMessages.some(m => m.id === msg.id)) {
+      game.chatMessages.push(msg);
+    }
 
     // Broadcast chat message to room channel
     io.to(`room_${game.roomCode}`).emit('chat:message', msg);
@@ -466,6 +468,8 @@ io.on('connection', (socket) => {
         .map(([sId]) => sId);
       pSockets.forEach(sId => io.to(sId).emit('chat:message', msg));
     });
+
+    broadcastGameState(game);
   });
 
   // 8. Disconnect

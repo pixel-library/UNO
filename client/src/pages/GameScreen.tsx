@@ -68,8 +68,13 @@ export const GameScreen: React.FC = () => {
 
     socket.on('game:state', (newState: PlayerPrivateState) => {
       setGameState(newState);
-      if (newState.chatMessages) {
-        setChatMessages(newState.chatMessages);
+      if (newState.chatMessages && newState.chatMessages.length > 0) {
+        setChatMessages((prev) => {
+          const map = new Map<string, ChatMessage>();
+          prev.forEach(m => map.set(m.id, m));
+          newState.chatMessages!.forEach(m => map.set(m.id, m));
+          return Array.from(map.values()).sort((a, b) => a.timestamp - b.timestamp);
+        });
       }
       setIsActionPending(false);
       setSyncError(null);
@@ -224,9 +229,10 @@ export const GameScreen: React.FC = () => {
     const myId = localStorage.getItem('uno_player_id') || '';
     const myName = localStorage.getItem('uno_player_name') || 'Player';
     const textToSend = chatInput.trim();
+    const msgId = `msg_${Date.now()}_${Math.random().toString(36).substring(2, 5)}`;
 
     const localMsg: ChatMessage = {
-      id: `msg_${Date.now()}_${Math.random().toString(36).substring(2, 5)}`,
+      id: msgId,
       senderId: myId,
       senderName: myName,
       text: textToSend,
@@ -240,6 +246,7 @@ export const GameScreen: React.FC = () => {
 
     const socket = socketService.getSocket();
     socket.emit('chat:message', {
+      id: msgId,
       text: textToSend,
       roomCode: gameState?.roomCode,
       playerId: myId
