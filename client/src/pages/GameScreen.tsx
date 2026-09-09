@@ -406,7 +406,7 @@ export const GameScreen: React.FC = () => {
       <main className="relative flex-1 w-full max-w-7xl mx-auto flex flex-col items-center justify-between px-4 py-1 overflow-hidden">
 
         {/* Top Opponent Angled Hand Resting Above Table */}
-        <div className="z-10 -mt-2 h-16 flex items-center justify-center">
+        <div className="z-10 mt-2 min-h-[5rem] flex items-center justify-center">
           {topOpponent && (
             <div className="flex -space-x-8 transform scale-90">
               {Array.from({ length: Math.min(topOpponent.cardCount || 7, 10) }).map((_, idx, arr) => {
@@ -428,7 +428,7 @@ export const GameScreen: React.FC = () => {
         </div>
 
         {/* ----------------------------------------------------------- */}
-        {/* CENTRAL GLOWING OVAL TABLE & SIDE OPPONENTS                 */}
+        {/* CENTRAL TABLE SURFACE & SIDE OPPONENTS                      */}
         {/* ----------------------------------------------------------- */}
         <div className="w-full flex items-center justify-between px-2 sm:px-6 z-10 my-auto">
           
@@ -482,13 +482,10 @@ export const GameScreen: React.FC = () => {
           </div>
 
           {/* --------------------------------------------------------- */}
-          {/* CENTER TABLE OVAL                                         */}
+          {/* CENTER TABLE AREA (Clean floating cards, no big border)   */}
           {/* --------------------------------------------------------- */}
-          <div className="relative px-12 sm:px-20 py-8 rounded-[110px] bg-[#0c2b57]/90 border-2 border-sky-400/30 shadow-[0_0_50px_rgba(0,130,202,0.3)] flex flex-col items-center justify-center">
+          <div className="relative px-6 py-4 flex flex-col items-center justify-center">
             
-            {/* Table Ring Glow Line Accent */}
-            <div className="absolute inset-2 rounded-[100px] border border-sky-400/20 pointer-events-none" />
-
             {/* Piles Container: DRAW PILE on Left, DISCARD PILE on Right */}
             <div className="flex items-center gap-10 sm:gap-14 z-10">
               
