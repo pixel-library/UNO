@@ -69,6 +69,12 @@ function getGlobalLobbyChannel() {
               targetPlayerId: payload.playerId
             }
           });
+
+          // Notify host local state and broadcast state update to all room clients
+          if (myId) {
+            socketService.triggerLocalEvent('game:state', game.getPrivateState(myId));
+          }
+          this.broadcastState(game.roomCode);
         }
       }
     });

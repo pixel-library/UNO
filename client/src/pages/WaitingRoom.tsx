@@ -89,7 +89,22 @@ export const WaitingRoom: React.FC = () => {
       }
     });
 
+    // Heartbeat sync timer every 2 seconds while in waiting room
+    const heartbeatTimer = setInterval(() => {
+      const currentMyId = localStorage.getItem('uno_player_id') || myId;
+      socket.emit('game:sync', { roomCode: formattedRoomCode, playerId: currentMyId }, (res: any) => {
+        if (res?.success && res?.state) {
+          const state: GamePublicState = res.state;
+          setGameState(state);
+          if (state.status === 'PLAYING') {
+            navigate(`/game/${state.id}`, { state: { initialGameState: state } });
+          }
+        }
+      });
+    }, 2000);
+
     return () => {
+      clearInterval(heartbeatTimer);
       socket.off('game:state', handleGameState);
     };
   }, [formattedRoomCode, navigate, myId, playerName]);
