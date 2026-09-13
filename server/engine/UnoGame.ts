@@ -361,15 +361,24 @@ export class UnoGame {
 
     // If active stack penalties exist, draw the accumulated stack!
     if (this.activeStackCount > 0) {
-      const penaltyCards = this.deck.drawMultiple(this.activeStackCount, this.discardPile);
+      const count = this.activeStackCount;
+      const penaltyCards = this.deck.drawMultiple(count, this.discardPile);
       const hand = this.playerHands.get(playerId) || [];
       hand.push(...penaltyCards);
       this.playerHands.set(playerId, hand);
       currentPlayer.cardCount = hand.length;
       
-      this.lastActionMessage = `${currentPlayer.name} drew ${this.activeStackCount} penalty stack cards!`;
       this.activeStackCount = 0;
-      this.advanceTurn();
+      this.turnStartedAt = Date.now();
+
+      this.lastActionEvent = {
+        type: 'STACK',
+        title: `+${count} CARDS DRAWN! 📥`,
+        playerName: currentPlayer.name,
+        timestamp: Date.now()
+      };
+      this.lastActionMessage = `📥 ${currentPlayer.name} drew ${count} penalty cards and can play a ${this.currentColor} card!`;
+
       return { success: true, drawnCard: penaltyCards[0] };
     }
 
@@ -518,37 +527,15 @@ export class UnoGame {
         break;
 
       case 'DRAW_TWO':
-        if (this.settings.houseRules.stacking) {
-          this.activeStackCount += 2;
-          this.lastActionEvent = { type: 'STACK', title: `+${this.activeStackCount} STACK! ⚡`, playerName, timestamp: Date.now() };
-          this.lastActionMessage += ` — +2 stacked! (Total stack: +${this.activeStackCount})`;
-        } else {
-          const nextP2 = this.getNextPlayer();
-          const penaltyHand2 = this.playerHands.get(nextP2.id) || [];
-          const drawnCards2 = this.deck.drawMultiple(2, this.discardPile);
-          penaltyHand2.push(...drawnCards2);
-          nextP2.cardCount = penaltyHand2.length;
-          this.advanceTurnIndex();
-          this.lastActionEvent = { type: 'DRAW_TWO', title: '+2 CARDS!', playerName, timestamp: Date.now() };
-          this.lastActionMessage += ` — ${nextP2.name} drew 2 cards and skipped!`;
-        }
+        this.activeStackCount += 2;
+        this.lastActionEvent = { type: 'STACK', title: `+${this.activeStackCount} STACK! ⚡`, playerName, timestamp: Date.now() };
+        this.lastActionMessage += ` — +2 stacked! (Total stack: +${this.activeStackCount})`;
         break;
 
       case 'WILD_DRAW_FOUR':
-        if (this.settings.houseRules.stacking) {
-          this.activeStackCount += 4;
-          this.lastActionEvent = { type: 'STACK', title: `+${this.activeStackCount} STACK! ⚡`, playerName, timestamp: Date.now() };
-          this.lastActionMessage += ` — +4 stacked! (Total stack: +${this.activeStackCount})`;
-        } else {
-          const nextP4 = this.getNextPlayer();
-          const penaltyHand4 = this.playerHands.get(nextP4.id) || [];
-          const drawnCards4 = this.deck.drawMultiple(4, this.discardPile);
-          penaltyHand4.push(...drawnCards4);
-          nextP4.cardCount = penaltyHand4.length;
-          this.advanceTurnIndex();
-          this.lastActionEvent = { type: 'WILD_DRAW_FOUR', title: '+4 CARDS!', playerName, timestamp: Date.now() };
-          this.lastActionMessage += ` — ${nextP4.name} drew 4 cards and skipped!`;
-        }
+        this.activeStackCount += 4;
+        this.lastActionEvent = { type: 'STACK', title: `+${this.activeStackCount} STACK! ⚡`, playerName, timestamp: Date.now() };
+        this.lastActionMessage += ` — +4 stacked! (Total stack: +${this.activeStackCount})`;
         break;
 
       case '7':

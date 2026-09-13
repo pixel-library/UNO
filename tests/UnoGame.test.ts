@@ -115,11 +115,23 @@ describe('UnoGame Engine Unit Tests', () => {
     expect(illegalRes.success).toBe(false);
     expect(illegalRes.error).toContain('+4 Stack active');
 
-    // Player 3 draws cards / passes turn -> gets 4 penalty cards and activeStackCount resets to 0
+    // Player 3 draws cards -> gets 4 penalty cards and activeStackCount resets to 0
     const handBefore = stackGame.playerHands.get('p3')?.length || 0;
     const drawRes = stackGame.drawCard('p3');
     expect(drawRes.success).toBe(true);
     expect(stackGame.activeStackCount).toBe(0);
     expect(stackGame.playerHands.get('p3')?.length).toBe(handBefore + 4);
+
+    // Player 3 should STILL be the current player and able to play a card matching currentColor ('BLUE')
+    expect(stackGame.getCurrentPlayer().id).toBe('p3');
+    expect(stackGame.currentColor).toBe('BLUE');
+
+    // Give p3 a BLUE 5 card to play
+    const blueCard = { id: 'b_5', color: 'BLUE' as const, value: '5' as const, score: 5 };
+    stackGame.playerHands.get('p3')?.push(blueCard);
+
+    const playBlueRes = stackGame.playCard('p3', 'b_5');
+    expect(playBlueRes.success).toBe(true);
+    expect(stackGame.getCurrentPlayer().id).toBe('p1');
   });
 });
