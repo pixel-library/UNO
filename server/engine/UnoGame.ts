@@ -32,6 +32,8 @@ export class UnoGame {
   public lastActionMessage: string = 'Game created';
   public lastActionEvent: ActionEvent | null = null;
   public activeEmote: TableEmote | null = null;
+  public kickedPlayerIds: Set<string> = new Set();
+  public kickedNames: Set<string> = new Set();
 
   constructor(id: string, roomCode: string, settings?: Partial<GameSettings>) {
     this.id = id;
@@ -83,6 +85,11 @@ export class UnoGame {
   public kickPlayer(hostId: string, targetPlayerId: string): boolean {
     const host = this.players.find(p => p.id === hostId);
     if (!host || !host.isHost) return false;
+    const target = this.players.find(p => p.id === targetPlayerId);
+    if (target) {
+      this.kickedPlayerIds.add(target.id);
+      this.kickedNames.add(target.name.toLowerCase());
+    }
     this.removePlayer(targetPlayerId);
     this.lastActionMessage = `${host.name} kicked a player from the room.`;
     return true;

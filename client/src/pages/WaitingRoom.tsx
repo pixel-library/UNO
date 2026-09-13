@@ -33,6 +33,13 @@ export const WaitingRoom: React.FC = () => {
 
     const handleGameState = (newState: GamePublicState) => {
       if (newState.roomCode === formattedRoomCode) {
+        const currentMyId = localStorage.getItem('uno_player_id') || myId;
+        const isStillInRoom = currentMyId && newState.players.some(p => p.id === currentMyId);
+        if (currentMyId && !isStillInRoom && newState.status === 'WAITING') {
+          setError('You were removed from this room by the host.');
+          return;
+        }
+
         setGameState(newState);
         setLoading(false);
         if (newState.status === 'PLAYING') {
@@ -47,10 +54,12 @@ export const WaitingRoom: React.FC = () => {
     socket.emit('game:sync', { roomCode: formattedRoomCode, playerId: myId }, (res: any) => {
       if (res?.success && res?.state) {
         const state: GamePublicState = res.state;
+        const currentMyId = localStorage.getItem('uno_player_id') || myId;
+        const inRoom = currentMyId && state.players.some(p => p.id === currentMyId);
+
         setGameState(state);
         setLoading(false);
 
-        const inRoom = myId && state.players.some(p => p.id === myId);
         if (!inRoom) {
           socket.emit('room:join', { roomCode: formattedRoomCode, playerName }, (joinRes: any) => {
             if (joinRes?.success) {
@@ -91,6 +100,12 @@ export const WaitingRoom: React.FC = () => {
       socket.emit('game:sync', { roomCode: formattedRoomCode, playerId: currentMyId }, (res: any) => {
         if (res?.success && res?.state) {
           const state: GamePublicState = res.state;
+          const isStillInRoom = currentMyId && state.players.some(p => p.id === currentMyId);
+          if (currentMyId && !isStillInRoom && state.status === 'WAITING') {
+            setError('You were removed from this room by the host.');
+            clearInterval(heartbeatTimer);
+            return;
+          }
           setGameState(state);
           if (state.status === 'PLAYING') {
             navigate(`/game/${state.id}`, { state: { initialGameState: state } });

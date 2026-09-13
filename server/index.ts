@@ -251,6 +251,11 @@ io.on('connection', (socket) => {
       return;
     }
 
+    if (game.kickedNames.has(valName.sanitizedName!.toLowerCase())) {
+      if (callback) callback({ success: false, error: 'You were removed from this room by the host.' });
+      return;
+    }
+
     if (game.status === 'PLAYING') {
       if (callback) callback({ success: false, error: 'Game already in progress.' });
       return;
