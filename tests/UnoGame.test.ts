@@ -195,6 +195,47 @@ describe('UnoGame Engine Unit Tests', () => {
     expect(stack3Game.getCurrentPlayer().id).toBe('p1');
   });
 
+  it('should allow stacking +2 onto +4 resulting in +6 activeStackCount and absorb full +6 on draw', () => {
+    const stackComboGame = new UnoGame('g_combo', 'COMBO1', {
+      houseRules: { stacking: true }
+    });
+    stackComboGame.addPlayer('p1', 's1', 'Player 1', true);
+    stackComboGame.addPlayer('p2', 's2', 'Player 2', false);
+    stackComboGame.addPlayer('p3', 's3', 'Player 3', false);
+    stackComboGame.startGame();
+
+    const wdfCard = { id: 'wdf_p1', color: 'WILD' as const, value: 'WILD_DRAW_FOUR' as const, score: 50 };
+    const dtBlue = { id: 'dt_blue_p2', color: 'BLUE' as const, value: 'DRAW_TWO' as const, score: 20 };
+    const ext1 = { id: 'ext1_combo', color: 'RED' as const, value: '1' as const, score: 1 };
+    const ext2 = { id: 'ext2_combo', color: 'GREEN' as const, value: '2' as const, score: 2 };
+    const ext3 = { id: 'ext3_combo', color: 'YELLOW' as const, value: '3' as const, score: 3 };
+
+    stackComboGame.playerHands.set('p1', [wdfCard, ext1]);
+    stackComboGame.playerHands.set('p2', [dtBlue, ext2]);
+    stackComboGame.playerHands.set('p3', [ext3]);
+    stackComboGame.currentColor = 'RED';
+
+    // Player 1 plays +4 (WILD_DRAW_FOUR) choosing RED -> activeStackCount = 4
+    const resP1 = stackComboGame.playCard('p1', 'wdf_p1', 'RED');
+    expect(resP1.success).toBe(true);
+    expect(stackComboGame.activeStackCount).toBe(4);
+    expect(stackComboGame.getCurrentPlayer().id).toBe('p2');
+
+    // Player 2 stacks BLUE +2 onto +4 -> activeStackCount becomes 4 + 2 = 6!
+    const resP2 = stackComboGame.playCard('p2', 'dt_blue_p2');
+    expect(resP2.success).toBe(true);
+    expect(stackComboGame.activeStackCount).toBe(6);
+    expect(stackComboGame.getCurrentPlayer().id).toBe('p3');
+
+    // Player 3 has no counter card and draws -> Player 3 absorbs full +6 accumulated penalty cards into hand!
+    const p3HandBefore = stackComboGame.playerHands.get('p3')?.length || 1;
+    const resDraw = stackComboGame.drawCard('p3');
+    expect(resDraw.success).toBe(true);
+    expect(stackComboGame.activeStackCount).toBe(0);
+    expect(stackComboGame.playerHands.get('p3')?.length).toBe(p3HandBefore + 6);
+    expect(stackComboGame.getCurrentPlayer().id).toBe('p1');
+  });
+
   it('should handle DISCARD_ALL rule and discard all cards of matching color from hand', () => {
     game.startGame();
     game.currentColor = 'RED';

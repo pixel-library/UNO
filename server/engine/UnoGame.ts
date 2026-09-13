@@ -207,6 +207,14 @@ export class UnoGame {
   }
 
   public isPlayable(card: Card): boolean {
+    const cardVal = String(card.value || '').trim().toUpperCase();
+
+    if (this.activeStackCount > 0 && this.settings.houseRules.stacking) {
+      const isCounterCard = cardVal === 'DRAW_TWO' || cardVal === 'WILD_DRAW_FOUR' ||
+        (this.settings.houseRules.counterDeflect && (cardVal === 'SKIP' || cardVal === 'REVERSE' || cardVal === 'SKIP_WILD'));
+      if (isCounterCard) return true;
+    }
+
     return this.isBasePlayable(card);
   }
 

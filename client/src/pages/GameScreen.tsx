@@ -465,6 +465,12 @@ export const GameScreen: React.FC = () => {
     const cardColor = String(card.color || '').trim().toUpperCase();
     const cardVal = String(card.value || '').trim().toUpperCase();
 
+    if ((gameState?.activeStackCount || 0) > 0 && gameState?.settings?.houseRules?.stacking) {
+      const isCounterCard = cardVal === 'DRAW_TWO' || cardVal === 'WILD_DRAW_FOUR' ||
+        (gameState?.settings?.houseRules?.counterDeflect && (cardVal === 'SKIP' || cardVal === 'REVERSE' || cardVal === 'SKIP_WILD'));
+      if (isCounterCard) return true;
+    }
+
     if (cardColor === 'WILD') return true;
     if (cardColor === String(gameState?.currentColor || '').trim().toUpperCase()) return true;
     if (topDiscard && cardVal === String(topDiscard.value || '').trim().toUpperCase()) return true;
