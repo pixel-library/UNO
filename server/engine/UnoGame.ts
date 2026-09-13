@@ -73,6 +73,23 @@ export class UnoGame {
     return player;
   }
 
+  public addBot(): PlayerPublic | null {
+    if (this.players.filter(p => !p.isSpectator).length >= this.settings.maxPlayers) {
+      return null;
+    }
+
+    const botNames = ['Bot Alex (AI) 🤖', 'Bot Sam (AI) 👾', 'Bot Morgan (AI) 🧠', 'Bot Charlie (AI) 🚀'];
+    const existingBotsCount = this.players.filter(p => p.id.startsWith('bot_')).length;
+    const name = botNames[existingBotsCount % botNames.length];
+    const botId = `bot_${Math.random().toString(36).substring(2, 9)}`;
+
+    const botPlayer = this.addPlayer(botId, `sess_${botId}`, name, false);
+    if (botPlayer) {
+      this.lastActionMessage = `${name} joined the room!`;
+    }
+    return botPlayer;
+  }
+
   public removePlayer(playerId: string): void {
     this.players = this.players.filter(p => p.id !== playerId);
     this.playerHands.delete(playerId);

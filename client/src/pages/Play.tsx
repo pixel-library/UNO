@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { socketService } from '@/services/socketService';
 import { validateRoomCode } from '@shared/validation/roomValidator';
@@ -21,6 +21,51 @@ export const Play: React.FC = () => {
   const [roomCode, setRoomCode] = useState('');
   const [joinError, setJoinError] = useState<string | null>(null);
   const [isJoining, setIsJoining] = useState(false);
+
+  // Public Rooms Browser State
+  const [publicRooms, setPublicRooms] = useState<any[]>([]);
+  const [isLoadingRooms, setIsLoadingRooms] = useState<boolean>(false);
+
+  const fetchPublicRooms = async () => {
+    setIsLoadingRooms(true);
+    try {
+      const res = await fetch('/api/rooms/public');
+      const data = await res.json();
+      if (data.success && Array.isArray(data.rooms)) {
+        setPublicRooms(data.rooms);
+      }
+    } catch (err) {
+      console.error('Failed to fetch public rooms', err);
+    } finally {
+      setIsLoadingRooms(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchPublicRooms();
+    const interval = setInterval(fetchPublicRooms, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const handleJoinPublicRoom = (code: string) => {
+    setRoomCode(code);
+    const playerName = localStorage.getItem('uno_player_name');
+    if (!playerName) {
+      navigate('/enter-name', { state: { returnTo: `/join/${code}` } });
+      return;
+    }
+    setIsJoining(true);
+    const socket = socketService.getSocket();
+    socket.emit('room:join', { roomCode: code, playerName }, (res: any) => {
+      setIsJoining(false);
+      if (res?.success) {
+        if (res.playerId) localStorage.setItem('uno_player_id', res.playerId);
+        navigate(`/room/${res.roomCode}`);
+      } else {
+        setJoinError(res?.error || 'Could not join public room');
+      }
+    });
+  };
 
   // Handle Room Creation
   const handleCreateGame = () => {
@@ -450,6 +495,89 @@ export const Play: React.FC = () => {
 
         </div>
 
+      </div>
+
+      {/* ------------------------------------------------------------- */}
+      {/* PUBLIC LOBBY BROWSER SECTION                                  */}
+      {/* ------------------------------------------------------------- */}
+      <div className="max-w-5xl w-full mt-12 z-10 space-y-4">
+        <div className="flex items-center justify-between px-2">
+          <div className="flex items-center gap-2">
+            <span className="text-xl">🌐</span>
+            <h2 className="text-lg font-extrabold text-neutral-800 tracking-wide uppercase">
+              OPEN PUBLIC LOBBIES
+            </h2>
+            <span className="bg-sky-100 text-sky-700 font-bold text-xs px-2.5 py-0.5 rounded-full">
+              {publicRooms.length} Active
+            </span>
+          </div>
+
+          <button
+            onClick={fetchPublicRooms}
+            disabled={isLoadingRooms}
+            className="text-xs font-bold text-neutral-500 hover:text-sky-600 flex items-center gap-1.5 transition-colors disabled:opacity-50"
+          >
+            <span>🔄</span> Refresh
+          </button>
+        </div>
+
+        {publicRooms.length === 0 ? (
+          <div className="bg-white rounded-2xl p-8 border border-neutral-200 text-center space-y-2 shadow-sm">
+            <p className="text-sm font-bold text-neutral-700">No open public rooms found right now.</p>
+            <p className="text-xs text-neutral-500">Create a new game room above or configure preset rules in the Create Game menu!</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {publicRooms.map((room) => (
+              <div
+                key={room.code}
+                className="bg-white rounded-2xl p-5 border border-neutral-200 shadow-md hover:shadow-lg transition-all flex flex-col justify-between space-y-4 group hover:border-sky-300"
+              >
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="font-mono font-black text-base text-neutral-800 bg-neutral-100 px-2.5 py-1 rounded-lg tracking-wider">
+                      #{room.code}
+                    </span>
+                    <span className="text-xs font-extrabold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
+                      👥 {room.playerCount} / {room.maxPlayers}
+                    </span>
+                  </div>
+
+                  <div className="pt-1">
+                    <p className="text-xs text-neutral-400 font-medium">Host</p>
+                    <p className="text-sm font-extrabold text-neutral-800 tracking-tight">{room.hostName}</p>
+                  </div>
+
+                  {/* Settings tags */}
+                  <div className="flex flex-wrap gap-1.5 pt-1">
+                    {room.settings?.houseRules?.stacking && (
+                      <span className="text-[10px] font-bold bg-amber-50 text-amber-700 px-2 py-0.5 rounded-md border border-amber-200">
+                        Stacking +2/+4
+                      </span>
+                    )}
+                    {room.settings?.houseRules?.jumpIn && (
+                      <span className="text-[10px] font-bold bg-purple-50 text-purple-700 px-2 py-0.5 rounded-md border border-purple-200">
+                        Jump-In
+                      </span>
+                    )}
+                    {room.settings?.houseRules?.sevenZero && (
+                      <span className="text-[10px] font-bold bg-sky-50 text-sky-700 px-2 py-0.5 rounded-md border border-sky-200">
+                        7-Zero
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => handleJoinPublicRoom(room.code)}
+                  className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-extrabold py-2.5 rounded-xl text-xs uppercase tracking-wider transition-all shadow-sm group-hover:shadow-md active:scale-95 flex items-center justify-center gap-1.5"
+                >
+                  JOIN LOBBY 🚀
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
     </div>

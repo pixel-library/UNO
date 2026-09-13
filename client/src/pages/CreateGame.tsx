@@ -6,6 +6,7 @@ import { socketService } from '@/services/socketService';
 export const CreateGame: React.FC = () => {
   const navigate = useNavigate();
 
+  const [preset, setPreset] = useState<'CLASSIC' | 'SPEED' | 'CHAOS' | 'CUSTOM'>('CLASSIC');
   const [maxPlayers, setMaxPlayers] = useState<number>(4);
   const [startingCards, setStartingCards] = useState<number>(7);
   const [turnTimerSeconds, setTurnTimerSeconds] = useState<number>(30);
@@ -16,7 +17,37 @@ export const CreateGame: React.FC = () => {
   const [customCards, setCustomCards] = useState<boolean>(false);
   const [allowSpectators, setAllowSpectators] = useState<boolean>(true);
   const [enableChat, setEnableChat] = useState<boolean>(true);
+  const [isPrivate, setIsPrivate] = useState<boolean>(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const applyPreset = (p: 'CLASSIC' | 'SPEED' | 'CHAOS' | 'CUSTOM') => {
+    setPreset(p);
+    if (p === 'CLASSIC') {
+      setMaxPlayers(4);
+      setStartingCards(7);
+      setTurnTimerSeconds(30);
+      setStacking(true);
+      setSevenZero(false);
+      setJumpIn(false);
+      setCustomCards(false);
+    } else if (p === 'SPEED') {
+      setMaxPlayers(4);
+      setStartingCards(5);
+      setTurnTimerSeconds(15);
+      setStacking(true);
+      setSevenZero(false);
+      setJumpIn(false);
+      setCustomCards(false);
+    } else if (p === 'CHAOS') {
+      setMaxPlayers(4);
+      setStartingCards(7);
+      setTurnTimerSeconds(30);
+      setStacking(true);
+      setSevenZero(true);
+      setJumpIn(true);
+      setCustomCards(true);
+    }
+  };
 
   const handleCreate = () => {
     if (isSubmitting) return;
@@ -48,6 +79,7 @@ export const CreateGame: React.FC = () => {
             turnTimerSeconds,
             allowSpectators,
             enableChat,
+            isPrivate,
             houseRules: {
               stacking,
               jumpIn,
@@ -88,20 +120,51 @@ export const CreateGame: React.FC = () => {
     <div className="w-full min-h-[calc(100vh-80px)] bg-neutral-50 py-10 px-4 sm:px-6 lg:px-8">
       <div className="max-w-3xl mx-auto bg-white rounded-3xl p-6 sm:p-10 border border-neutral-200 shadow-xl space-y-8">
         
-        <div className="flex items-center gap-3 border-b border-neutral-100 pb-4">
-          <div className="p-3 rounded-2xl bg-blue-100 text-uno-blue">
-            <Settings2 className="w-6 h-6" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-black text-uno-navy">CREATE GAME ROOM</h1>
-            <p className="text-xs font-semibold text-neutral-500">Configure your match settings and house rules before starting.</p>
+        <div className="flex items-center justify-between border-b border-neutral-100 pb-4">
+          <div className="flex items-center gap-3">
+            <div className="p-3 rounded-2xl bg-blue-100 text-uno-blue">
+              <Settings2 className="w-6 h-6" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-black text-uno-navy">CREATE GAME ROOM</h1>
+              <p className="text-xs font-semibold text-neutral-500">Configure your match rules & privacy before creating.</p>
+            </div>
           </div>
         </div>
 
         <div className="space-y-6">
           
+          {/* Quick Preset Selector Cards */}
+          <div className="space-y-2">
+            <label className="text-xs font-bold text-neutral-700 uppercase tracking-wider flex items-center gap-1.5">
+              <Sparkles className="w-4 h-4 text-amber-500" /> GAME PRESETS
+            </label>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              {[
+                { key: 'CLASSIC', label: 'Classic 🎲', desc: 'Standard 7-card match' },
+                { key: 'SPEED', label: 'Speed Match ⚡', desc: '5 cards, 15s timer' },
+                { key: 'CHAOS', label: 'Chaos Mode 💥', desc: 'Stack + Swap + Jump-In' },
+                { key: 'CUSTOM', label: 'Custom 🛠️', desc: 'Full manual rules' }
+              ].map((p) => (
+                <button
+                  key={p.key}
+                  type="button"
+                  onClick={() => applyPreset(p.key as any)}
+                  className={`p-3 rounded-2xl text-left border-2 transition-all ${
+                    preset === p.key
+                      ? 'border-uno-blue bg-blue-50/80 shadow-md ring-2 ring-uno-blue/30'
+                      : 'border-neutral-200 hover:border-neutral-300 bg-neutral-50/50'
+                  }`}
+                >
+                  <div className="font-extrabold text-xs text-uno-navy">{p.label}</div>
+                  <div className="text-[10px] text-neutral-500 font-medium leading-tight mt-0.5">{p.desc}</div>
+                </button>
+              ))}
+            </div>
+          </div>
+
           {/* Match Basics: Max Players, Starting Cards & Turn Timer */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
             {/* Max Players Selector */}
             <div className="space-y-2">
               <label className="text-xs font-bold text-neutral-700 uppercase tracking-wider flex items-center gap-1.5">
@@ -112,7 +175,7 @@ export const CreateGame: React.FC = () => {
                   <button
                     key={num}
                     type="button"
-                    onClick={() => setMaxPlayers(num)}
+                    onClick={() => { setMaxPlayers(num); setPreset('CUSTOM'); }}
                     className={`py-2.5 rounded-xl font-extrabold text-xs border-2 transition-all ${
                       maxPlayers === num
                         ? 'border-uno-blue bg-blue-50 text-uno-blue'
@@ -135,7 +198,7 @@ export const CreateGame: React.FC = () => {
                   <button
                     key={num}
                     type="button"
-                    onClick={() => setStartingCards(num)}
+                    onClick={() => { setStartingCards(num); setPreset('CUSTOM'); }}
                     className={`py-2.5 rounded-xl font-extrabold text-xs border-2 transition-all ${
                       startingCards === num
                         ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
@@ -163,7 +226,7 @@ export const CreateGame: React.FC = () => {
                   <button
                     key={t.value}
                     type="button"
-                    onClick={() => setTurnTimerSeconds(t.value)}
+                    onClick={() => { setTurnTimerSeconds(t.value); setPreset('CUSTOM'); }}
                     className={`py-2.5 rounded-xl font-bold text-xs border-2 transition-all ${
                       turnTimerSeconds === t.value
                         ? 'border-amber-500 bg-amber-50 text-amber-700'

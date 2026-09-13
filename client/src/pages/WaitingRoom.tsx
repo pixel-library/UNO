@@ -170,6 +170,31 @@ export const WaitingRoom: React.FC = () => {
     }
   };
 
+  const [copiedLink, setCopiedLink] = useState(false);
+
+  const handleCopyInviteLink = () => {
+    const inviteUrl = `${window.location.origin}/join/${formattedRoomCode || gameState?.roomCode}`;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(inviteUrl).then(() => {
+        setCopiedLink(true);
+        setTimeout(() => setCopiedLink(false), 2000);
+      }).catch(() => {
+        fallbackCopyText(inviteUrl);
+      });
+    } else {
+      fallbackCopyText(inviteUrl);
+    }
+  };
+
+  const handleAddBot = () => {
+    const socket = socketService.getSocket();
+    socket.emit('room:addBot', {}, (res: any) => {
+      if (!res?.success) {
+        alert(res?.error || 'Could not add AI bot.');
+      }
+    });
+  };
+
   const handleStartGame = () => {
     if (isStarting) return;
     setIsStarting(true);
@@ -197,17 +222,6 @@ export const WaitingRoom: React.FC = () => {
     if (!confirm('Transfer room host privilege to this player?')) return;
     const socket = socketService.getSocket();
     socket.emit('room:transferHost', { newHostId });
-  };
-
-  const handleUpdateSetting = (updates: Partial<GameSettings>) => {
-    if (!gameState) return;
-    const newSettings = {
-      ...gameState.settings,
-      ...updates,
-      houseRules: { ...gameState.settings.houseRules, ...(updates.houseRules || {}) }
-    };
-    const socket = socketService.getSocket();
-    socket.emit('room:updateSettings', { settings: newSettings });
   };
 
   if (error) {
@@ -260,17 +274,27 @@ export const WaitingRoom: React.FC = () => {
             <span className="text-xs font-bold text-uno-blue uppercase tracking-widest">WAITING LOBBY</span>
             <h1 className="text-3xl font-black text-uno-navy tracking-tight mt-1">ROOM {formattedRoomCode}</h1>
             <p className="text-xs font-semibold text-neutral-500 mt-1">
-              Share code with friends to join the match.
+              Share code or invite link with friends to join match.
             </p>
           </div>
 
-          <button
-            onClick={handleCopyCode}
-            className="bg-neutral-100 hover:bg-neutral-200 border border-neutral-200 text-uno-navy font-bold px-6 py-3 rounded-2xl text-xs flex items-center gap-2 transition-all"
-          >
-            {copied ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
-            {copied ? 'CODE COPIED!' : 'COPY ROOM CODE'}
-          </button>
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              onClick={handleCopyCode}
+              className="bg-neutral-100 hover:bg-neutral-200 border border-neutral-200 text-uno-navy font-bold px-4 py-2.5 rounded-2xl text-xs flex items-center gap-2 transition-all"
+            >
+              {copied ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
+              {copied ? 'CODE COPIED!' : 'COPY CODE'}
+            </button>
+
+            <button
+              onClick={handleCopyInviteLink}
+              className="bg-blue-50 hover:bg-blue-100 border border-blue-200 text-uno-blue font-bold px-4 py-2.5 rounded-2xl text-xs flex items-center gap-2 transition-all"
+            >
+              {copiedLink ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4 text-uno-blue" />}
+              {copiedLink ? 'LINK COPIED!' : 'INVITE LINK'}
+            </button>
+          </div>
         </div>
 
         {/* Active Match Rules Summary Badge Panel (Configured Pre-Game) */}
@@ -367,20 +391,37 @@ export const WaitingRoom: React.FC = () => {
             {Array.from({ length: Math.max(0, maxPlayers - players.length) }).map((_, idx) => (
               <div
                 key={idx}
-                className="border-2 border-dashed border-neutral-200 p-4 rounded-2xl flex items-center justify-center text-neutral-400 font-bold text-xs"
+                className="border-2 border-dashed border-neutral-200 p-4 rounded-2xl flex items-center justify-between text-neutral-400 font-bold text-xs"
               >
-                Waiting for player...
+                <span>Empty Slot</span>
+                {isHost && (
+                  <button
+                    onClick={handleAddBot}
+                    className="bg-blue-50 hover:bg-blue-100 text-uno-blue border border-blue-200 px-3 py-1.5 rounded-xl font-extrabold text-[11px] transition-colors"
+                  >
+                    + ADD AI BOT 🤖
+                  </button>
+                )}
               </div>
             ))}
           </div>
 
           {/* Action Button */}
-          <div className="pt-4 border-t border-neutral-100 flex justify-end">
+          <div className="pt-4 border-t border-neutral-100 flex flex-wrap items-center justify-between gap-3">
+            {isHost && players.length < maxPlayers && (
+              <button
+                onClick={handleAddBot}
+                className="bg-blue-50 hover:bg-blue-100 text-uno-blue border border-blue-200 px-5 py-3 rounded-2xl text-xs font-black transition-colors flex items-center gap-1.5"
+              >
+                🤖 ADD AI BOT TO SLOT
+              </button>
+            )}
+
             {isHost ? (
               <button
                 onClick={handleStartGame}
                 disabled={players.length < 2 || isStarting}
-                className="w-full sm:w-auto bg-uno-yellow hover:bg-amber-400 disabled:opacity-50 text-uno-navy font-black px-10 py-4 rounded-2xl text-base flex items-center justify-center gap-2 shadow-lg transition-transform hover:scale-105 active:scale-100"
+                className="w-full sm:w-auto ml-auto bg-uno-yellow hover:bg-amber-400 disabled:opacity-50 text-uno-navy font-black px-10 py-4 rounded-2xl text-base flex items-center justify-center gap-2 shadow-lg transition-transform hover:scale-105 active:scale-100"
               >
                 <Play className="w-5 h-5 fill-current" />
                 {isStarting ? 'STARTING MATCH...' : players.length < 2 ? 'WAITING FOR PLAYERS...' : 'START GAME'}

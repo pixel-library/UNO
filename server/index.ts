@@ -140,6 +140,23 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', activeGames: activeGames.size });
 });
 
+app.get('/api/rooms/public', (req, res) => {
+  const publicRooms: any[] = [];
+  activeGames.forEach((game) => {
+    if (game.status === 'WAITING' && !game.settings.isPrivate) {
+      publicRooms.push({
+        code: game.roomCode,
+        gameId: game.id,
+        hostName: game.players.find(p => p.isHost)?.name || 'Host',
+        playerCount: game.players.length,
+        maxPlayers: game.settings.maxPlayers,
+        settings: game.settings
+      });
+    }
+  });
+  res.json({ success: true, rooms: publicRooms });
+});
+
 app.get('/api/rooms/:code', (req, res) => {
   const code = req.params.code.toUpperCase();
   const game = activeGames.get(code);
@@ -349,6 +366,36 @@ io.on('connection', (socket) => {
     const success = game.updateSettings(playerInfo.playerId, settings);
     if (callback) callback({ success });
     if (success) broadcastGameState(game);
+  });
+
+  // 2b. Add AI Bot to Room
+  socket.on('room:addBot', (_, callback) => {
+    const playerInfo = socketPlayerMap.get(socket.id);
+    if (!playerInfo) {
+      if (callback) callback({ success: false, error: 'Player not found' });
+      return;
+    }
+
+    const game = activeGames.get(playerInfo.roomCode);
+    if (!game) {
+      if (callback) callback({ success: false, error: 'Room not found' });
+      return;
+    }
+
+    const host = game.players.find(p => p.id === playerInfo.playerId);
+    if (!host || !host.isHost) {
+      if (callback) callback({ success: false, error: 'Only the room host can add AI bots.' });
+      return;
+    }
+
+    const bot = game.addBot();
+    if (!bot) {
+      if (callback) callback({ success: false, error: 'Room is full.' });
+      return;
+    }
+
+    if (callback) callback({ success: true, bot });
+    broadcastGameState(game);
   });
 
   // 3. Start Game

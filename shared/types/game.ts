@@ -34,6 +34,7 @@ export interface GameSettings {
   houseRules: HouseRules;
   allowSpectators: boolean;
   enableChat: boolean;
+  isPrivate?: boolean;          // Room privacy: true (Code only), false (Public in lobby)
 }
 
 export interface PlayerPublic {
