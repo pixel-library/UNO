@@ -1,15 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { 
-  Volume2, VolumeX, Music, Settings, MessageSquare, 
-  Send, Copy, Check, Play, Layers, ArrowRight, X, AlertTriangle, Smile
-} from 'lucide-react';
+import { Copy, Volume2, VolumeX, Settings, MessageSquare, Send, Check, Play, Zap, ArrowRight, Music, X } from 'lucide-react';
 import { UnoCard } from '@/components/card/UnoCard';
 import { CardColor, PlayerPrivateState, Card, ChatMessage } from '@shared/types/game';
 import { audioService } from '@/services/audioService';
 import { socketService } from '@/services/socketService';
-
-const EMOTE_OPTIONS = ['🔥', '😂', '😱', '🎉', '💩', '⚡'];
 
 export const GameScreen: React.FC = () => {
   const { gameId } = useParams<{ gameId: string }>();
@@ -23,13 +18,26 @@ export const GameScreen: React.FC = () => {
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [musicEnabled, setMusicEnabled] = useState(true);
   const [showChat, setShowChat] = useState(true);
-  const [showEmotePicker, setShowEmotePicker] = useState(false);
+  const [showMobileChat, setShowMobileChat] = useState(false);
   const [chatInput, setChatInput] = useState('');
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   
   const [pendingWildCardId, setPendingWildCardId] = useState<string | null>(null);
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
+
+  // Responsive screen detection for mobile card sizing
+  const [isMobile, setIsMobile] = useState(
+    typeof window !== 'undefined' ? window.innerWidth < 640 : false
+  );
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 640);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // Action pending state for race condition protection
   const [isActionPending, setIsActionPending] = useState(false);
@@ -62,32 +70,6 @@ export const GameScreen: React.FC = () => {
       if (newState.targetPlayerId && myId && newState.targetPlayerId !== myId) {
         return;
       }
-
-      // Check for audio triggers based on new state events
-      if (newState.lastActionEvent?.type) {
-        switch (newState.lastActionEvent.type) {
-          case 'SKIP':
-          case 'REVERSE':
-            audioService.playWhooshSound();
-            break;
-          case 'UNO_CALL':
-          case 'UNO_CHALLENGE':
-            audioService.playExplosionSound();
-            break;
-          case 'STACK':
-            audioService.playDrawSound();
-            break;
-        }
-      }
-
-      if (newState.activeEmote) {
-        audioService.playEmoteSound();
-      }
-
-      if (newState.status === 'FINISHED' && gameState?.status !== 'FINISHED') {
-        audioService.playWinSound();
-      }
-
       setGameState(newState);
       if (newState.chatMessages && newState.chatMessages.length > 0) {
         setChatMessages((prev) => {
@@ -125,7 +107,7 @@ export const GameScreen: React.FC = () => {
       socket.off('chat:message');
       socket.off('connect', handleSync);
     };
-  }, [gameId, gameState?.status]);
+  }, [gameId]);
 
   // Copy Room Code
   const handleCopyCode = () => {
@@ -226,37 +208,6 @@ export const GameScreen: React.FC = () => {
     });
   };
 
-  // 7-Zero Hand Swap Handler
-  const handleSwapHandTarget = (targetPlayerId: string) => {
-    if (isActionPending) return;
-    setIsActionPending(true);
-
-    const socket = socketService.getSocket();
-    socket.emit('game:swapHand', { targetSwapPlayerId: targetPlayerId }, (res: any) => {
-      setIsActionPending(false);
-      if (res?.success) {
-        audioService.playWhooshSound();
-      }
-    });
-  };
-
-  // Challenge Uncaught UNO Handler
-  const handleChallengeUno = (targetPlayerId: string) => {
-    audioService.playExplosionSound();
-    const socket = socketService.getSocket();
-    socket.emit('game:challengeUno', { targetPlayerId }, (res: any) => {
-      if (res?.error) alert(res.error);
-    });
-  };
-
-  // Send Emote Handler
-  const handleSendEmote = (emote: string) => {
-    audioService.playEmoteSound();
-    setShowEmotePicker(false);
-    const socket = socketService.getSocket();
-    socket.emit('game:sendEmote', { emote });
-  };
-
   // Draw Card Handler
   const handleDrawCard = () => {
     if (isActionPending) return;
@@ -294,6 +245,13 @@ export const GameScreen: React.FC = () => {
     audioService.playUnoSound();
     const socket = socketService.getSocket();
     socket.emit('game:callUno');
+  };
+
+  // Challenge UNO Handler
+  const handleChallengeUno = () => {
+    audioService.playExplosionSound();
+    const socket = socketService.getSocket();
+    socket.emit('game:challengeUno');
   };
 
   // Send Chat Message
@@ -337,15 +295,21 @@ export const GameScreen: React.FC = () => {
     socket.emit('game:rematch');
   };
 
-  // Loading / Error Screen
+  // Loading / Retry Screen if game state not ready
   if (!gameState) {
     return (
-      <div className="uno-game flex flex-col items-center justify-center p-4">
+      <div className="w-full h-screen bg-[#081F3E] text-white flex flex-col items-center justify-center p-4 space-y-6">
+        <div className="bg-[#E52521] border-2 border-[#FCD116] px-5 py-2 rounded-2xl shadow-2xl transform -rotate-3">
+          <span className="font-black text-3xl italic tracking-tighter">
+            <span className="text-[#FCD116]">U</span>N<span className="text-[#FCD116]">O</span>
+          </span>
+        </div>
+
         {syncError ? (
-          <div className="game-modal text-center space-y-4">
-            <h2>UNABLE TO START MATCH</h2>
-            <p className="text-sm font-bold text-neutral-700 font-sans">{syncError}</p>
-            <div className="flex gap-4 justify-center">
+          <div className="bg-white/10 backdrop-blur-md border border-white/20 p-6 rounded-3xl max-w-sm w-full text-center space-y-4 shadow-xl">
+            <h2 className="text-lg font-extrabold text-red-300">Unable to Start Match</h2>
+            <p className="text-xs text-white/80">{syncError}</p>
+            <div className="flex gap-3 pt-2">
               <button
                 onClick={() => {
                   setSyncError(null);
@@ -356,24 +320,23 @@ export const GameScreen: React.FC = () => {
                     else setSyncError(res?.error || 'Game not found.');
                   });
                 }}
-                className="modal-button"
+                className="flex-1 bg-uno-yellow text-uno-navy font-bold py-2.5 rounded-xl text-xs hover:bg-amber-400 transition-colors"
               >
-                RETRY
+                Retry
               </button>
               <button
                 onClick={() => navigate('/play')}
-                className="modal-button"
-                style={{ background: '#3A4454' }}
+                className="flex-1 bg-white/20 hover:bg-white/30 text-white font-bold py-2.5 rounded-xl text-xs transition-colors"
               >
-                RETURN HOME
+                Return Home
               </button>
             </div>
           </div>
         ) : (
-          <div className="text-center font-comic space-y-2">
-            <div className="w-12 h-12 border-4 border-yellow-300 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-            <h2 className="text-4xl font-black tracking-wide text-yellow-300 drop-shadow-[2px_2px_0px_#000]">CONNECTING TO ROOM...</h2>
-            <p className="text-sm text-white/90 font-sans">Synchronizing game board state</p>
+          <div className="text-center space-y-2">
+            <div className="w-8 h-8 border-4 border-uno-yellow border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+            <h2 className="text-xl font-bold tracking-wide">Connecting to Game Table...</h2>
+            <p className="text-xs text-white/60">Dealing cards and establishing server synchronization</p>
           </div>
         )}
       </div>
@@ -383,10 +346,9 @@ export const GameScreen: React.FC = () => {
   const myId = localStorage.getItem('uno_player_id') || '';
   const activePlayers = (gameState?.players || []).filter(p => p && !p.isSpectator);
 
-  // Seating breakdown starting from local player
+  // Compute relative seating order starting from local player
   const myIdx = activePlayers.findIndex(p => p.id === myId);
   const validMyIdx = myIdx >= 0 ? myIdx : 0;
-  const myPlayer = activePlayers[validMyIdx] || activePlayers[0];
 
   const relativeOpponents: typeof activePlayers = [];
   if (activePlayers.length > 1) {
@@ -395,6 +357,10 @@ export const GameScreen: React.FC = () => {
     }
   }
 
+  // Seating breakdown based on active player count:
+  // 2 Players: You (Bottom), Opponent 1 (Top)
+  // 3 Players: You (Bottom), Opponent 1 (Left), Opponent 2 (Right)
+  // 4 Players: You (Bottom), Opponent 1 (Left), Opponent 2 (Top), Opponent 3 (Right)
   let topOpponent: typeof activePlayers[0] | null = null;
   let leftOpponent: typeof activePlayers[0] | null = null;
   let rightOpponent: typeof activePlayers[0] | null = null;
@@ -417,504 +383,582 @@ export const GameScreen: React.FC = () => {
     .filter(c => c && c.id && c.color && c.value);
   const topDiscard: Card = gameState?.topDiscardCard || { id: 'disc_1', color: 'GREEN', value: '2', score: 2 };
 
-  // Failsafe avatar image renderer
-  const renderAvatarImg = (name: string, avatarUrl?: string) => {
-    const finalUrl = avatarUrl && avatarUrl.length > 5 
-      ? avatarUrl 
-      : `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(name || 'Player')}`;
-    return (
-      <img
-        src={finalUrl}
-        alt={`${name} avatar`}
-        onError={(e) => {
-          e.currentTarget.src = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23ffffff"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>`;
-        }}
-      />
-    );
-  };
+  // Discard pile glow color based on active game color
+  const discardGlowClass =
+    gameState.currentColor === 'RED' ? 'ring-4 ring-red-500 shadow-[0_0_25px_rgba(229,37,33,0.8)]' :
+    gameState.currentColor === 'YELLOW' ? 'ring-4 ring-yellow-400 shadow-[0_0_25px_rgba(252,209,22,0.8)]' :
+    gameState.currentColor === 'GREEN' ? 'ring-4 ring-emerald-500 shadow-[0_0_25px_rgba(45,150,63,0.8)]' :
+    gameState.currentColor === 'BLUE' ? 'ring-4 ring-sky-500 shadow-[0_0_25px_rgba(0,130,202,0.8)]' :
+    'ring-4 ring-emerald-500 shadow-[0_0_25px_rgba(45,150,63,0.8)]';
 
   return (
-    <div className="uno-game">
+    <div className="w-full h-screen max-h-screen bg-[#081F3E] text-white flex flex-col justify-between overflow-hidden relative selection:bg-none font-sans">
+      
+      {/* ------------------------------------------------------------- */}
+      {/* TOP HEADER BAR                                                */}
+      {/* ------------------------------------------------------------- */}
+      <header className="w-full px-2 sm:px-6 py-2 flex items-center justify-between z-30 shrink-0 gap-2">
+        
+        {/* Left: UNO ONLINE Logo + Room Badge */}
+        <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
+          <div
+            onClick={() => navigate('/')}
+            className="flex items-center gap-1 cursor-pointer hover:scale-105 transition-transform"
+          >
+            <div className="bg-[#E52521] border border-[#FCD116] px-2 py-0.5 rounded-lg shadow-md transform -rotate-3">
+              <span className="font-extrabold text-sm sm:text-lg italic tracking-tighter">
+                <span className="text-[#FCD116]">U</span>N<span className="text-[#FCD116]">O</span>
+              </span>
+            </div>
+            <span className="text-[10px] sm:text-xs font-bold text-white/90 uppercase tracking-wider hidden sm:inline">ONLINE</span>
+          </div>
 
-      {/* =====================================================
-           BACKGROUND / DECORATION & COMIC ACTION POPUPS
-           ===================================================== */}
-      <div className="graffiti m1">M</div>
-      <div className="graffiti m2">+</div>
-      <div className="graffiti m3">×</div>
-
-      {/* Floating Action Event Popup */}
-      {gameState.lastActionEvent && (Date.now() - gameState.lastActionEvent.timestamp < 3000) && (
-        <div className="absolute top-28 left-1/2 transform -translate-x-1/2 z-40 animate-bounce pointer-events-none">
-          <div className="bg-yellow-300 text-black border-4 border-black px-6 py-2 rounded-2xl shadow-[5px_5px_0px_#000] font-comic font-black text-2xl -rotate-2">
-            {gameState.lastActionEvent.title} ({gameState.lastActionEvent.playerName})
+          <div className="bg-[#0e2c56]/80 px-2 py-0.5 sm:px-3 sm:py-1 rounded-xl border border-sky-500/20 flex items-center gap-1.5 text-[10px] sm:text-xs font-bold shadow-sm">
+            <span className="text-white/70 hidden sm:inline">Room:</span>
+            <span className="text-white font-mono tracking-wider">{gameState.roomCode}</span>
+            <button onClick={handleCopyCode} className="hover:text-uno-yellow transition-colors ml-0.5" title="Copy Room Code">
+              {copiedCode ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5 text-white/70" />}
+            </button>
           </div>
         </div>
-      )}
 
-      {/* =====================================================
-           TOP LEFT: UNO LOGO + ROOM
-           ===================================================== */}
-      <div className="uno-brand-area">
-        <div className="uno-logo" onClick={() => navigate('/')} style={{ cursor: 'pointer' }} title="UNO Home">
-          <span>UNO</span>
+        {/* Top Center: Top Opponent Status Pill */}
+        <div className="flex flex-col items-center z-20 shrink">
+          {topOpponent ? (
+            <div className={`bg-white/10 backdrop-blur-md px-2 py-1 sm:px-4 sm:py-1.5 rounded-2xl border transition-all flex items-center gap-1.5 sm:gap-3 shadow-lg ${
+              currentTurnPlayerId === topOpponent.id
+                ? 'border-emerald-400 ring-2 ring-emerald-400/60 bg-emerald-500/20 shadow-[0_0_15px_rgba(52,211,153,0.5)]'
+                : 'border-white/20'
+            }`}>
+              <div className="w-5 h-5 sm:w-7 sm:h-7 rounded-full bg-sky-400/30 text-white flex items-center justify-center text-[10px] sm:text-xs font-bold border border-sky-300/40">
+                {topOpponent.avatar || '👤'}
+              </div>
+              <div className="text-left leading-tight">
+                <div className="font-bold text-[10px] sm:text-xs text-white uppercase tracking-wider truncate max-w-[70px] sm:max-w-none">{topOpponent.name}</div>
+                <div className="text-[9px] text-white/70">{topOpponent.cardCount} cards</div>
+              </div>
+              <span className="hidden sm:flex items-center gap-1 bg-emerald-500/20 px-2 py-0.5 rounded-full text-[10px] text-emerald-300 font-bold border border-emerald-400/30">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> {topOpponent.isConnected ? 'Online' : 'Offline'}
+              </span>
+            </div>
+          ) : (
+            <div className="text-[10px] sm:text-xs font-extrabold tracking-widest text-sky-300/60 uppercase">UNO ARENA</div>
+          )}
         </div>
 
-        <div className="room-ticket">
-          <span>
-            Room: <strong className="room-code">{(gameState.roomCode || '').toUpperCase()}</strong>
-          </span>
+        {/* Top Right: Controls */}
+        <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+          <button
+            onClick={toggleSound}
+            className="p-1.5 sm:px-3 sm:py-1.5 rounded-xl bg-white/10 hover:bg-white/20 border border-white/15 transition-all text-xs font-bold flex items-center gap-1.5"
+            title="Toggle Sound"
+          >
+            {soundEnabled ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5 text-red-400" />}
+            <span className="hidden sm:inline">Sound</span>
+          </button>
 
           <button
-            className="copy-icon"
-            type="button"
-            aria-label="Copy room code"
-            onClick={handleCopyCode}
-            title="Copy room code"
+            onClick={toggleMusic}
+            className={`p-1.5 sm:px-3 sm:py-1.5 rounded-xl bg-white/10 hover:bg-white/20 border border-white/15 transition-all text-xs font-bold flex items-center gap-1.5 ${
+              musicEnabled ? 'text-white' : 'text-white/50'
+            }`}
+            title="Toggle Music"
           >
-            {copiedCode ? <Check className="w-5 h-5 text-emerald-600" /> : <Copy className="w-5 h-5 text-black" />}
+            <Music className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Music</span>
+          </button>
+
+          <button
+            onClick={() => navigate('/settings')}
+            className="p-1.5 sm:px-3 sm:py-1.5 rounded-xl bg-white/10 hover:bg-white/20 border border-white/15 transition-all text-xs font-bold flex items-center gap-1.5"
+            title="Settings"
+          >
+            <Settings className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Settings</span>
+          </button>
+
+          <button
+            onClick={() => {
+              if (window.innerWidth < 1024) {
+                setShowMobileChat(!showMobileChat);
+              } else {
+                setShowChat(!showChat);
+              }
+            }}
+            className={`p-1.5 sm:px-3 sm:py-1.5 rounded-xl border transition-all text-xs font-bold flex items-center gap-1.5 ${
+              (showChat || showMobileChat) ? 'bg-sky-500/30 border-sky-400 text-sky-200' : 'bg-white/10 border-white/15 text-white'
+            }`}
+            title="Chat"
+          >
+            <MessageSquare className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Chat</span>
           </button>
         </div>
-      </div>
 
-      {/* =====================================================
-           TOP RIGHT CONTROLS & LIVE REACTION WHEEL
-           ===================================================== */}
-      <div className="top-controls relative">
-        <button
-          className="top-control"
-          type="button"
-          onClick={() => setShowEmotePicker(!showEmotePicker)}
-          title="Send Emote"
-        >
-          <Smile className="w-6 h-6 text-black" />
-          <span>Emote</span>
-        </button>
+      </header>
 
-        <button className="top-control" type="button" onClick={toggleSound} title="Sound Effects">
-          {soundEnabled ? <Volume2 className="w-6 h-6 text-black" /> : <VolumeX className="w-6 h-6 text-red-600" />}
-          <span>Sound</span>
-        </button>
+      {/* ------------------------------------------------------------- */}
+      {/* MAIN GAME TABLE OVAL SURFACE                                  */}
+      {/* ------------------------------------------------------------- */}
+      <main className="relative flex-1 w-full max-w-7xl mx-auto flex flex-col items-center justify-between px-1 sm:px-4 py-1 overflow-hidden">
 
-        <button className="top-control" type="button" onClick={toggleMusic} title="Music">
-          <Music className={`w-6 h-6 text-black ${musicEnabled ? 'opacity-100' : 'opacity-40'}`} />
-          <span>Music</span>
-        </button>
-
-        <button className="top-control" type="button" onClick={() => navigate('/settings')} title="Settings">
-          <Settings className="w-6 h-6 text-black" />
-          <span>Settings</span>
-        </button>
-
-        <button className="top-control" type="button" onClick={() => setShowChat(!showChat)} title="Chat">
-          <MessageSquare className="w-6 h-6 text-black" />
-          <span>Chat</span>
-        </button>
-
-        {/* Reaction Emote Wheel Popup */}
-        {showEmotePicker && (
-          <div className="absolute top-20 right-0 bg-white border-3 border-black p-2 rounded-2xl shadow-[4px_4px_0px_#000] flex gap-2 z-50 animate-in fade-in">
-            {EMOTE_OPTIONS.map((e) => (
-              <button
-                key={e}
-                onClick={() => handleSendEmote(e)}
-                className="text-2xl hover:scale-125 transition-transform p-1"
-              >
-                {e}
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* =====================================================
-           TOP PLAYER (PLAYER 2)
-           ===================================================== */}
-      {topOpponent && (
-        <>
-          <div className={`player-top ${currentTurnPlayerId === topOpponent.id ? 'active-player' : ''} relative`}>
-            {/* Live Emote Overlay */}
-            {gameState.activeEmote?.senderId === topOpponent.id && (Date.now() - gameState.activeEmote.timestamp < 3500) && (
-              <div className="absolute -top-10 left-1/2 -translate-x-1/2 text-4xl animate-bounce z-50">
-                {gameState.activeEmote.emote}
-              </div>
-            )}
-
-            <div className="player-avatar">
-              {renderAvatarImg(topOpponent.name, topOpponent.avatar)}
-            </div>
-
-            <div className="player-information">
-              <div className="player-name">{topOpponent.name}</div>
-              <div className="card-count">{topOpponent.cardCount} cards</div>
-            </div>
-
-            {/* Challenge UNO Button */}
-            {topOpponent.cardCount === 1 && !topOpponent.hasCalledUno && (
-              <button
-                onClick={() => handleChallengeUno(topOpponent!.id)}
-                className="ml-auto bg-red-600 text-white font-comic font-black text-xs px-2 py-1 rounded-lg border-2 border-black animate-pulse flex items-center gap-1"
-                title="Catch Uncaught UNO!"
-              >
-                <AlertTriangle className="w-3.5 h-3.5" /> CHALLENGE
-              </button>
-            )}
-
-            <div className="online-status">
-              {topOpponent.isConnected ? 'Online' : 'Offline'}
-            </div>
-          </div>
-
-          <div className="player-hand-top">
-            {Array.from({ length: Math.min(topOpponent.cardCount || 7, 8) }).map((_, idx) => (
-              <div
-                key={idx}
-                className="uno-card card-back"
-                style={{ '--i': idx + 1 } as React.CSSProperties}
-              />
-            ))}
-          </div>
-        </>
-      )}
-
-      {/* =====================================================
-           LEFT PLAYER (PLAYER 3)
-           ===================================================== */}
-      {leftOpponent && (
-        <div className="player-left">
-          <div className={`side-player-info ${currentTurnPlayerId === leftOpponent.id ? 'active-player' : ''} relative`}>
-            {/* Live Emote Overlay */}
-            {gameState.activeEmote?.senderId === leftOpponent.id && (Date.now() - gameState.activeEmote.timestamp < 3500) && (
-              <div className="absolute -top-10 left-1/2 -translate-x-1/2 text-4xl animate-bounce z-50">
-                {gameState.activeEmote.emote}
-              </div>
-            )}
-
-            <div className="side-name">{leftOpponent.name}</div>
-            <div className="side-status">{leftOpponent.isConnected ? 'Online' : 'Offline'}</div>
-
-            {/* Challenge UNO Button */}
-            {leftOpponent.cardCount === 1 && !leftOpponent.hasCalledUno && (
-              <button
-                onClick={() => handleChallengeUno(leftOpponent!.id)}
-                className="my-1 bg-red-600 text-white font-comic font-black text-[10px] px-1.5 py-0.5 rounded border border-black animate-pulse"
-              >
-                CHALLENGE
-              </button>
-            )}
-
-            <div className="side-player-avatar">
-              {renderAvatarImg(leftOpponent.name, leftOpponent.avatar)}
-            </div>
-          </div>
-
-          <div className="side-card-stack">
-            {Array.from({ length: Math.min(leftOpponent.cardCount || 7, 5) }).map((_, idx) => {
-              const rotations = [-18, -12, -7, 2, 8];
-              const offsets = [-80, -45, -10, 25, 60];
-              return (
-                <div
-                  key={idx}
-                  className="uno-card card-back"
-                  style={{
-                    '--rotation': `${rotations[idx % 5]}deg`,
-                    '--offset': `${offsets[idx % 5]}px`
-                  } as React.CSSProperties}
-                />
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* =====================================================
-           RIGHT PLAYER (PLAYER 4)
-           ===================================================== */}
-      {rightOpponent && (
-        <div className="player-right">
-          <div className={`side-player-info ${currentTurnPlayerId === rightOpponent.id ? 'active-player' : ''} relative`}>
-            {/* Live Emote Overlay */}
-            {gameState.activeEmote?.senderId === rightOpponent.id && (Date.now() - gameState.activeEmote.timestamp < 3500) && (
-              <div className="absolute -top-10 left-1/2 -translate-x-1/2 text-4xl animate-bounce z-50">
-                {gameState.activeEmote.emote}
-              </div>
-            )}
-
-            <div className="side-name">{rightOpponent.name}</div>
-            <div className="side-status">{rightOpponent.isConnected ? 'Online' : 'Offline'}</div>
-
-            {/* Challenge UNO Button */}
-            {rightOpponent.cardCount === 1 && !rightOpponent.hasCalledUno && (
-              <button
-                onClick={() => handleChallengeUno(rightOpponent!.id)}
-                className="my-1 bg-red-600 text-white font-comic font-black text-[10px] px-1.5 py-0.5 rounded border border-black animate-pulse"
-              >
-                CHALLENGE
-              </button>
-            )}
-
-            <div className="side-player-avatar">
-              {renderAvatarImg(rightOpponent.name, rightOpponent.avatar)}
-            </div>
-          </div>
-
-          <div className="side-card-stack">
-            {Array.from({ length: Math.min(rightOpponent.cardCount || 7, 5) }).map((_, idx) => {
-              const rotations = [18, 12, 7, -2, -8];
-              const offsets = [-80, -45, -10, 25, 60];
-              return (
-                <div
-                  key={idx}
-                  className="uno-card card-back"
-                  style={{
-                    '--rotation': `${rotations[idx % 5]}deg`,
-                    '--offset': `${offsets[idx % 5]}px`
-                  } as React.CSSProperties}
-                />
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* =====================================================
-           CENTER GAME AREA
-           ===================================================== */}
-      <main className="center-board">
-        <div className="piles">
-          {/* DRAW PILE */}
-          <div
-            className="pile-wrapper"
-            onClick={isMyTurn ? handleDrawCard : undefined}
-            style={{ cursor: isMyTurn ? 'pointer' : 'not-allowed' }}
-            title={isMyTurn ? "Click to Draw Card" : "Wait for your turn"}
-          >
-            <div className="pile draw-pile">
-              <div className="pile-card" />
-            </div>
-            <div className="pile-label">DRAW PILE</div>
-            <div className="pile-count">{gameState.drawPileCount || 73}</div>
-          </div>
-
-          {/* DISCARD PILE */}
-          <div className="pile-wrapper">
-            <div className="pile discard-pile">
-              <UnoCard
-                color={topDiscard.color}
-                value={topDiscard.value}
-                size="md"
-                className="pile-card"
-              />
-            </div>
-            <div className="pile-label">DISCARD PILE</div>
-            <div className="pile-count">{gameState.discardPileCount || 1}</div>
-          </div>
-        </div>
-
-        {/* TURN INDICATOR */}
-        <div className="turn-indicator">
-          <span
-            className="turn-dot"
-            style={{ background: isMyTurn ? '#19aa4b' : '#ffb321' }}
-          />
-          <span>
-            {isMyTurn
-              ? 'YOUR TURN'
-              : `${(activePlayers[currentIdx]?.name || 'PLAYER').toUpperCase()}'S TURN`}
-          </span>
-        </div>
-      </main>
-
-      {/* =====================================================
-           CHAT PANEL
-           ===================================================== */}
-      {showChat && (
-        <section className="chat-panel">
-          <div className="chat-header">
-            <div className="chat-header-left">
-              <MessageSquare className="w-5 h-5 text-black" />
-              <span>Chat</span>
-            </div>
-            <span className="text-black font-bold">•••</span>
-          </div>
-
-          <div className="chat-messages">
-            {chatMessages.length === 0 ? (
-              <p className="text-neutral-400 italic text-center py-4 text-xs font-sans">No messages yet...</p>
-            ) : (
-              chatMessages.map((msg) => (
-                <div key={msg.id} className="chat-message font-sans">
-                  <strong className="text-[#1688e8]">{msg.senderName}: </strong>
-                  <span className="text-neutral-800">{msg.text}</span>
-                </div>
-              ))
-            )}
-          </div>
-
-          <form onSubmit={handleSendChat} className="chat-input-area">
-            <input
-              className="chat-input font-sans"
-              type="text"
-              value={chatInput}
-              onChange={(e) => setChatInput(e.target.value)}
-              placeholder="Type a message..."
-            />
-            <button className="chat-send" type="submit" title="Send message">
-              <Send className="w-5 h-5 text-white" />
-            </button>
-          </form>
-        </section>
-      )}
-
-      {/* =====================================================
-           CURRENT PLAYER HAND
-           ===================================================== */}
-      <section className="my-hand-area">
-        <div className="my-hand">
-          {displayHand.map((card) => {
-            const isPlayable = isMyTurn && (
-              card.color === 'WILD' ||
-              card.color === gameState.currentColor ||
-              card.value === topDiscard.value
-            );
-            const isSelected = selectedCardId === card.id;
-
-            return (
-              <UnoCard
-                key={card.id}
-                color={card.color}
-                value={card.value}
-                playable={isPlayable}
-                selected={isSelected}
-                onClick={() => handleCardClick(card)}
-              />
-            );
-          })}
-        </div>
-
-        {/* CURRENT PLAYER INFO */}
-        <div className={`my-player-info ${isMyTurn ? 'active-player' : ''} relative`}>
-          {/* Live Emote Overlay */}
-          {gameState.activeEmote?.senderId === myPlayer?.id && (Date.now() - gameState.activeEmote.timestamp < 3500) && (
-            <div className="absolute -top-10 left-1/2 -translate-x-1/2 text-4xl animate-bounce z-50">
-              {gameState.activeEmote.emote}
+        {/* Top Opponent Angled Hand Resting Above Table */}
+        <div className="z-10 mt-1 min-h-[3.5rem] sm:min-h-[5rem] flex items-center justify-center">
+          {topOpponent && (
+            <div className="flex -space-x-8 transform scale-75 sm:scale-90">
+              {Array.from({ length: Math.min(topOpponent.cardCount || 7, 10) }).map((_, idx, arr) => {
+                const total = arr.length;
+                const mid = (total - 1) / 2;
+                const arcAngle = (idx - mid) * 4;
+                return (
+                  <div
+                    key={idx}
+                    className="transition-transform duration-200 hover:scale-110"
+                    style={{ transform: `rotate(${arcAngle}deg) rotate(180deg)` }}
+                  >
+                    <UnoCard faceDown size="sm" />
+                  </div>
+                );
+              })}
             </div>
           )}
-
-          <div className="player-avatar">
-            {renderAvatarImg(myPlayer?.name || 'PLAYER 1', myPlayer?.avatar)}
-          </div>
-
-          <div className="player-information">
-            <div className="player-name">{myPlayer?.name || 'PLAYER 1'}</div>
-            <div className="card-count">{displayHand.length} cards</div>
-          </div>
-
-          <div className="online-status">
-            Online
-          </div>
         </div>
-      </section>
 
-      {/* =====================================================
-           RIGHT ACTION AREA
-           ===================================================== */}
-      <section className="action-area">
-        <button className="uno-button" type="button" onClick={handleCallUno} title="Call UNO!">
-          <span>UNO!</span>
-        </button>
+        {/* ----------------------------------------------------------- */}
+        {/* CENTRAL TABLE SURFACE & SIDE OPPONENTS                      */}
+        {/* ----------------------------------------------------------- */}
+        <div className="w-full flex items-center justify-between px-1 sm:px-6 z-10 my-auto">
+          
+          {/* Left Opponent */}
+          <div className="flex items-center gap-1 sm:gap-3 shrink-0 min-w-0 sm:min-w-[90px] lg:min-w-[120px]">
+            {leftOpponent ? (
+              <div className="flex flex-col sm:flex-row items-center gap-1 sm:gap-3 shrink-0">
+                {/* Left Player Angled Card Fan (Desktop / Tablet only) */}
+                {!isMobile && (
+                  <div className="relative flex flex-col items-center justify-center min-w-0 sm:min-w-[60px]">
+                    <div className="flex -space-x-8 transform rotate-90 scale-75 lg:scale-90 origin-center py-2 sm:py-4">
+                      {Array.from({ length: Math.min(leftOpponent.cardCount || 7, 8) }).map((_, idx, arr) => {
+                        const total = arr.length;
+                        const mid = (total - 1) / 2;
+                        const arcAngle = (idx - mid) * 4;
+                        return (
+                          <div
+                            key={idx}
+                            className="transition-transform duration-200"
+                            style={{ transform: `rotate(${arcAngle}deg)` }}
+                          >
+                            <UnoCard faceDown size="sm" />
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
 
-        <div className="action-buttons">
-          <button
-            className="game-action draw-button"
-            type="button"
-            onClick={handleDrawCard}
-            disabled={!isMyTurn || isActionPending}
-          >
-            <Layers className="w-6 h-6 text-white shrink-0" />
-            <span>DRAW CARD</span>
-          </button>
+                {/* Left Status Badge */}
+                <div className="flex flex-col items-start space-y-0.5">
+                  <div className={`bg-white/10 backdrop-blur-md px-1.5 py-1 sm:px-3 sm:py-1.5 rounded-xl sm:rounded-2xl border transition-all text-xs font-bold flex items-center gap-1.5 ${
+                    currentTurnPlayerId === leftOpponent.id
+                      ? 'border-emerald-400 ring-2 ring-emerald-400/60 bg-emerald-500/20 shadow-[0_0_15px_rgba(52,211,153,0.5)]'
+                      : 'border-white/20'
+                  }`}>
+                    <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-purple-500 text-white flex items-center justify-center text-[10px] font-bold">
+                      {leftOpponent.avatar || '👤'}
+                    </div>
+                    <div className="text-left">
+                      <div className="text-[10px] sm:text-[11px] font-bold truncate max-w-[45px] sm:max-w-none text-white">{leftOpponent.name}</div>
+                      <div className="text-[8px] sm:text-[9px] text-white/70">{leftOpponent.cardCount} cards</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="w-2 sm:w-12 shrink-0 pointer-events-none" />
+            )}
+          </div>
 
-          <button
-            className="game-action end-turn-button"
-            type="button"
-            onClick={handlePassTurn}
-            disabled={!isMyTurn || isActionPending}
-          >
-            <ArrowRight className="w-6 h-6 text-white shrink-0" />
-            <span>END TURN</span>
-          </button>
-        </div>
-      </section>
+          {/* --------------------------------------------------------- */}
+          {/* CENTER TABLE AREA                                         */}
+          {/* --------------------------------------------------------- */}
+          <div className="relative px-1 sm:px-6 py-1 sm:py-4 flex flex-col items-center justify-center">
+            
+            {/* Piles Container: DRAW PILE on Left, DISCARD PILE on Right */}
+            <div className="flex items-center gap-3 sm:gap-8 lg:gap-14 z-10">
+              
+              {/* DRAW PILE */}
+              <div
+                onClick={isMyTurn ? handleDrawCard : undefined}
+                className={`flex flex-col items-center group ${isMyTurn ? 'cursor-pointer' : 'cursor-not-allowed'}`}
+              >
+                <div className="relative transform transition-transform group-hover:scale-105 active:scale-95">
+                  <div className="absolute top-1 left-1 w-full h-full">
+                    <UnoCard faceDown size={isMobile ? 'sm' : 'md'} />
+                  </div>
+                  <UnoCard faceDown size={isMobile ? 'sm' : 'md'} />
+                </div>
 
-      {/* =====================================================
-           7-ZERO HAND SWAP SELECTION MODAL
-           ===================================================== */}
-      {gameState.pendingHandSwapPlayerId === myId && (
-        <div className="game-modal-overlay">
-          <div className="game-modal text-center space-y-4">
-            <h2>SWAP HAND (7-RULE)</h2>
-            <p className="font-bold text-neutral-800 font-sans">Select a player to swap hands with:</p>
+                <div className="mt-1 sm:mt-3 text-center">
+                  <span className="text-[9px] sm:text-xs font-bold tracking-wider text-white/90 uppercase block">DRAW</span>
+                  <span className="text-xs sm:text-sm font-black text-white">{gameState.drawPileCount || 73}</span>
+                </div>
+              </div>
 
-            <div className="grid grid-cols-1 gap-3 pt-2">
-              {activePlayers.filter(p => p.id !== myId).map((target) => (
-                <button
-                  key={target.id}
-                  onClick={() => handleSwapHandTarget(target.id)}
-                  className="modal-button flex items-center justify-between px-6"
-                  style={{ background: '#0082CA' }}
-                >
-                  <span>{target.name}</span>
-                  <span className="text-sm font-sans">{target.cardCount} cards</span>
-                </button>
-              ))}
+              {/* DISCARD PILE with Color Glowing Aura Ring */}
+              <div className="flex flex-col items-center">
+                <div className={`rounded-xl sm:rounded-2xl p-0.5 sm:p-1 transition-all ${discardGlowClass}`}>
+                  <UnoCard color={topDiscard.color} value={topDiscard.value} size={isMobile ? 'sm' : 'md'} />
+                </div>
+
+                <div className="mt-1 sm:mt-3 text-center">
+                  <span className="text-[9px] sm:text-xs font-bold tracking-wider text-white/90 uppercase block">DISCARD</span>
+                  <span className="text-xs sm:text-sm font-black text-white">{gameState.discardPileCount || 1}</span>
+                </div>
+              </div>
+
             </div>
+
+            {/* YOUR TURN INDICATOR */}
+            <div className="mt-2 sm:mt-6 z-10 flex items-center gap-1.5 sm:gap-2">
+              <span className={`w-2 h-2 sm:w-3 sm:h-3 rounded-full ${isMyTurn ? 'bg-emerald-400 animate-ping' : 'bg-white/40'}`} />
+              <span className="font-extrabold text-[10px] sm:text-base tracking-widest text-white uppercase">
+                {isMyTurn ? 'YOUR TURN' : 'WAITING'}
+              </span>
+            </div>
+
+          </div>
+
+          {/* Right Opponent */}
+          <div className="flex items-center gap-1 sm:gap-3 shrink-0 min-w-0 sm:min-w-[90px] lg:min-w-[120px] justify-end">
+            {rightOpponent ? (
+              <div className="flex flex-col sm:flex-row items-center gap-1 sm:gap-3 shrink-0">
+                {/* Right Status Badge */}
+                <div className="flex flex-col items-end space-y-0.5">
+                  <div className={`bg-white/10 backdrop-blur-md px-1.5 py-1 sm:px-3 sm:py-1.5 rounded-xl sm:rounded-2xl border transition-all text-xs font-bold flex items-center gap-1.5 ${
+                    currentTurnPlayerId === rightOpponent.id
+                      ? 'border-emerald-400 ring-2 ring-emerald-400/60 bg-emerald-500/20 shadow-[0_0_15px_rgba(52,211,153,0.5)]'
+                      : 'border-white/20'
+                  }`}>
+                    <div className="text-right">
+                      <div className="text-[10px] sm:text-[11px] font-bold truncate max-w-[45px] sm:max-w-none text-white">{rightOpponent.name}</div>
+                      <div className="text-[8px] sm:text-[9px] text-white/70">{rightOpponent.cardCount} cards</div>
+                    </div>
+                    <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-amber-500 text-white flex items-center justify-center text-[10px] font-bold">
+                      {rightOpponent.avatar || '👤'}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right Player Angled Card Fan (Desktop / Tablet only) */}
+                {!isMobile && (
+                  <div className="relative flex flex-col items-center justify-center min-w-0 sm:min-w-[60px]">
+                    <div className="flex -space-x-8 transform -rotate-90 scale-75 lg:scale-90 origin-center py-2 sm:py-4">
+                      {Array.from({ length: Math.min(rightOpponent.cardCount || 7, 8) }).map((_, idx, arr) => {
+                        const total = arr.length;
+                        const mid = (total - 1) / 2;
+                        const arcAngle = (idx - mid) * 4;
+                        return (
+                          <div
+                            key={idx}
+                            className="transition-transform duration-200"
+                            style={{ transform: `rotate(${arcAngle}deg)` }}
+                          >
+                            <UnoCard faceDown size="sm" />
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="w-2 sm:w-12 shrink-0 pointer-events-none" />
+            )}
+          </div>
+
+        </div>
+
+        {/* ----------------------------------------------------------- */}
+        {/* BOTTOM AREA: ACTION BUTTONS, PLAYER HAND & CHAT            */}
+        {/* ----------------------------------------------------------- */}
+        <div className="w-full flex flex-col items-center z-20 pb-2 shrink-0 relative px-1 sm:px-4">
+          
+          {/* PROMINENT CENTERED ACTION TOOLBAR: DRAW CARD, END TURN, CALL UNO & CATCH UNO */}
+          <div className="flex items-center gap-2 sm:gap-3 z-30 mb-1 flex-wrap justify-center">
+            <button
+              onClick={handleDrawCard}
+              disabled={!isMyTurn || isActionPending}
+              className="bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 border-2 border-sky-300/60 text-white font-extrabold px-4 py-1.5 sm:px-6 sm:py-2 rounded-full text-xs sm:text-sm shadow-[0_0_15px_rgba(56,189,248,0.5)] transition-all active:scale-95 disabled:opacity-40 flex items-center gap-1.5 cursor-pointer"
+            >
+              <span>📥</span> DRAW CARD
+            </button>
+
+            <button
+              onClick={handlePassTurn}
+              disabled={!isMyTurn || isActionPending}
+              className="bg-sky-950/80 hover:bg-sky-900 border border-sky-400/40 text-sky-200 disabled:opacity-40 font-extrabold px-4 py-1.5 sm:px-5 sm:py-2 rounded-full text-xs sm:text-sm transition-all shadow-md active:scale-95 flex items-center gap-1.5 cursor-pointer"
+            >
+              <span>➔</span> END TURN
+            </button>
+
+            <button
+              onClick={handleCallUno}
+              className="bg-gradient-to-r from-red-600 to-amber-500 hover:from-red-500 hover:to-amber-400 border-2 border-yellow-300 text-white font-black px-4 py-1.5 sm:px-5 sm:py-2 rounded-full text-xs sm:text-sm shadow-[0_0_15px_rgba(239,68,68,0.6)] transition-all active:scale-95 flex items-center gap-1 cursor-pointer"
+            >
+              <span>🔥</span> CALL UNO!
+            </button>
+
+            {activePlayers.some(p => p.id !== myId && p.cardCount === 1) && (
+              <button
+                onClick={handleChallengeUno}
+                className="bg-red-700 hover:bg-red-600 border-2 border-yellow-300 text-white font-extrabold px-3 py-1.5 sm:px-4 sm:py-2 rounded-full text-xs sm:text-sm shadow-[0_0_15px_rgba(220,38,38,0.7)] transition-all active:scale-95 animate-pulse flex items-center gap-1 cursor-pointer"
+                title="Challenge an opponent holding 1 card who forgot to call UNO!"
+              >
+                <span>🚨</span> CATCH UNO!
+              </button>
+            )}
+          </div>
+
+          <div className="w-full flex items-end justify-between gap-2">
+            {/* BOTTOM LEFT: Desktop-Only Inline Chat Box Widget */}
+            <div className="hidden lg:flex w-64 lg:w-72 bg-[#092248]/90 backdrop-blur-md border border-white/15 rounded-2xl p-3 shadow-2xl flex-col space-y-2 shrink-0">
+              <div className="flex items-center justify-between border-b border-white/10 pb-1.5">
+                <span className="font-bold text-xs text-white">Chat</span>
+                <button className="text-white/60 hover:text-white text-xs font-mono">•••</button>
+              </div>
+
+              {/* Chat Messages Window */}
+              <div className="h-20 overflow-y-auto space-y-1.5 text-[11px] pr-1">
+                {chatMessages.length === 0 ? (
+                  <p className="text-white/40 italic text-center py-2 text-[10px]">Type a message below...</p>
+                ) : (
+                  chatMessages.map((msg) => (
+                    <div key={msg.id} className="bg-white/5 px-2 py-1 rounded-lg">
+                      <span className="font-bold text-sky-300">{msg.senderName}: </span>
+                      <span className="text-white/90">{msg.text}</span>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              {/* Chat Input */}
+              <form onSubmit={handleSendChat} className="relative">
+                <input
+                  type="text"
+                  value={chatInput}
+                  onChange={(e) => setChatInput(e.target.value)}
+                  placeholder="Type a message..."
+                  className="w-full bg-white/10 border border-white/20 rounded-xl pl-3 pr-8 py-1.5 text-xs text-white placeholder:text-white/40 focus:outline-none focus:border-sky-400"
+                />
+                <button type="submit" className="absolute right-2 top-2 text-white/70 hover:text-sky-300">
+                  <Send className="w-3.5 h-3.5" />
+                </button>
+              </form>
+            </div>
+
+            {/* BOTTOM CENTER: Fanned Player Hand & Player Status Pill */}
+            <div className="flex flex-col items-center w-full lg:max-w-[70vw] z-30 flex-1 px-1">
+              
+              {/* UNO Call Button when hand <= 2 */}
+              {isMyTurn && displayHand.length <= 2 && (
+                <div className="flex items-center justify-center gap-2 mb-1 z-40">
+                  <button
+                    onClick={handleCallUno}
+                    className="bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white font-black px-4 py-1.5 rounded-xl text-xs flex items-center gap-1.5 shadow-xl transition-transform hover:scale-110 active:scale-95 border border-yellow-400 animate-bounce"
+                  >
+                    🔥 UNO!
+                  </button>
+                </div>
+              )}
+
+              {/* Player Hand Container */}
+              <div className="w-full flex items-center justify-center overflow-x-auto overflow-y-visible pt-2 sm:pt-8 pb-1 px-1 scrollbar-none touch-pan-x">
+                {isMobile && displayHand.length > 7 ? (
+                  /* Mobile Multi-Row Layout for > 7 Cards */
+                  <div className="w-full flex flex-col items-center justify-center gap-1.5 py-1 px-0.5">
+                    {[
+                      displayHand.slice(0, Math.ceil(displayHand.length / 2)),
+                      displayHand.slice(Math.ceil(displayHand.length / 2))
+                    ].map((rowCards, rowIndex) => (
+                      <div key={rowIndex} className="flex items-center justify-center">
+                        {rowCards.map((card, idx) => {
+                          const isSelected = selectedCardId === card.id;
+                          const totalInRow = rowCards.length;
+                          const overlapMargin = totalInRow <= 4 ? '-ml-1' : totalInRow <= 6 ? '-ml-2.5' : '-ml-4';
+                          const isPlayable = isMyTurn && (
+                            card.color === 'WILD' ||
+                            card.color === gameState.currentColor ||
+                            card.value === topDiscard.value
+                          );
+
+                          return (
+                            <div
+                              key={card.id || `${rowIndex}_${idx}`}
+                              className={`group relative transition-all duration-200 ease-out ${idx > 0 ? overlapMargin : ''} hover:z-50 active:scale-105`}
+                              style={{ zIndex: isSelected ? 40 : idx + 1 }}
+                            >
+                              <UnoCard
+                                color={card.color}
+                                value={card.value}
+                                size="sm"
+                                playable={isPlayable}
+                                selected={isSelected}
+                                onClick={() => handleCardClick(card)}
+                              />
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  /* Single Row Fanned Layout for Desktop/Tablet or <= 7 Cards */
+                  <div
+                    className="flex items-center justify-center transition-all duration-300 py-2 px-1"
+                    style={{
+                      minWidth: 'max-content'
+                    }}
+                  >
+                    {displayHand.map((card, idx) => {
+                      const isSelected = selectedCardId === card.id;
+                      const total = displayHand.length;
+                      const mid = (total - 1) / 2;
+                      
+                      const angle = isMobile
+                        ? (total > 1 ? (idx - mid) * Math.min(2, 16 / total) : 0)
+                        : (total > 1 ? (idx - mid) * Math.min(3, 24 / total) : 0);
+                      
+                      const overlapMargin = isMobile
+                        ? (total <= 4 ? '-ml-2' : '-ml-4')
+                        : (total <= 4 ? '-ml-2 sm:-ml-3' : total <= 7 ? '-ml-4 sm:-ml-7' : total <= 11 ? '-ml-7 sm:-ml-12' : '-ml-10 sm:-ml-16');
+
+                      const isPlayable = isMyTurn && (
+                        card.color === 'WILD' ||
+                        card.color === gameState.currentColor ||
+                        card.value === topDiscard.value
+                      );
+
+                      const cardSize = isMobile ? 'sm' : 'md';
+
+                      return (
+                        <div
+                          key={card.id || idx}
+                          className={`group relative transition-all duration-200 ease-out ${idx > 0 ? overlapMargin : ''} hover:z-50 hover:-translate-y-6 sm:hover:-translate-y-10 hover:scale-110 sm:hover:scale-125 hover:rotate-0`}
+                          style={{
+                            transform: `rotate(${angle}deg)`,
+                            zIndex: isSelected ? 40 : idx + 1
+                          }}
+                        >
+                          <UnoCard
+                            color={card.color}
+                            value={card.value}
+                            size={cardSize}
+                            playable={isPlayable}
+                            selected={isSelected}
+                            onClick={() => handleCardClick(card)}
+                          />
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* Player Pill below hand */}
+              <div className="bg-white/10 backdrop-blur-md px-3 py-0.5 sm:px-4 sm:py-1 rounded-full border border-white/20 flex items-center gap-2 text-[10px] sm:text-xs font-bold z-10 my-0.5">
+                <div className="w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-sky-500 text-white flex items-center justify-center text-[9px] sm:text-[10px]">👤</div>
+                <span>You</span>
+                <span className="text-white/60">{displayHand.length} Cards</span>
+                <span className="hidden sm:flex items-center gap-1 text-emerald-400 text-[10px]">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" /> Online
+                </span>
+              </div>
+
+            </div>
+
+            {/* Desktop right filler to maintain balance */}
+            <div className="hidden lg:block w-64 lg:w-72 shrink-0 pointer-events-none" />
+
+          </div>
+
+        </div>
+
+      </main>
+
+      {/* ------------------------------------------------------------- */}
+      {/* MOBILE & TABLET SLIDE-UP CHAT DRAWER                          */}
+      {/* ------------------------------------------------------------- */}
+      {showMobileChat && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 lg:hidden">
+          <div className="bg-[#092248] border border-sky-400/30 rounded-t-3xl sm:rounded-3xl p-4 w-full sm:max-w-md shadow-2xl space-y-3">
+            <div className="flex items-center justify-between border-b border-white/10 pb-2">
+              <span className="font-bold text-sm text-white flex items-center gap-2">
+                <MessageSquare className="w-4 h-4 text-sky-400" /> Room Chat
+              </span>
+              <button onClick={() => setShowMobileChat(false)} className="text-white/60 hover:text-white p-1">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="h-48 overflow-y-auto space-y-2 text-xs pr-1">
+              {chatMessages.length === 0 ? (
+                <p className="text-white/40 italic text-center py-6 text-xs">No messages yet. Say hello!</p>
+              ) : (
+                chatMessages.map((msg) => (
+                  <div key={msg.id} className="bg-white/10 px-3 py-1.5 rounded-xl">
+                    <span className="font-bold text-sky-300">{msg.senderName}: </span>
+                    <span className="text-white/90">{msg.text}</span>
+                  </div>
+                ))
+              )}
+            </div>
+            <form onSubmit={handleSendChat} className="relative pt-1">
+              <input
+                type="text"
+                value={chatInput}
+                onChange={(e) => setChatInput(e.target.value)}
+                placeholder="Type a message..."
+                className="w-full bg-white/10 border border-white/20 rounded-xl pl-4 pr-10 py-2.5 text-xs text-white placeholder:text-white/40 focus:outline-none focus:border-sky-400"
+              />
+              <button type="submit" className="absolute right-3 top-3 text-white/70 hover:text-sky-300">
+                <Send className="w-4 h-4" />
+              </button>
+            </form>
           </div>
         </div>
       )}
 
-      {/* =====================================================
-           WILD COLOR PICKER MODAL
-           ===================================================== */}
+      {/* ------------------------------------------------------------- */}
+      {/* WILD COLOR PICKER MODAL                                       */}
+      {/* ------------------------------------------------------------- */}
       {showColorPicker && (
-        <div className="game-modal-overlay">
-          <div className="game-modal text-center">
-            <h2>CHOOSE COLOR</h2>
-            <p className="mb-6 font-bold text-neutral-700 font-sans">Select active color for next turns:</p>
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-md z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-8 max-w-sm w-full text-center space-y-6 border border-neutral-200 shadow-2xl">
+            <h3 className="text-2xl font-black text-uno-navy tracking-tight">CHOOSE COLOR</h3>
+            <p className="text-xs font-semibold text-neutral-500">
+              Select the active color for the next turns:
+            </p>
 
             <div className="grid grid-cols-2 gap-4">
               <button
-                type="button"
                 onClick={() => handleSelectColor('RED')}
-                className="modal-button"
-                style={{ background: '#ed1c24' }}
+                className="h-20 rounded-2xl bg-[#E52521] hover:scale-105 transition-transform text-white font-extrabold text-lg shadow-md"
               >
                 RED
               </button>
-
               <button
-                type="button"
                 onClick={() => handleSelectColor('YELLOW')}
-                className="modal-button"
-                style={{ background: '#ffd21f', color: '#000' }}
+                className="h-20 rounded-2xl bg-[#FCD116] hover:scale-105 transition-transform text-uno-navy font-extrabold text-lg shadow-md"
               >
                 YELLOW
               </button>
-
               <button
-                type="button"
                 onClick={() => handleSelectColor('GREEN')}
-                className="modal-button"
-                style={{ background: '#23a83d' }}
+                className="h-20 rounded-2xl bg-[#2D963F] hover:scale-105 transition-transform text-white font-extrabold text-lg shadow-md"
               >
                 GREEN
               </button>
-
               <button
-                type="button"
                 onClick={() => handleSelectColor('BLUE')}
-                className="modal-button"
-                style={{ background: '#1688e8' }}
+                className="h-20 rounded-2xl bg-[#0082CA] hover:scale-105 transition-transform text-white font-extrabold text-lg shadow-md"
               >
                 BLUE
               </button>
@@ -923,35 +967,38 @@ export const GameScreen: React.FC = () => {
         </div>
       )}
 
-      {/* =====================================================
-           GAME OVER / VICTORY MODAL
-           ===================================================== */}
+      {/* ------------------------------------------------------------- */}
+      {/* GAME OVER / VICTORY OVERLAY MODAL                             */}
+      {/* ------------------------------------------------------------- */}
       {gameState.status === 'FINISHED' && (
-        <div className="game-modal-overlay">
-          <div className="game-modal text-center space-y-4">
-            <h2>
-              {gameState.winner?.id === myId ? 'YOU WIN!' : `${(gameState.winner?.name || 'Player').toUpperCase()} WINS!`}
-            </h2>
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-lg z-50 flex items-center justify-center p-4">
+          <div className="bg-white text-uno-navy rounded-3xl p-8 sm:p-10 max-w-md w-full text-center space-y-6 shadow-2xl border border-neutral-200">
+            <div className="w-20 h-20 rounded-3xl bg-amber-100 border-2 border-amber-300 text-amber-500 flex items-center justify-center mx-auto shadow-lg transform rotate-3">
+              <span className="text-4xl">🏆</span>
+            </div>
 
-            <p className="font-bold text-lg text-neutral-800 font-sans">
-              Winner Score: {gameState.winner?.score || 0} pts
-            </p>
+            <div>
+              <span className="text-xs font-black text-uno-blue uppercase tracking-widest">MATCH FINISHED</span>
+              <h2 className="text-3xl font-black text-uno-navy tracking-tight mt-1">
+                {gameState.winner?.id === myId ? 'YOU WIN!' : `${gameState.winner?.name || 'Player'} WINS!`}
+              </h2>
+              <p className="text-sm font-bold text-neutral-500 mt-2">
+                Winner Score: {gameState.winner?.score || 0} pts
+              </p>
+            </div>
 
-            <div className="flex flex-col gap-3 pt-2">
+            <div className="space-y-3 pt-2">
               <button
-                type="button"
                 onClick={handleRematch}
-                className="modal-button"
-                style={{ background: '#ffd21f', color: '#000' }}
+                className="w-full bg-uno-yellow hover:bg-amber-400 text-uno-navy font-black py-4 rounded-2xl text-base flex items-center justify-center gap-2 shadow-lg transition-transform hover:scale-[1.02]"
               >
+                <Play className="w-5 h-5 fill-current" />
                 PLAY AGAIN
               </button>
 
               <button
-                type="button"
                 onClick={() => navigate('/play')}
-                className="modal-button"
-                style={{ background: '#d9d9d2', color: '#000' }}
+                className="w-full bg-neutral-100 hover:bg-neutral-200 text-uno-navy font-bold py-3.5 rounded-2xl text-sm flex items-center justify-center gap-2"
               >
                 RETURN TO LOBBY
               </button>
