@@ -402,9 +402,16 @@ export const supabaseRoomService = {
           game.currentPlayerIndex = payload.publicState.currentPlayerIndex;
           game.direction = payload.publicState.direction;
           game.currentColor = payload.publicState.currentColor;
+          game.activeStackCount = typeof payload.publicState.activeStackCount === 'number' ? payload.publicState.activeStackCount : 0;
+          game.pendingHandSwapPlayerId = payload.publicState.pendingHandSwapPlayerId || null;
+          game.lastActionEvent = payload.publicState.lastActionEvent || null;
+          game.activeEmote = payload.publicState.activeEmote || null;
           game.winner = payload.publicState.winner;
           game.turnStartedAt = payload.publicState.turnStartedAt;
           game.lastActionMessage = payload.publicState.lastActionMessage;
+          if (payload.publicState.settings) {
+            game.settings = payload.publicState.settings;
+          }
           if (payload.publicState.chatMessages) {
             game.chatMessages = payload.publicState.chatMessages;
             payload.publicState.chatMessages.forEach((m: any) => {

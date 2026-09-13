@@ -236,6 +236,50 @@ describe('UnoGame Engine Unit Tests', () => {
     expect(stackComboGame.getCurrentPlayer().id).toBe('p1');
   });
 
+  it('should absorb +4 penalty when Player 2 plays matching color card on +4, leaving Player 3 with zero penalty', () => {
+    const stack4Game = new UnoGame('g_stack4', 'STACK4', {
+      houseRules: { stacking: true }
+    });
+    stack4Game.addPlayer('p1', 's1', 'Player 1', true);
+    stack4Game.addPlayer('p2', 's2', 'Player 2', false);
+    stack4Game.addPlayer('p3', 's3', 'Player 3', false);
+    stack4Game.startGame();
+
+    const wdfCard = { id: 'wdf_p1_4', color: 'WILD' as const, value: 'WILD_DRAW_FOUR' as const, score: 50 };
+    const redFive = { id: 'r_five_p2', color: 'RED' as const, value: '5' as const, score: 5 };
+    const redSeven = { id: 'r_seven_p3', color: 'RED' as const, value: '7' as const, score: 7 };
+    const ext1 = { id: 'ext1_4', color: 'BLUE' as const, value: '1' as const, score: 1 };
+    const ext2 = { id: 'ext2_4', color: 'GREEN' as const, value: '2' as const, score: 2 };
+    const ext3 = { id: 'ext3_4', color: 'YELLOW' as const, value: '3' as const, score: 3 };
+
+    stack4Game.playerHands.set('p1', [wdfCard, ext1]);
+    stack4Game.playerHands.set('p2', [redFive, ext2]);
+    stack4Game.playerHands.set('p3', [redSeven, ext3]);
+    stack4Game.currentColor = 'RED';
+
+    // Player 1 plays +4 choosing RED -> activeStackCount = 4, turn passes to Player 2
+    const resP1 = stack4Game.playCard('p1', 'wdf_p1_4', 'RED');
+    expect(resP1.success).toBe(true);
+    expect(stack4Game.activeStackCount).toBe(4);
+    expect(stack4Game.getCurrentPlayer().id).toBe('p2');
+
+    // Player 2 plays Red 5 (matching chosen RED color) -> absorbs 4 penalty cards, activeStackCount = 0, turn passes to Player 3
+    const p2HandBefore = stack4Game.playerHands.get('p2')?.length || 2;
+    const resP2 = stack4Game.playCard('p2', 'r_five_p2');
+    expect(resP2.success).toBe(true);
+    expect(stack4Game.activeStackCount).toBe(0);
+    expect(stack4Game.playerHands.get('p2')?.length).toBe(p2HandBefore + 3); // -1 played + 4 drawn = net +3
+    expect(stack4Game.getCurrentPlayer().id).toBe('p3');
+
+    // Player 3's turn starts with activeStackCount = 0 -> Player 3 plays Red 7 with ZERO penalty cards!
+    const p3HandBefore = stack4Game.playerHands.get('p3')?.length || 2;
+    const resP3 = stack4Game.playCard('p3', 'r_seven_p3');
+    expect(resP3.success).toBe(true);
+    expect(stack4Game.activeStackCount).toBe(0);
+    expect(stack4Game.playerHands.get('p3')?.length).toBe(p3HandBefore - 1);
+    expect(stack4Game.getCurrentPlayer().id).toBe('p1');
+  });
+
   it('should handle DISCARD_ALL rule and discard all cards of matching color from hand', () => {
     game.startGame();
     game.currentColor = 'RED';
