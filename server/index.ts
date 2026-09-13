@@ -81,6 +81,22 @@ function checkAndExecuteAIMove(game: UnoGame) {
   const currentPlayer = game.getCurrentPlayer();
   if (currentPlayer && currentPlayer.id.startsWith('bot_')) {
     setTimeout(() => {
+      // Check if AI bot played a 7 and needs to complete 7-hand swap
+      if (game.pendingHandSwapPlayerId === currentPlayer.id) {
+        const opponents = game.players.filter(p => !p.isSpectator && p.id !== currentPlayer.id);
+        if (opponents.length > 0) {
+          opponents.sort((a, b) => a.cardCount - b.cardCount);
+          game.swapHands(currentPlayer.id, opponents[0].id);
+        } else {
+          game.pendingHandSwapPlayerId = null;
+        }
+        broadcastGameState(game);
+        if (game.status === 'PLAYING' && game.getCurrentPlayer().id.startsWith('bot_')) {
+          checkAndExecuteAIMove(game);
+        }
+        return;
+      }
+
       const hand = game.playerHands.get(currentPlayer.id) || [];
       const move = AIPlayer.selectMove(hand, game.getPublicState(), 'MEDIUM');
 
@@ -542,19 +558,27 @@ io.on('connection', (socket) => {
   });
 
   // 6b. Challenge Uncaught UNO
-  socket.on('game:challengeUno', ({ targetPlayerId }: { targetPlayerId: string }, callback) => {
+  socket.on('game:challengeUno', (payload: any, callback: any) => {
+    let cb = typeof payload === 'function' ? payload : callback;
+    let payloadData = typeof payload === 'object' ? payload : {};
+    let targetPlayerId = payloadData?.targetPlayerId;
+
     let playerInfo = socketPlayerMap.get(socket.id);
-    let challengerId = playerInfo?.playerId || socket.data?.playerId;
-    let roomCode = playerInfo?.roomCode || socket.data?.roomCode;
+    let challengerId = payloadData?.playerId || playerInfo?.playerId || socket.data?.playerId;
+    let roomCode = payloadData?.roomCode ? String(payloadData.roomCode).trim().toUpperCase() : (playerInfo?.roomCode || socket.data?.roomCode);
 
     let game = roomCode ? activeGames.get(roomCode) : undefined;
-    if (!game || !challengerId || !targetPlayerId) {
-      if (callback) callback({ success: false, error: 'Invalid challenge' });
+    if (!game && challengerId) {
+      game = Array.from(activeGames.values()).find(g => g.players.some(p => p.id === challengerId));
+    }
+
+    if (!game || !challengerId) {
+      if (cb) cb({ success: false, error: 'Invalid challenge' });
       return;
     }
 
     const result = game.challengeUno(challengerId, targetPlayerId);
-    if (callback) callback(result);
+    if (cb) cb(result);
 
     if (result.success) {
       broadcastGameState(game);

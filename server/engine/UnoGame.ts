@@ -428,15 +428,20 @@ export class UnoGame {
     return { success: false, message: 'Cannot call UNO with more than 2 cards' };
   }
 
-  public challengeUno(challengerId: string, targetPlayerId: string): { success: boolean; message?: string; error?: string } {
+  public challengeUno(challengerId: string, targetPlayerId?: string): { success: boolean; message?: string; error?: string } {
     const challenger = this.players.find(p => p.id === challengerId);
-    const target = this.players.find(p => p.id === targetPlayerId);
+    if (!challenger) return { success: false, error: 'Challenger not found' };
 
-    if (!challenger || !target) {
-      return { success: false, error: 'Players not found' };
+    let target = targetPlayerId ? this.players.find(p => p.id === targetPlayerId) : undefined;
+    if (!target) {
+      target = this.players.find(p => p.id !== challengerId && !p.isSpectator && p.cardCount === 1 && !p.hasCalledUno);
     }
 
-    const targetHand = this.playerHands.get(targetPlayerId) || [];
+    if (!target) {
+      return { success: false, error: 'No opponent found holding 1 card who forgot to call UNO.' };
+    }
+
+    const targetHand = this.playerHands.get(target.id) || [];
     
     // Target must have exactly 1 card AND failed to call UNO!
     if (targetHand.length === 1 && !target.hasCalledUno) {
