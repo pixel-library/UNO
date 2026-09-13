@@ -189,16 +189,22 @@ export class UnoGame {
     return false;
   }
 
-  public playCard(playerId: string, cardId: string, chosenColor?: CardColor): { success: boolean; error?: string } {
+  public playCard(playerId: string, cardId: string, chosenColor?: CardColor, cardColor?: CardColor, cardValue?: any): { success: boolean; error?: string } {
     const currentPlayer = this.getCurrentPlayer();
     if (currentPlayer.id !== playerId) {
       return { success: false, error: 'Not your turn' };
     }
 
     const hand = this.playerHands.get(playerId);
-    if (!hand) return { success: false, error: 'Player hand not found' };
+    if (!hand || hand.length === 0) return { success: false, error: 'Player hand not found' };
 
-    const cardIndex = hand.findIndex(c => c.id === cardId);
+    let cardIndex = hand.findIndex(c => c.id === cardId);
+    if (cardIndex === -1 && cardId) {
+      cardIndex = hand.findIndex(c => c.id.endsWith(cardId) || cardId.endsWith(c.id));
+    }
+    if (cardIndex === -1 && cardColor && cardValue) {
+      cardIndex = hand.findIndex(c => c.color === cardColor && c.value === cardValue);
+    }
     if (cardIndex === -1) return { success: false, error: 'Card not in hand' };
 
     const card = hand[cardIndex];

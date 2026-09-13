@@ -539,10 +539,10 @@ export const supabaseRoomService = {
    * Play card in cloud match
    */
   async playCloudCard(payload: any): Promise<{ success: boolean; error?: string }> {
-    const game = getGameFromCache();
+    const game = getGameFromCache(payload?.roomCode);
     if (game && payload?.cardId) {
-      const myId = localStorage.getItem('uno_player_id') || game.getCurrentPlayer().id;
-      const result = game.playCard(myId, payload.cardId, payload.chosenColor);
+      const myId = payload?.playerId || localStorage.getItem('uno_player_id') || game.getCurrentPlayer().id;
+      const result = game.playCard(myId, payload.cardId, payload.chosenColor, payload.cardColor, payload.cardValue);
       if (result.success && game.roomCode) {
         this.broadcastState(game.roomCode);
       }

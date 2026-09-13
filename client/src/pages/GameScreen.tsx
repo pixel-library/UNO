@@ -160,7 +160,8 @@ export const GameScreen: React.FC = () => {
     if (!gameState || isActionPending) return;
 
     const activePlayers = gameState.players.filter(p => !p.isSpectator);
-    const currentPlayer = activePlayers[gameState.currentPlayerIndex];
+    const safeIdx = (typeof gameState.currentPlayerIndex === 'number' ? gameState.currentPlayerIndex : 0) % (activePlayers.length || 1);
+    const currentPlayer = activePlayers[safeIdx];
     const myId = localStorage.getItem('uno_player_id');
 
     if (currentPlayer?.id !== myId) return;
@@ -178,12 +179,20 @@ export const GameScreen: React.FC = () => {
     const pendingTimer = setTimeout(() => setIsActionPending(false), 1200);
 
     const socket = socketService.getSocket();
-    socket.emit('game:playCard', { cardId: card.id }, (res: any) => {
+    socket.emit('game:playCard', { 
+      cardId: card.id, 
+      playerId: myId, 
+      roomCode: gameState.roomCode,
+      cardColor: card.color,
+      cardValue: card.value
+    }, (res: any) => {
       clearTimeout(pendingTimer);
       setIsActionPending(false);
       if (res?.success) {
         audioService.playCardSound();
         setSelectedCardId(null);
+      } else {
+        alert(res?.error || 'Cannot play this card.');
       }
     });
   };
@@ -195,8 +204,14 @@ export const GameScreen: React.FC = () => {
     setIsActionPending(true);
     const pendingTimer = setTimeout(() => setIsActionPending(false), 1200);
 
+    const myId = localStorage.getItem('uno_player_id');
     const socket = socketService.getSocket();
-    socket.emit('game:playCard', { cardId: pendingWildCardId, chosenColor: color }, (res: any) => {
+    socket.emit('game:playCard', { 
+      cardId: pendingWildCardId, 
+      chosenColor: color, 
+      playerId: myId, 
+      roomCode: gameState?.roomCode 
+    }, (res: any) => {
       clearTimeout(pendingTimer);
       setIsActionPending(false);
       if (res?.success) {
@@ -204,6 +219,8 @@ export const GameScreen: React.FC = () => {
         setShowColorPicker(false);
         setPendingWildCardId(null);
         setSelectedCardId(null);
+      } else {
+        alert(res?.error || 'Could not set wild card color.');
       }
     });
   };

@@ -385,22 +385,31 @@ io.on('connection', (socket) => {
   });
 
   // 4. Play Card
-  socket.on('game:playCard', (payload: MovePayload, callback) => {
+  socket.on('game:playCard', (payload: MovePayload & { playerId?: string; roomCode?: string; cardColor?: CardColor; cardValue?: any }, callback) => {
     let playerInfo = socketPlayerMap.get(socket.id);
-    let playerId = playerInfo?.playerId || socket.data?.playerId;
-    let roomCode = playerInfo?.roomCode || socket.data?.roomCode;
+    let playerId = payload?.playerId || playerInfo?.playerId || socket.data?.playerId;
+    let roomCode = payload?.roomCode ? String(payload.roomCode).trim().toUpperCase() : (playerInfo?.roomCode || socket.data?.roomCode);
 
     let game = roomCode ? activeGames.get(roomCode) : undefined;
     if (!game && playerId) {
       game = Array.from(activeGames.values()).find(g => g.players.some(p => p.id === playerId));
     }
 
-    if (!game || !payload.cardId || !playerId) {
-      if (callback) callback({ success: false, error: 'Game or action invalid' });
+    if (!game || !payload?.cardId || !playerId) {
+      if (callback) callback({ success: false, error: 'Game or player session invalid' });
       return;
     }
 
-    const result = game.playCard(playerId, payload.cardId, payload.chosenColor);
+    // Ensure socket map & room join are registered
+    if (!playerInfo && game) {
+      socket.data.playerId = playerId;
+      socket.data.roomCode = game.roomCode;
+      const targetPlayer = game.players.find(p => p.id === playerId);
+      socketPlayerMap.set(socket.id, { roomCode: game.roomCode, playerId, sessionId: targetPlayer?.sessionId || `sess_${playerId}` });
+      socket.join(`room_${game.roomCode}`);
+    }
+
+    const result = game.playCard(playerId, payload.cardId, payload.chosenColor, payload.cardColor, payload.cardValue);
     if (callback) callback(result);
 
     if (result.success) {
