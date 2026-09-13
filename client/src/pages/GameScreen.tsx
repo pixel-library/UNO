@@ -162,7 +162,6 @@ export const GameScreen: React.FC = () => {
     const activePlayers = gameState.players.filter(p => !p.isSpectator);
     const safeIdx = (typeof gameState.currentPlayerIndex === 'number' ? gameState.currentPlayerIndex : 0) % (activePlayers.length || 1);
     const currentPlayer = activePlayers[safeIdx];
-    const myId = localStorage.getItem('uno_player_id');
 
     if (currentPlayer?.id !== myId) return;
 
@@ -227,7 +226,6 @@ export const GameScreen: React.FC = () => {
     setIsActionPending(true);
     const pendingTimer = setTimeout(() => setIsActionPending(false), 1200);
 
-    const myId = localStorage.getItem('uno_player_id');
     const socket = socketService.getSocket();
     socket.emit('game:playCard', { 
       cardId: pendingWildCardId, 
@@ -257,8 +255,7 @@ export const GameScreen: React.FC = () => {
     const pendingTimer = setTimeout(() => setIsActionPending(false), 1200);
 
     const socket = socketService.getSocket();
-    const resolvedId = myId || localStorage.getItem('uno_player_id');
-    socket.emit('game:drawCard', { roomCode: gameState?.roomCode, playerId: resolvedId }, (res: any) => {
+    socket.emit('game:drawCard', { roomCode: gameState?.roomCode, playerId: myId }, (res: any) => {
       clearTimeout(pendingTimer);
       setIsActionPending(false);
       if (!res?.success && res?.error) {
@@ -276,7 +273,6 @@ export const GameScreen: React.FC = () => {
     const pendingTimer = setTimeout(() => setIsActionPending(false), 1200);
 
     const socket = socketService.getSocket();
-    const myId = localStorage.getItem('uno_player_id');
     socket.emit('game:passTurn', { roomCode: gameState?.roomCode, playerId: myId }, (res: any) => {
       clearTimeout(pendingTimer);
       setIsActionPending(false);
@@ -294,7 +290,6 @@ export const GameScreen: React.FC = () => {
   const handleChallengeUno = () => {
     audioService.playExplosionSound();
     const socket = socketService.getSocket();
-    const myId = localStorage.getItem('uno_player_id') || gameState?.targetPlayerId;
     socket.emit('game:challengeUno', { roomCode: gameState?.roomCode, playerId: myId });
   };
 
@@ -348,7 +343,6 @@ export const GameScreen: React.FC = () => {
     const pendingTimer = setTimeout(() => setIsActionPending(false), 1200);
 
     const socket = socketService.getSocket();
-    const myId = localStorage.getItem('uno_player_id') || gameState?.targetPlayerId;
     const colorToSet = customColor || gameState?.currentColor || 'RED';
     socket.emit('game:swapHand', { 
       targetSwapPlayerId: targetPlayerId, 
