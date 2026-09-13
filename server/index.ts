@@ -512,26 +512,34 @@ io.on('connection', (socket) => {
     }
   });
 
-  // 4c. 7-Zero Hand Swap
-  socket.on('game:swapHand', ({ targetSwapPlayerId }: { targetSwapPlayerId: string }, callback) => {
+  // 4c. 7-Zero & Wild Swap Hand Selection
+  const handleHandSwapEvent = (data: any, callback?: Function) => {
+    const targetId = data?.targetSwapPlayerId || data?.targetPlayerId;
     let playerInfo = socketPlayerMap.get(socket.id);
     let playerId = playerInfo?.playerId || socket.data?.playerId;
     let roomCode = playerInfo?.roomCode || socket.data?.roomCode;
 
     let game = roomCode ? activeGames.get(roomCode) : undefined;
-    if (!game || !playerId || !targetSwapPlayerId) {
-      if (callback) callback({ success: false, error: 'Swap invalid' });
+    if (!game && playerId) {
+      game = Array.from(activeGames.values()).find(g => g.players.some(p => p.id === playerId));
+    }
+
+    if (!game || !playerId || !targetId) {
+      if (callback) callback({ success: false, error: 'Swap target invalid' });
       return;
     }
 
-    const result = game.swapHands(playerId, targetSwapPlayerId);
+    const result = game.swapHands(playerId, targetId);
     if (callback) callback(result);
 
     if (result.success) {
       broadcastGameState(game);
       checkAndExecuteAIMove(game);
     }
-  });
+  };
+
+  socket.on('game:swapHand', handleHandSwapEvent);
+  socket.on('game:swapHands', handleHandSwapEvent);
 
   // 5. Draw Card
   socket.on('game:drawCard', (_, callback) => {

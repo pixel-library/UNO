@@ -312,6 +312,14 @@ export const GameScreen: React.FC = () => {
     socket.emit('game:rematch');
   };
 
+  // Hand Swap Target Selection Handler (7-Zero / Wild Swap)
+  const handleSwapHands = (targetPlayerId: string) => {
+    audioService.playButtonClick();
+    const socket = socketService.getSocket();
+    socket.emit('game:swapHand', { targetSwapPlayerId: targetPlayerId, targetPlayerId });
+    socket.emit('game:swapHands', { targetSwapPlayerId: targetPlayerId, targetPlayerId });
+  };
+
   // Loading / Retry Screen if game state not ready
   if (!gameState) {
     return (
@@ -998,6 +1006,48 @@ export const GameScreen: React.FC = () => {
               >
                 BLUE
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ------------------------------------------------------------- */}
+      {/* HAND SWAP SELECTION MODAL (7-Zero / Wild Swap)               */}
+      {/* ------------------------------------------------------------- */}
+      {gameState.pendingHandSwapPlayerId === myId && (
+        <div className="fixed inset-0 bg-black/75 backdrop-blur-md z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full text-center space-y-6 border border-neutral-200 shadow-2xl">
+            <div className="w-16 h-16 rounded-2xl bg-amber-100 border border-amber-300 text-amber-600 flex items-center justify-center mx-auto text-3xl shadow-md">
+              🔄
+            </div>
+            <div>
+              <h3 className="text-2xl font-black text-uno-navy tracking-tight">SWAP HANDS 🔄</h3>
+              <p className="text-xs font-semibold text-neutral-500 mt-1">
+                Select an opponent to swap your entire hand with:
+              </p>
+            </div>
+
+            <div className="space-y-3">
+              {activePlayers.filter(p => p.id !== myId).map((target) => (
+                <button
+                  key={target.id}
+                  onClick={() => handleSwapHands(target.id)}
+                  className="w-full p-4 rounded-2xl bg-neutral-50 hover:bg-amber-50 border border-neutral-200 hover:border-amber-300 transition-all flex items-center justify-between group shadow-sm hover:shadow-md cursor-pointer"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center text-lg font-bold">
+                      {target.avatar || '👤'}
+                    </div>
+                    <div className="text-left">
+                      <div className="font-extrabold text-sm text-neutral-800 group-hover:text-amber-700">{target.name}</div>
+                      <div className="text-xs font-semibold text-neutral-400">Holding {target.cardCount} cards</div>
+                    </div>
+                  </div>
+                  <span className="bg-amber-500 text-white font-extrabold text-xs px-3.5 py-2 rounded-xl uppercase tracking-wider group-hover:scale-105 transition-transform">
+                    SWAP 🔄
+                  </span>
+                </button>
+              ))}
             </div>
           </div>
         </div>

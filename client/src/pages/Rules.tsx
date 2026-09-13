@@ -1,6 +1,6 @@
 import React from 'react';
 import { UnoCard } from '@/components/card/UnoCard';
-import { Lightbulb, Layers, RotateCcw, Ban, Sparkles, RefreshCw, Hash, Minus } from 'lucide-react';
+import { Lightbulb, Layers, RotateCcw, Ban, Sparkles, RefreshCw, Hash, Minus, Zap } from 'lucide-react';
 
 export const Rules: React.FC = () => {
   return (
@@ -235,9 +235,88 @@ export const Rules: React.FC = () => {
                 <UnoCard color="WILD" value="MINUS_TWO_WILD" size="sm" />
               </div>
               <div className="flex-1 space-y-2">
-                <h4 className="text-sm font-bold text-uno-navy">-2 WILD (House Rule)</h4>
                 <p className="text-xs text-neutral-600 leading-relaxed font-medium">
                   Choose game color AND select 2 cards from your hand to discard to the deck bottom.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Card 11: Discard All Color */}
+          <div className="bg-neutral-50 rounded-2xl border border-neutral-200/80 p-6 flex flex-col justify-between space-y-6">
+            <div className="flex items-center gap-2.5 px-3 py-1.5 rounded-lg bg-rose-100 text-rose-700 text-xs font-bold w-fit">
+              <Sparkles className="w-4 h-4" />
+              <span>DISCARD ALL COLOR 🎨</span>
+            </div>
+
+            <div className="flex flex-row items-center gap-4">
+              <div className="shrink-0 flex justify-center">
+                <UnoCard color="RED" value="DISCARD_ALL" size="sm" />
+              </div>
+              <div className="flex-1 space-y-2">
+                <h4 className="text-sm font-bold text-uno-navy">DISCARD ALL COLOR (House Rule)</h4>
+                <p className="text-xs text-neutral-600 leading-relaxed font-medium">
+                  Immediately discard ALL cards of that matching color from your hand in a single move!
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Card 12: Deflect Shield */}
+          <div className="bg-neutral-50 rounded-2xl border border-neutral-200/80 p-6 flex flex-col justify-between space-y-6">
+            <div className="flex items-center gap-2.5 px-3 py-1.5 rounded-lg bg-blue-100 text-blue-700 text-xs font-bold w-fit">
+              <Zap className="w-4 h-4" />
+              <span>DEFLECT SHIELD 🛡️</span>
+            </div>
+
+            <div className="flex flex-row items-center gap-4">
+              <div className="shrink-0 flex justify-center">
+                <UnoCard color="RED" value="SKIP" size="sm" />
+              </div>
+              <div className="flex-1 space-y-2">
+                <h4 className="text-sm font-bold text-uno-navy">DEFLECT SHIELD (House Rule)</h4>
+                <p className="text-xs text-neutral-600 leading-relaxed font-medium">
+                  Playing a SKIP or REVERSE when hit with a +2/+4 penalty deflects the accumulated stack back onto the attacker!
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Card 13: Wild Shuffle */}
+          <div className="bg-neutral-50 rounded-2xl border border-neutral-200/80 p-6 flex flex-col justify-between space-y-6">
+            <div className="flex items-center gap-2.5 px-3 py-1.5 rounded-lg bg-indigo-100 text-indigo-700 text-xs font-bold w-fit">
+              <RotateCcw className="w-4 h-4" />
+              <span>WILD SHUFFLE 🌀</span>
+            </div>
+
+            <div className="flex flex-row items-center gap-4">
+              <div className="shrink-0 flex justify-center">
+                <UnoCard color="WILD" value="WILD_SHUFFLE" size="sm" />
+              </div>
+              <div className="flex-1 space-y-2">
+                <h4 className="text-sm font-bold text-uno-navy">WILD SHUFFLE (House Rule)</h4>
+                <p className="text-xs text-neutral-600 leading-relaxed font-medium">
+                  Gather all player hands, shuffle them together into one pile, and re-deal them evenly back to all players!
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Card 14: Wild Swap */}
+          <div className="bg-neutral-50 rounded-2xl border border-neutral-200/80 p-6 flex flex-col justify-between space-y-6">
+            <div className="flex items-center gap-2.5 px-3 py-1.5 rounded-lg bg-amber-100 text-amber-700 text-xs font-bold w-fit">
+              <Sparkles className="w-4 h-4" />
+              <span>WILD SWAP 🎯</span>
+            </div>
+
+            <div className="flex flex-row items-center gap-4">
+              <div className="shrink-0 flex justify-center">
+                <UnoCard color="WILD" value="WILD_SWAP" size="sm" />
+              </div>
+              <div className="flex-1 space-y-2">
+                <h4 className="text-sm font-bold text-uno-navy">WILD SWAP (House Rule)</h4>
+                <p className="text-xs text-neutral-600 leading-relaxed font-medium">
+                  Pick any opponent to swap your entire hand of cards with on demand!
                 </p>
               </div>
             </div>
