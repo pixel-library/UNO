@@ -616,6 +616,7 @@ export class UnoGame {
           this.activeStackCount += 2;
           this.lastActionEvent = { type: 'STACK', title: `+${this.activeStackCount} STACK! ⚡`, playerName, timestamp: Date.now() };
           this.lastActionMessage += ` — +2 stacked! (Total stack: +${this.activeStackCount})`;
+          this.checkAndAutoAbsorbStackForNextPlayer();
         } else {
           const nextPlayer = this.getNextPlayer();
           const nextHand = this.playerHands.get(nextPlayer.id) || [];
@@ -634,6 +635,7 @@ export class UnoGame {
           this.activeStackCount += 4;
           this.lastActionEvent = { type: 'STACK', title: `+${this.activeStackCount} STACK! ⚡`, playerName, timestamp: Date.now() };
           this.lastActionMessage += ` — +4 stacked! (Total stack: +${this.activeStackCount})`;
+          this.checkAndAutoAbsorbStackForNextPlayer();
         } else {
           const nextPlayer = this.getNextPlayer();
           const nextHand = this.playerHands.get(nextPlayer.id) || [];
@@ -746,6 +748,39 @@ export class UnoGame {
     const step = this.direction === 'CW' ? 1 : -1;
     const nextIdx = (this.currentPlayerIndex + step + activePlayers.length) % activePlayers.length;
     return activePlayers[nextIdx];
+  }
+
+  private checkAndAutoAbsorbStackForNextPlayer(): void {
+    if (this.activeStackCount <= 0) return;
+
+    const nextPlayer = this.getNextPlayer();
+    const nextHand = this.playerHands.get(nextPlayer.id) || [];
+
+    // Check if next player has any legal stacking response cards
+    const hasStackingCard = nextHand.some(card => {
+      const val = String(card.value || '').trim().toUpperCase();
+      if (val === 'DRAW_TWO' || val === 'WILD_DRAW_FOUR') return true;
+      if (this.settings.houseRules.counterDeflect && (val === 'SKIP' || val === 'REVERSE' || val === 'SKIP_WILD')) return true;
+      return false;
+    });
+
+    // If next player has NO stacking card in hand, auto-deal penalty stack and skip their turn!
+    if (!hasStackingCard) {
+      const count = this.activeStackCount;
+      const penaltyCards = this.deck.drawMultiple(count, this.discardPile);
+      nextHand.push(...penaltyCards);
+      this.playerHands.set(nextPlayer.id, nextHand);
+      nextPlayer.cardCount = nextHand.length;
+      this.activeStackCount = 0;
+      this.advanceTurnIndex(); // Skip next player's turn!
+      this.lastActionEvent = {
+        type: 'STACK',
+        title: `+${count} CARDS & SKIPPED! ⚡`,
+        playerName: nextPlayer.name,
+        timestamp: Date.now()
+      };
+      this.lastActionMessage += ` — ${nextPlayer.name} drew +${count} cards and was skipped!`;
+    }
   }
 
   private calculateScores(): void {

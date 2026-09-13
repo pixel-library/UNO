@@ -103,23 +103,13 @@ describe('UnoGame Engine Unit Tests', () => {
     expect(stackGame.activeStackCount).toBe(2);
     expect(stackGame.getCurrentPlayer().id).toBe('p2');
 
-    // Player 2 stacks another +2 (BLUE) -> stack becomes 4
+    // Player 2 stacks another +2 (BLUE) -> Player 3 has no +2/+4, so +4 stack is automatically absorbed by Player 3 and Player 3 is skipped!
+    const handBeforeP3 = stackGame.playerHands.get('p3')?.length || 2;
     const res2 = stackGame.playCard('p2', 'dt_2');
     expect(res2.success).toBe(true);
-    expect(stackGame.activeStackCount).toBe(4);
-    expect(stackGame.getCurrentPlayer().id).toBe('p3');
-
-    // Player 3 has BLUE 3 (non-stacking). Trying to play BLUE 3 should be rejected while activeStackCount > 0!
-    const resPlay = stackGame.playCard('p3', 'b_matching');
-    expect(resPlay.success).toBe(false);
-
-    // Player 3 draws the +4 penalty cards -> absorbs +4 penalty & turn is skipped to Player 1!
-    const handBeforeP3 = stackGame.playerHands.get('p3')?.length || 2;
-    const resDraw = stackGame.drawCard('p3');
-    expect(resDraw.success).toBe(true);
     expect(stackGame.activeStackCount).toBe(0);
     expect(stackGame.playerHands.get('p3')?.length).toBe(handBeforeP3 + 4);
-    // Turn skipped p3 and advanced to p1!
+    // Turn automatically skipped p3 and advanced to p1!
     expect(stackGame.getCurrentPlayer().id).toBe('p1');
   });
 
