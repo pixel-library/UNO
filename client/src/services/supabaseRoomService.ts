@@ -702,7 +702,7 @@ export const supabaseRoomService = {
       const myId = payload?.playerId || localStorage.getItem('uno_player_id') || game.pendingHandSwapPlayerId;
       const targetId = payload?.targetSwapPlayerId || payload?.targetPlayerId;
       if (myId && targetId) {
-        const result = game.swapHands(myId, targetId);
+        const result = game.swapHands(myId, targetId, payload?.chosenColor);
         if (result.success && game.roomCode) {
           this.broadcastState(game.roomCode);
         }

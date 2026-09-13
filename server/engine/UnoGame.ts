@@ -356,7 +356,7 @@ export class UnoGame {
     return { success: true };
   }
 
-  public swapHands(sourcePlayerId: string, targetPlayerId: string): { success: boolean; error?: string } {
+  public swapHands(sourcePlayerId: string, targetPlayerId: string, chosenColor?: CardColor): { success: boolean; error?: string } {
     if (this.pendingHandSwapPlayerId !== sourcePlayerId) {
       return { success: false, error: 'No hand swap pending' };
     }
@@ -376,6 +376,10 @@ export class UnoGame {
     sourcePlayer.cardCount = targetHand.length;
     targetPlayer.cardCount = sourceHand.length;
     this.pendingHandSwapPlayerId = null;
+
+    if (chosenColor && ['RED', 'YELLOW', 'GREEN', 'BLUE'].includes(chosenColor)) {
+      this.currentColor = chosenColor;
+    }
 
     this.lastActionEvent = {
       type: 'HAND_SWAP',

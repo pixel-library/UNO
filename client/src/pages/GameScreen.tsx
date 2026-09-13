@@ -25,6 +25,7 @@ export const GameScreen: React.FC = () => {
   const [pendingWildCardId, setPendingWildCardId] = useState<string | null>(null);
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
+  const [selectedSwapColor, setSelectedSwapColor] = useState<CardColor>('RED');
 
   // Responsive screen detection for mobile card sizing
   const [isMobile, setIsMobile] = useState(
@@ -170,6 +171,29 @@ export const GameScreen: React.FC = () => {
     audioService.playButtonClick();
 
     if (card.color === 'WILD') {
+      if (card.value === 'WILD_SWAP') {
+        setIsActionPending(true);
+        const pendingTimer = setTimeout(() => setIsActionPending(false), 1200);
+        const socket = socketService.getSocket();
+        socket.emit('game:playCard', { 
+          cardId: card.id, 
+          playerId: myId, 
+          roomCode: gameState.roomCode,
+          cardColor: card.color,
+          cardValue: card.value
+        }, (res: any) => {
+          clearTimeout(pendingTimer);
+          setIsActionPending(false);
+          if (res?.success) {
+            audioService.playCardSound();
+            setSelectedCardId(null);
+          } else {
+            alert(res?.error || 'Cannot play this card.');
+          }
+        });
+        return;
+      }
+
       setPendingWildCardId(card.id);
       setShowColorPicker(true);
       return;
@@ -313,7 +337,7 @@ export const GameScreen: React.FC = () => {
   };
 
   // Hand Swap Target Selection Handler (7-Zero / Wild Swap)
-  const handleSwapHands = (targetPlayerId: string) => {
+  const handleSwapHands = (targetPlayerId: string, customColor?: CardColor) => {
     if (isActionPending) return;
     setIsActionPending(true);
     audioService.playButtonClick();
@@ -322,9 +346,11 @@ export const GameScreen: React.FC = () => {
 
     const socket = socketService.getSocket();
     const myId = localStorage.getItem('uno_player_id') || gameState?.targetPlayerId;
+    const colorToSet = customColor || selectedSwapColor || 'RED';
     socket.emit('game:swapHand', { 
       targetSwapPlayerId: targetPlayerId, 
       targetPlayerId,
+      chosenColor: colorToSet,
       playerId: myId,
       roomCode: gameState?.roomCode 
     }, (res: any) => {
@@ -1042,6 +1068,30 @@ export const GameScreen: React.FC = () => {
               <p className="text-xs font-semibold text-neutral-500 mt-1">
                 Select an opponent to swap your entire hand with:
               </p>
+            </div>
+
+            {/* Color Selector */}
+            <div className="bg-neutral-50 border border-neutral-200 rounded-2xl p-3 space-y-2">
+              <p className="text-xs font-bold text-neutral-500 uppercase tracking-wider text-left">Select Active Color:</p>
+              <div className="grid grid-cols-4 gap-2">
+                {(['RED', 'YELLOW', 'GREEN', 'BLUE'] as CardColor[]).map((col) => {
+                  const isSelected = selectedSwapColor === col;
+                  const bgClass =
+                    col === 'RED' ? 'bg-[#E52521] text-white' :
+                    col === 'YELLOW' ? 'bg-[#FCD116] text-uno-navy' :
+                    col === 'GREEN' ? 'bg-[#2D963F] text-white' : 'bg-[#0082CA] text-white';
+                  return (
+                    <button
+                      key={col}
+                      type="button"
+                      onClick={() => setSelectedSwapColor(col)}
+                      className={`py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${bgClass} ${isSelected ? 'ring-4 ring-black/30 scale-105 shadow-md' : 'opacity-65 hover:opacity-100'}`}
+                    >
+                      {col}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
             <div className="space-y-3">

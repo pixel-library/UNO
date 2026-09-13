@@ -312,7 +312,7 @@ class SocketService {
         const humanPlayer = localGame.players.find(p => !p.id.startsWith('bot_')) || localGame.players[0];
         const sourceId = payload?.playerId || humanPlayer?.id || localGame.pendingHandSwapPlayerId;
         if (sourceId) {
-          const result = localGame.swapHands(sourceId, targetId);
+          const result = localGame.swapHands(sourceId, targetId, payload?.chosenColor);
           if (ackCallback) ackCallback(result);
           if (result.success && humanPlayer) {
             const state = localGame.getPrivateState(humanPlayer.id);

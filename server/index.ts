@@ -529,7 +529,7 @@ io.on('connection', (socket) => {
       return;
     }
 
-    const result = game.swapHands(playerId, targetId);
+    const result = game.swapHands(playerId, targetId, data?.chosenColor);
     if (callback) callback(result);
 
     if (result.success) {
