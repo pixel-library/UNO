@@ -5,7 +5,9 @@ import {
   GameSettings,
   PlayerPrivateState,
   PlayerPublic,
-  ChatMessage
+  ChatMessage,
+  ActionEvent,
+  TableEmote
 } from '@shared/types/game';
 import { Deck } from './Deck';
 import { DEFAULT_GAME_SETTINGS } from '@shared/constants/gameConstants';
@@ -25,13 +27,20 @@ export class UnoGame {
   public turnStartedAt: number = Date.now();
   public settings: GameSettings;
   public activeStackCount: number = 0;
+  public pendingHandSwapPlayerId: string | null = null;
   public chatMessages: ChatMessage[] = [];
   public lastActionMessage: string = 'Game created';
+  public lastActionEvent: ActionEvent | null = null;
+  public activeEmote: TableEmote | null = null;
 
   constructor(id: string, roomCode: string, settings?: Partial<GameSettings>) {
     this.id = id;
     this.roomCode = roomCode;
-    this.settings = { ...DEFAULT_GAME_SETTINGS, ...settings };
+    this.settings = { 
+      ...DEFAULT_GAME_SETTINGS, 
+      ...settings,
+      houseRules: { ...DEFAULT_GAME_SETTINGS.houseRules, ...settings?.houseRules }
+    };
     this.deck = new Deck(this.settings.houseRules);
   }
 
@@ -40,7 +49,7 @@ export class UnoGame {
       return null;
     }
 
-    const avatars = ['🐶', '🐱', '🦊', '🐯', '🦁', '🐸', '🐵', '🚀', '⭐', '🔥'];
+    const avatars = ['🐶', '🐱', '🦊', '🐯', '🦁', '🐸', '🐵', '🚀', '⭐', '🔥', '👑', '🎮'];
     const avatar = avatars[this.players.length % avatars.length];
 
     const player: PlayerPublic = {
@@ -71,6 +80,38 @@ export class UnoGame {
     }
   }
 
+  public kickPlayer(hostId: string, targetPlayerId: string): boolean {
+    const host = this.players.find(p => p.id === hostId);
+    if (!host || !host.isHost) return false;
+    this.removePlayer(targetPlayerId);
+    this.lastActionMessage = `${host.name} kicked a player from the room.`;
+    return true;
+  }
+
+  public transferHost(hostId: string, newHostId: string): boolean {
+    const host = this.players.find(p => p.id === hostId);
+    const target = this.players.find(p => p.id === newHostId);
+    if (!host || !host.isHost || !target) return false;
+
+    host.isHost = false;
+    target.isHost = true;
+    this.lastActionMessage = `${host.name} transferred host to ${target.name}.`;
+    return true;
+  }
+
+  public updateSettings(hostId: string, newSettings: Partial<GameSettings>): boolean {
+    const host = this.players.find(p => p.id === hostId);
+    if (!host || !host.isHost) return false;
+
+    this.settings = {
+      ...this.settings,
+      ...newSettings,
+      houseRules: { ...this.settings.houseRules, ...newSettings.houseRules }
+    };
+    this.lastActionMessage = `Room settings updated by ${host.name}.`;
+    return true;
+  }
+
   public startGame(): boolean {
     const activePlayers = this.players.filter(p => !p.isSpectator);
     if (activePlayers.length < 2) return false;
@@ -81,6 +122,7 @@ export class UnoGame {
     this.currentPlayerIndex = 0;
     this.winner = null;
     this.activeStackCount = 0;
+    this.pendingHandSwapPlayerId = null;
 
     // Deal starting hands
     activePlayers.forEach((player) => {
@@ -121,6 +163,13 @@ export class UnoGame {
     const top = this.topDiscardCard;
     if (!top) return true;
 
+    // Stacking rule validation: when active stack is active, only draw cards can stack
+    if (this.activeStackCount > 0 && this.settings.houseRules.stacking) {
+      if (top.value === 'DRAW_TWO' && card.value === 'DRAW_TWO') return true;
+      if (top.value === 'WILD_DRAW_FOUR' && (card.value === 'WILD_DRAW_FOUR' || card.value === 'DRAW_TWO')) return true;
+      return false;
+    }
+
     // Wild cards are always playable
     if (card.color === 'WILD') return true;
 
@@ -148,7 +197,7 @@ export class UnoGame {
     const card = hand[cardIndex];
 
     if (!this.isPlayable(card)) {
-      return { success: false, error: 'Illegal move. Card does not match color or value.' };
+      return { success: false, error: 'Illegal move. Card does not match active color or value.' };
     }
 
     // Remove from hand and add to discard pile
@@ -174,9 +223,110 @@ export class UnoGame {
     }
 
     // Apply special card action
-    this.applyCardAction(card);
+    this.applyCardAction(card, playerId);
+
+    // If pending 7-swap, do not advance turn until target is selected
+    if (this.pendingHandSwapPlayerId === playerId) {
+      return { success: true };
+    }
 
     // Advance turn
+    this.advanceTurn();
+    return { success: true };
+  }
+
+  public jumpIn(playerId: string, cardId: string, chosenColor?: CardColor): { success: boolean; error?: string } {
+    if (!this.settings.houseRules.jumpIn) {
+      return { success: false, error: 'Jump-in rule is disabled' };
+    }
+
+    const top = this.topDiscardCard;
+    if (!top) return { success: false, error: 'No discard pile' };
+
+    const hand = this.playerHands.get(playerId);
+    if (!hand) return { success: false, error: 'Hand not found' };
+
+    const cardIndex = hand.findIndex(c => c.id === cardId);
+    if (cardIndex === -1) return { success: false, error: 'Card not in hand' };
+
+    const card = hand[cardIndex];
+
+    // Jump-in requires exact color AND value match
+    const exactColorMatch = card.color === top.color || (card.color === 'WILD' && top.color === 'WILD');
+    const exactValueMatch = card.value === top.value;
+
+    if (!exactColorMatch || !exactValueMatch) {
+      return { success: false, error: 'Jump-in requires an exact matching card (color + value).' };
+    }
+
+    const player = this.players.find(p => p.id === playerId);
+    if (!player) return { success: false, error: 'Player not found' };
+
+    // Move player index to jumping player
+    const activePlayers = this.players.filter(p => !p.isSpectator);
+    const newIdx = activePlayers.findIndex(p => p.id === playerId);
+    if (newIdx !== -1) {
+      this.currentPlayerIndex = newIdx;
+    }
+
+    // Play card
+    hand.splice(cardIndex, 1);
+    this.discardPile.push(card);
+    player.cardCount = hand.length;
+    if (card.color === 'WILD') {
+      this.currentColor = chosenColor && chosenColor !== 'WILD' ? chosenColor : 'RED';
+    } else {
+      this.currentColor = card.color;
+    }
+
+    this.lastActionEvent = {
+      type: 'JUMP_IN',
+      title: 'JUMP IN!',
+      playerName: player.name,
+      timestamp: Date.now()
+    };
+    this.lastActionMessage = `⚡ ${player.name} JUMPED IN with ${card.color} ${card.value}!`;
+
+    if (hand.length === 0) {
+      this.status = 'FINISHED';
+      this.winner = player;
+      this.calculateScores();
+      return { success: true };
+    }
+
+    this.advanceTurn();
+    return { success: true };
+  }
+
+  public swapHands(sourcePlayerId: string, targetPlayerId: string): { success: boolean; error?: string } {
+    if (this.pendingHandSwapPlayerId !== sourcePlayerId) {
+      return { success: false, error: 'No hand swap pending' };
+    }
+
+    const sourceHand = this.playerHands.get(sourcePlayerId);
+    const targetHand = this.playerHands.get(targetPlayerId);
+    const sourcePlayer = this.players.find(p => p.id === sourcePlayerId);
+    const targetPlayer = this.players.find(p => p.id === targetPlayerId);
+
+    if (!sourceHand || !targetHand || !sourcePlayer || !targetPlayer) {
+      return { success: false, error: 'Invalid swap targets' };
+    }
+
+    // Swap hands
+    this.playerHands.set(sourcePlayerId, targetHand);
+    this.playerHands.set(targetPlayerId, sourceHand);
+    sourcePlayer.cardCount = targetHand.length;
+    targetPlayer.cardCount = sourceHand.length;
+    this.pendingHandSwapPlayerId = null;
+
+    this.lastActionEvent = {
+      type: 'HAND_SWAP',
+      title: 'HAND SWAP 🔄',
+      playerName: sourcePlayer.name,
+      timestamp: Date.now()
+    };
+    this.lastActionMessage = `🔄 ${sourcePlayer.name} swapped hands with ${targetPlayer.name}!`;
+
     this.advanceTurn();
     return { success: true };
   }
@@ -185,6 +335,20 @@ export class UnoGame {
     const currentPlayer = this.getCurrentPlayer();
     if (currentPlayer.id !== playerId) {
       return { success: false, error: 'Not your turn' };
+    }
+
+    // If active stack penalties exist, draw the accumulated stack!
+    if (this.activeStackCount > 0) {
+      const penaltyCards = this.deck.drawMultiple(this.activeStackCount, this.discardPile);
+      const hand = this.playerHands.get(playerId) || [];
+      hand.push(...penaltyCards);
+      this.playerHands.set(playerId, hand);
+      currentPlayer.cardCount = hand.length;
+      
+      this.lastActionMessage = `${currentPlayer.name} drew ${this.activeStackCount} penalty stack cards!`;
+      this.activeStackCount = 0;
+      this.advanceTurn();
+      return { success: true, drawnCard: penaltyCards[0] };
     }
 
     // Handle deck depletion
@@ -220,10 +384,47 @@ export class UnoGame {
     const hand = this.playerHands.get(playerId) || [];
     if (hand.length <= 2) {
       player.hasCalledUno = true;
+      this.lastActionEvent = {
+        type: 'UNO_CALL',
+        title: 'UNO! 🔥',
+        playerName: player.name,
+        timestamp: Date.now()
+      };
+      this.lastActionMessage = `🔥 ${player.name} called UNO!`;
       return { success: true, message: `${player.name} called UNO!` };
     }
 
     return { success: false, message: 'Cannot call UNO with more than 2 cards' };
+  }
+
+  public challengeUno(challengerId: string, targetPlayerId: string): { success: boolean; message?: string; error?: string } {
+    const challenger = this.players.find(p => p.id === challengerId);
+    const target = this.players.find(p => p.id === targetPlayerId);
+
+    if (!challenger || !target) {
+      return { success: false, error: 'Players not found' };
+    }
+
+    const targetHand = this.playerHands.get(targetPlayerId) || [];
+    
+    // Target must have exactly 1 card AND failed to call UNO!
+    if (targetHand.length === 1 && !target.hasCalledUno) {
+      const penaltyCards = this.deck.drawMultiple(2, this.discardPile);
+      targetHand.push(...penaltyCards);
+      target.cardCount = targetHand.length;
+      target.hasCalledUno = false;
+
+      this.lastActionEvent = {
+        type: 'UNO_CHALLENGE',
+        title: 'CAUGHT! 🚨',
+        playerName: challenger.name,
+        timestamp: Date.now()
+      };
+      this.lastActionMessage = `🚨 ${challenger.name} CAUGHT ${target.name} NOT calling UNO! ${target.name} drew 2 penalty cards!`;
+      return { success: true, message: `Caught ${target.name}! They drew 2 cards.` };
+    }
+
+    return { success: false, error: `${target.name} has already called UNO or does not have 1 card.` };
   }
 
   public passTurn(playerId: string): { success: boolean; error?: string } {
@@ -237,52 +438,125 @@ export class UnoGame {
     return { success: true };
   }
 
-  private applyCardAction(card: Card): void {
+  public sendEmote(senderId: string, emote: string): boolean {
+    const sender = this.players.find(p => p.id === senderId);
+    if (!sender) return false;
+
+    this.activeEmote = {
+      senderId,
+      senderName: sender.name,
+      emote,
+      timestamp: Date.now()
+    };
+    return true;
+  }
+
+  private applyCardAction(card: Card, playerId: string): void {
     const activePlayers = this.players.filter(p => !p.isSpectator);
+    const player = this.players.find(p => p.id === playerId);
+    const playerName = player?.name || 'Player';
 
     switch (card.value) {
       case 'SKIP':
       case 'SKIP_WILD':
         this.advanceTurnIndex();
+        this.lastActionEvent = { type: 'SKIP', title: 'SKIP! ⊘', playerName, timestamp: Date.now() };
         this.lastActionMessage += ' — Next player skipped!';
         break;
 
       case 'REVERSE':
         if (activePlayers.length === 2) {
-          // In 2-player game, Reverse acts as a Skip
           this.advanceTurnIndex();
+          this.lastActionEvent = { type: 'SKIP', title: 'SKIP! ⊘', playerName, timestamp: Date.now() };
           this.lastActionMessage += ' — Skip in 2-player!';
         } else {
           this.direction = this.direction === 'CW' ? 'CCW' : 'CW';
+          this.lastActionEvent = { type: 'REVERSE', title: 'REVERSE ⇄', playerName, timestamp: Date.now() };
           this.lastActionMessage += ' — Direction reversed!';
         }
         break;
 
       case 'DRAW_TWO':
-        const nextP2 = this.getNextPlayer();
-        const penaltyHand2 = this.playerHands.get(nextP2.id) || [];
-        const drawnCards2 = this.deck.drawMultiple(2, this.discardPile);
-        penaltyHand2.push(...drawnCards2);
-        nextP2.cardCount = penaltyHand2.length;
-        this.advanceTurnIndex(); // Skip penalty player's turn
-        this.lastActionMessage += ` — ${nextP2.name} drew 2 cards and skipped!`;
+        if (this.settings.houseRules.stacking) {
+          this.activeStackCount += 2;
+          this.lastActionEvent = { type: 'STACK', title: `+${this.activeStackCount} STACK! ⚡`, playerName, timestamp: Date.now() };
+          this.lastActionMessage += ` — +2 stacked! (Total stack: +${this.activeStackCount})`;
+        } else {
+          const nextP2 = this.getNextPlayer();
+          const penaltyHand2 = this.playerHands.get(nextP2.id) || [];
+          const drawnCards2 = this.deck.drawMultiple(2, this.discardPile);
+          penaltyHand2.push(...drawnCards2);
+          nextP2.cardCount = penaltyHand2.length;
+          this.advanceTurnIndex();
+          this.lastActionEvent = { type: 'DRAW_TWO', title: '+2 CARDS!', playerName, timestamp: Date.now() };
+          this.lastActionMessage += ` — ${nextP2.name} drew 2 cards and skipped!`;
+        }
         break;
 
       case 'WILD_DRAW_FOUR':
-        const nextP4 = this.getNextPlayer();
-        const penaltyHand4 = this.playerHands.get(nextP4.id) || [];
-        const drawnCards4 = this.deck.drawMultiple(4, this.discardPile);
-        penaltyHand4.push(...drawnCards4);
-        nextP4.cardCount = penaltyHand4.length;
-        this.advanceTurnIndex(); // Skip penalty player's turn
-        this.lastActionMessage += ` — ${nextP4.name} drew 4 cards and skipped!`;
+        if (this.settings.houseRules.stacking) {
+          this.activeStackCount += 4;
+          this.lastActionEvent = { type: 'STACK', title: `+${this.activeStackCount} STACK! ⚡`, playerName, timestamp: Date.now() };
+          this.lastActionMessage += ` — +4 stacked! (Total stack: +${this.activeStackCount})`;
+        } else {
+          const nextP4 = this.getNextPlayer();
+          const penaltyHand4 = this.playerHands.get(nextP4.id) || [];
+          const drawnCards4 = this.deck.drawMultiple(4, this.discardPile);
+          penaltyHand4.push(...drawnCards4);
+          nextP4.cardCount = penaltyHand4.length;
+          this.advanceTurnIndex();
+          this.lastActionEvent = { type: 'WILD_DRAW_FOUR', title: '+4 CARDS!', playerName, timestamp: Date.now() };
+          this.lastActionMessage += ` — ${nextP4.name} drew 4 cards and skipped!`;
+        }
+        break;
+
+      case '7':
+        if (this.settings.houseRules.sevenZero) {
+          this.pendingHandSwapPlayerId = playerId;
+          this.lastActionMessage += ' — Select a player to swap hands with!';
+        }
+        break;
+
+      case '0':
+        if (this.settings.houseRules.sevenZero && activePlayers.length > 1) {
+          this.rotateAllHands();
+          this.lastActionEvent = { type: 'HAND_ROTATE', title: 'HANDS ROTATED! 🌀', playerName, timestamp: Date.now() };
+          this.lastActionMessage += ' — All player hands rotated!';
+        }
         break;
 
       case 'REPLAY':
-        // Replay allows taking another turn immediately (do not advance index)
         this.lastActionMessage += ' — Replay turn!';
         break;
     }
+  }
+
+  private rotateAllHands(): void {
+    const activePlayers = this.players.filter(p => !p.isSpectator);
+    if (activePlayers.length < 2) return;
+
+    const handsArray = activePlayers.map(p => this.playerHands.get(p.id) || []);
+    
+    if (this.direction === 'CW') {
+      // Shift right
+      const lastHand = handsArray[handsArray.length - 1];
+      for (let i = handsArray.length - 1; i > 0; i--) {
+        handsArray[i] = handsArray[i - 1];
+      }
+      handsArray[0] = lastHand;
+    } else {
+      // Shift left
+      const firstHand = handsArray[0];
+      for (let i = 0; i < handsArray.length - 1; i++) {
+        handsArray[i] = handsArray[i + 1];
+      }
+      handsArray[handsArray.length - 1] = firstHand;
+    }
+
+    activePlayers.forEach((p, idx) => {
+      this.playerHands.set(p.id, handsArray[idx]);
+      p.cardCount = handsArray[idx].length;
+    });
   }
 
   private advanceTurnIndex(): void {
@@ -340,7 +614,10 @@ export class UnoGame {
       turnDuration: this.settings.turnTimerSeconds,
       settings: this.settings,
       activeStackCount: this.activeStackCount,
+      pendingHandSwapPlayerId: this.pendingHandSwapPlayerId,
       lastActionMessage: this.lastActionMessage,
+      lastActionEvent: this.lastActionEvent,
+      activeEmote: this.activeEmote,
       chatMessages: this.chatMessages
     };
   }

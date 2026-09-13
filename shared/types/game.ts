@@ -50,6 +50,20 @@ export interface PlayerPublic {
   score: number;
 }
 
+export interface ActionEvent {
+  type: 'SKIP' | 'REVERSE' | 'DRAW_TWO' | 'WILD_DRAW_FOUR' | 'STACK' | 'HAND_SWAP' | 'HAND_ROTATE' | 'UNO_CALL' | 'UNO_CHALLENGE' | 'JUMP_IN';
+  title: string;
+  playerName: string;
+  timestamp: number;
+}
+
+export interface TableEmote {
+  senderId: string;
+  senderName: string;
+  emote: string;
+  timestamp: number;
+}
+
 export interface GamePublicState {
   id: string;
   roomCode: string;
@@ -66,7 +80,10 @@ export interface GamePublicState {
   turnDuration: number;
   settings: GameSettings;
   activeStackCount: number;      // Stacking penalty pool (+2 +2 = +4)
+  pendingHandSwapPlayerId?: string | null; // Player who played a 7 and needs to select target
   lastActionMessage?: string;
+  lastActionEvent?: ActionEvent | null;
+  activeEmote?: TableEmote | null;
   chatMessages?: ChatMessage[];
 }
 
@@ -87,6 +104,7 @@ export interface MovePayload {
   cardId?: string;
   chosenColor?: CardColor;
   chosenNumber?: string;
+  targetSwapPlayerId?: string;
 }
 
 export interface RoomInfo {

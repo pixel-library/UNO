@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Copy, Check, Play, Users, Crown, Shield } from 'lucide-react';
+import { Copy, Check, Play, Users, Crown, Shield, UserX, Settings, Zap, RotateCcw, Layers } from 'lucide-react';
 import { socketService } from '@/services/socketService';
-import { GamePublicState, PlayerPublic } from '@shared/types/game';
+import { GamePublicState, PlayerPublic, GameSettings } from '@shared/types/game';
 
 export const WaitingRoom: React.FC = () => {
   const { roomCode } = useParams<{ roomCode: string }>();
@@ -12,6 +12,7 @@ export const WaitingRoom: React.FC = () => {
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isStarting, setIsStarting] = useState(false);
 
   const formattedRoomCode = roomCode ? roomCode.trim().toUpperCase() : '';
   const myId = localStorage.getItem('uno_player_id');
@@ -24,7 +25,6 @@ export const WaitingRoom: React.FC = () => {
     }
 
     if (!playerName) {
-      // Redirect to join route with roomCode pre-filled to set nickname
       navigate(`/join/${formattedRoomCode}`);
       return;
     }
@@ -50,10 +50,8 @@ export const WaitingRoom: React.FC = () => {
         setGameState(state);
         setLoading(false);
 
-        // Check if current user is in player list
         const inRoom = myId && state.players.some(p => p.id === myId);
         if (!inRoom) {
-          // Player is not in the room yet - auto emit room:join
           socket.emit('room:join', { roomCode: formattedRoomCode, playerName }, (joinRes: any) => {
             if (joinRes?.success) {
               if (joinRes.playerId) {
@@ -72,7 +70,6 @@ export const WaitingRoom: React.FC = () => {
           navigate(`/game/${state.id}`, { state: { initialGameState: state } });
         }
       } else {
-        // Room sync failed - try auto-joining via room:join
         socket.emit('room:join', { roomCode: formattedRoomCode, playerName }, (joinRes: any) => {
           setLoading(false);
           if (joinRes?.success) {
@@ -89,7 +86,6 @@ export const WaitingRoom: React.FC = () => {
       }
     });
 
-    // Heartbeat sync timer every 2 seconds while in waiting room
     const heartbeatTimer = setInterval(() => {
       const currentMyId = localStorage.getItem('uno_player_id') || myId;
       socket.emit('game:sync', { roomCode: formattedRoomCode, playerId: currentMyId }, (res: any) => {
@@ -143,8 +139,6 @@ export const WaitingRoom: React.FC = () => {
     }
   };
 
-  const [isStarting, setIsStarting] = useState(false);
-
   const handleStartGame = () => {
     if (isStarting) return;
     setIsStarting(true);
@@ -159,6 +153,30 @@ export const WaitingRoom: React.FC = () => {
         alert(res?.error || 'Could not start game');
       }
     });
+  };
+
+  // Host Action Handlers
+  const handleKickPlayer = (targetPlayerId: string) => {
+    if (!confirm('Are you sure you want to kick this player?')) return;
+    const socket = socketService.getSocket();
+    socket.emit('room:kickPlayer', { targetPlayerId });
+  };
+
+  const handleTransferHost = (newHostId: string) => {
+    if (!confirm('Transfer room host privilege to this player?')) return;
+    const socket = socketService.getSocket();
+    socket.emit('room:transferHost', { newHostId });
+  };
+
+  const handleUpdateSetting = (updates: Partial<GameSettings>) => {
+    if (!gameState) return;
+    const newSettings = {
+      ...gameState.settings,
+      ...updates,
+      houseRules: { ...gameState.settings.houseRules, ...(updates.houseRules || {}) }
+    };
+    const socket = socketService.getSocket();
+    socket.emit('room:updateSettings', { settings: newSettings });
   };
 
   if (error) {
@@ -199,6 +217,7 @@ export const WaitingRoom: React.FC = () => {
   const hostPlayer = players.find(p => p.isHost);
   const isHost = hostPlayer ? hostPlayer.id === currentMyId : false;
   const maxPlayers = gameState?.settings.maxPlayers || 4;
+  const houseRules = gameState?.settings.houseRules || { stacking: true, jumpIn: false, sevenZero: false };
 
   return (
     <div className="w-full min-h-[calc(100vh-80px)] bg-neutral-50 py-12 px-4 sm:px-6 lg:px-8">
@@ -222,6 +241,69 @@ export const WaitingRoom: React.FC = () => {
             {copied ? 'CODE COPIED!' : 'COPY ROOM CODE'}
           </button>
         </div>
+
+        {/* Host Settings Customization Panel */}
+        {isHost && (
+          <div className="bg-white rounded-3xl p-6 border border-neutral-200 shadow-lg space-y-6">
+            <div className="flex items-center gap-2 border-b border-neutral-100 pb-3">
+              <Settings className="w-5 h-5 text-uno-blue" />
+              <h3 className="font-black text-sm text-uno-navy uppercase tracking-wider">ROOM & HOUSE RULES SETTINGS</h3>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* Turn Timer Selector */}
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-neutral-600 uppercase">TURN TIMER</label>
+                <select
+                  value={gameState?.settings.turnTimerSeconds || 30}
+                  onChange={(e) => handleUpdateSetting({ turnTimerSeconds: Number(e.target.value) })}
+                  className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-3 py-2 text-xs font-bold text-uno-navy focus:outline-none focus:ring-2 focus:ring-uno-blue"
+                >
+                  <option value={0}>OFF (No Timer)</option>
+                  <option value={15}>15 Seconds (Fast)</option>
+                  <option value={30}>30 Seconds (Standard)</option>
+                  <option value={60}>60 Seconds (Relaxed)</option>
+                </select>
+              </div>
+
+              {/* House Rules Toggles */}
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-neutral-600 uppercase block">HOUSE RULES</label>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handleUpdateSetting({ houseRules: { ...houseRules, stacking: !houseRules.stacking } })}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all flex items-center gap-1 ${
+                      houseRules.stacking ? 'bg-amber-50 border-amber-400 text-amber-900' : 'bg-neutral-100 border-neutral-200 text-neutral-400'
+                    }`}
+                  >
+                    <Layers className="w-3.5 h-3.5" /> +2/+4 Stacking
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleUpdateSetting({ houseRules: { ...houseRules, sevenZero: !houseRules.sevenZero } })}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all flex items-center gap-1 ${
+                      houseRules.sevenZero ? 'bg-purple-50 border-purple-400 text-purple-900' : 'bg-neutral-100 border-neutral-200 text-neutral-400'
+                    }`}
+                  >
+                    <RotateCcw className="w-3.5 h-3.5" /> 7-Zero Swap
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleUpdateSetting({ houseRules: { ...houseRules, jumpIn: !houseRules.jumpIn } })}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all flex items-center gap-1 ${
+                      houseRules.jumpIn ? 'bg-emerald-50 border-emerald-400 text-emerald-900' : 'bg-neutral-100 border-neutral-200 text-neutral-400'
+                    }`}
+                  >
+                    <Zap className="w-3.5 h-3.5" /> Jump-In Match
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Player Slots */}
         <div className="bg-white rounded-3xl p-8 border border-neutral-200 shadow-lg space-y-6">
@@ -254,9 +336,29 @@ export const WaitingRoom: React.FC = () => {
                   </div>
                 </div>
 
-                <span className="bg-emerald-100 text-emerald-700 text-[10px] font-extrabold px-3 py-1 rounded-full">
-                  READY
-                </span>
+                <div className="flex items-center gap-1.5">
+                  {isHost && p.id !== currentMyId && (
+                    <>
+                      <button
+                        onClick={() => handleTransferHost(p.id)}
+                        className="p-1.5 bg-amber-50 hover:bg-amber-100 text-amber-600 border border-amber-300 rounded-lg transition-colors"
+                        title="Make Host"
+                      >
+                        <Crown className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={() => handleKickPlayer(p.id)}
+                        className="p-1.5 bg-red-50 hover:bg-red-100 text-red-600 border border-red-300 rounded-lg transition-colors"
+                        title="Kick Player"
+                      >
+                        <UserX className="w-3.5 h-3.5" />
+                      </button>
+                    </>
+                  )}
+                  <span className="bg-emerald-100 text-emerald-700 text-[10px] font-extrabold px-3 py-1 rounded-full">
+                    READY
+                  </span>
+                </div>
               </div>
             ))}
 

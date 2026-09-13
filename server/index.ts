@@ -5,7 +5,7 @@ import path from 'path';
 import { UnoGame } from './engine/UnoGame';
 import { AIPlayer } from './engine/AIPlayer';
 import { validatePlayerName, validateRoomCode } from '../shared/validation/roomValidator';
-import { GameSettings, MovePayload, ChatMessage } from '../shared/types/game';
+import { GameSettings, MovePayload, ChatMessage, CardColor } from '../shared/types/game';
 
 const app = express();
 const server = http.createServer(app);
@@ -44,12 +44,10 @@ function broadcastGameState(game: UnoGame) {
   game.players.forEach((player) => {
     if (player.id.startsWith('bot_')) return;
 
-    // Find socket entries in socketPlayerMap for this player
     let pSockets = Array.from(socketPlayerMap.entries())
       .filter(([_, data]) => data.roomCode === game.roomCode && data.playerId === player.id)
       .map(([sId]) => sId);
 
-    // If socketPlayerMap has no match, search connected sockets in this room channel
     if (pSockets.length === 0) {
       const roomSocketIds = io.sockets.adapter.rooms.get(roomName);
       if (roomSocketIds) {
@@ -57,7 +55,6 @@ function broadcastGameState(game: UnoGame) {
           const clientSocket = io.sockets.sockets.get(sId);
           if (clientSocket && clientSocket.data?.playerId === player.id) {
             pSockets.push(sId);
-            // Re-bind to socketPlayerMap for future broadcasts
             socketPlayerMap.set(sId, { roomCode: game.roomCode, playerId: player.id, sessionId: player.sessionId });
           }
         }
@@ -70,12 +67,10 @@ function broadcastGameState(game: UnoGame) {
         io.to(sId).emit('game:state', privateState);
       });
     } else {
-      // Emergency fallback: emit to room channel with targetPlayerId guard so player's client picks up state
       io.to(roomName).emit('game:state', privateState);
     }
   });
 
-  // Also broadcast public state to room channel for spectators and UI status
   io.to(roomName).emit('game:publicState', publicState);
 }
 
@@ -97,13 +92,30 @@ function checkAndExecuteAIMove(game: UnoGame) {
 
       broadcastGameState(game);
 
-      // Check if next turn is also an AI bot
       if (game.status === 'PLAYING' && game.getCurrentPlayer().id.startsWith('bot_')) {
         checkAndExecuteAIMove(game);
       }
     }, 1200);
   }
 }
+
+// -----------------------------------------------------------------
+// SERVER-SIDE AFK TURN TIMER LOOP
+// -----------------------------------------------------------------
+setInterval(() => {
+  activeGames.forEach((game) => {
+    if (game.status === 'PLAYING' && game.settings.turnTimerSeconds > 0) {
+      const elapsedSeconds = (Date.now() - game.turnStartedAt) / 1000;
+      if (elapsedSeconds >= game.settings.turnTimerSeconds) {
+        const curr = game.getCurrentPlayer();
+        console.log(`[AFK TIMER] Player ${curr.name} in room ${game.roomCode} timed out (${elapsedSeconds.toFixed(1)}s). Auto-drawing card.`);
+        game.drawCard(curr.id);
+        broadcastGameState(game);
+        checkAndExecuteAIMove(game);
+      }
+    }
+  });
+}, 1000);
 
 // -----------------------------------------------------------------
 // REST API ROUTES
@@ -131,6 +143,7 @@ app.get('/api/rooms/:code', (req, res) => {
 // SOCKET.IO EVENT HANDLERS
 // -----------------------------------------------------------------
 io.on('connection', (socket) => {
+
   // 1. Create Room
   socket.on('room:create', ({ playerName, settings }: { playerName: string; settings?: Partial<GameSettings> }, callback) => {
     const valName = validatePlayerName(playerName);
@@ -153,10 +166,6 @@ io.on('connection', (socket) => {
     socket.data.playerId = playerId;
     socket.data.roomCode = roomCode;
     socketPlayerMap.set(socket.id, { roomCode, playerId, sessionId });
-
-    console.log(`[ROOM CREATE] Generated roomCode: "${roomCode}"`);
-    console.log(`[ROOM CREATE] Stored room key: "${roomCode}" for host "${valName.sanitizedName}" (socket ${socket.id})`);
-    console.log(`[ROOM CREATE] Current active room keys: [${Array.from(activeGames.keys()).join(', ')}]`);
 
     if (callback) {
       callback({
@@ -187,10 +196,8 @@ io.on('connection', (socket) => {
     const humanId = `player_${Math.random().toString(36).substring(2, 9)}`;
     const sessionId = `sess_${Math.random().toString(36).substring(2, 9)}`;
 
-    // Add Human player
     game.addPlayer(humanId, sessionId, valName.sanitizedName!, true);
 
-    // Add 3 AI bot players
     const bots = [
       { id: 'bot_alex', name: 'Bot Alex (AI)', avatar: '🤖' },
       { id: 'bot_sam', name: 'Bot Sam (AI)', avatar: '👾' },
@@ -208,9 +215,6 @@ io.on('connection', (socket) => {
     socket.data.roomCode = roomCode;
     socketPlayerMap.set(socket.id, { roomCode, playerId: humanId, sessionId });
 
-    console.log(`[ROOM] Created VS AI room ${roomCode} for player ${valName.sanitizedName}`);
-
-    // Start game immediately
     game.startGame();
 
     if (callback) {
@@ -230,32 +234,24 @@ io.on('connection', (socket) => {
 
   // 2. Join Room
   socket.on('room:join', ({ roomCode, playerName }: { roomCode: string; playerName: string }, callback) => {
-    console.log(`[ROOM JOIN] Received roomCode: "${roomCode}" from player: "${playerName}"`);
     const valCode = validateRoomCode(roomCode);
     const valName = validatePlayerName(playerName);
 
     if (!valCode.valid || !valName.valid) {
       const err = valCode.error || valName.error;
-      console.log(`[ROOM JOIN] Validation failed for code "${roomCode}": ${err}`);
       if (callback) callback({ success: false, error: err });
       return;
     }
 
     const formattedCode = valCode.formattedCode!;
-    console.log(`[ROOM JOIN] Normalized roomCode: "${formattedCode}"`);
-    console.log(`[ROOM JOIN] Available server room keys: [${Array.from(activeGames.keys()).join(', ')}]`);
-
     const game = activeGames.get(formattedCode);
-    console.log(`[ROOM JOIN] Found room:`, !!game);
 
     if (!game) {
-      console.log(`[ROOM JOIN] FAIL: Room not found for code: "${formattedCode}"`);
       if (callback) callback({ success: false, error: 'Room not found. Check your room code.' });
       return;
     }
 
     if (game.status === 'PLAYING') {
-      console.log(`[ROOM] Room "${formattedCode}" is already playing.`);
       if (callback) callback({ success: false, error: 'Game already in progress.' });
       return;
     }
@@ -273,7 +269,6 @@ io.on('connection', (socket) => {
       sessionId = `sess_${Math.random().toString(36).substring(2, 9)}`;
       const player = game.addPlayer(playerId, sessionId, valName.sanitizedName!, false);
       if (!player) {
-        console.log(`[ROOM] Room "${formattedCode}" is full (${game.players.length}/${game.settings.maxPlayers}).`);
         if (callback) callback({ success: false, error: 'Room is full.' });
         return;
       }
@@ -283,8 +278,6 @@ io.on('connection', (socket) => {
     socket.data.playerId = playerId;
     socket.data.roomCode = formattedCode;
     socketPlayerMap.set(socket.id, { roomCode: formattedCode, playerId, sessionId });
-
-    console.log(`[ROOM] Player ${valName.sanitizedName} (${playerId}) joined room ${formattedCode}. Players: ${game.players.length}/${game.settings.maxPlayers}`);
 
     if (callback) {
       callback({
@@ -300,6 +293,43 @@ io.on('connection', (socket) => {
     broadcastGameState(game);
   });
 
+  // 2b. Room Host Actions
+  socket.on('room:kickPlayer', ({ targetPlayerId }: { targetPlayerId: string }, callback) => {
+    const playerInfo = socketPlayerMap.get(socket.id);
+    if (!playerInfo) return;
+
+    const game = activeGames.get(playerInfo.roomCode);
+    if (!game) return;
+
+    const success = game.kickPlayer(playerInfo.playerId, targetPlayerId);
+    if (callback) callback({ success });
+    if (success) broadcastGameState(game);
+  });
+
+  socket.on('room:transferHost', ({ newHostId }: { newHostId: string }, callback) => {
+    const playerInfo = socketPlayerMap.get(socket.id);
+    if (!playerInfo) return;
+
+    const game = activeGames.get(playerInfo.roomCode);
+    if (!game) return;
+
+    const success = game.transferHost(playerInfo.playerId, newHostId);
+    if (callback) callback({ success });
+    if (success) broadcastGameState(game);
+  });
+
+  socket.on('room:updateSettings', ({ settings }: { settings: Partial<GameSettings> }, callback) => {
+    const playerInfo = socketPlayerMap.get(socket.id);
+    if (!playerInfo) return;
+
+    const game = activeGames.get(playerInfo.roomCode);
+    if (!game) return;
+
+    const success = game.updateSettings(playerInfo.playerId, settings);
+    if (callback) callback({ success });
+    if (success) broadcastGameState(game);
+  });
+
   // 3. Start Game
   socket.on('game:start', (payload: any, callback: any) => {
     let cb = typeof payload === 'function' ? payload : callback;
@@ -310,13 +340,7 @@ io.on('connection', (socket) => {
     let targetRoomCode = playerInfo?.roomCode || roomCodeFromPayload;
 
     let game = targetRoomCode ? activeGames.get(targetRoomCode) : undefined;
-    if (!game && !targetRoomCode) {
-      if (cb) cb({ success: false, error: 'Game not found.' });
-      return;
-    }
-
     if (!game) {
-      // Find game where this player might be host
       game = Array.from(activeGames.values()).find(g => g.players.some(p => p.isHost));
     }
 
@@ -334,7 +358,6 @@ io.on('connection', (socket) => {
       return;
     }
 
-    // Re-bind socket & room mapping
     socket.data.playerId = player.id;
     socket.data.roomCode = game.roomCode;
     socketPlayerMap.set(socket.id, { roomCode: game.roomCode, playerId: player.id, sessionId: player.sessionId });
@@ -345,8 +368,6 @@ io.on('connection', (socket) => {
       if (cb) cb({ success: false, error: 'Need at least 2 players to start.' });
       return;
     }
-
-    console.log(`[ROOM] Game started in room ${game.roomCode}`);
 
     if (cb) {
       cb({
@@ -383,6 +404,52 @@ io.on('connection', (socket) => {
     }
   });
 
+  // 4b. Jump-In Out of Turn Play
+  socket.on('game:jumpIn', (payload: MovePayload, callback) => {
+    let playerInfo = socketPlayerMap.get(socket.id);
+    let playerId = playerInfo?.playerId || socket.data?.playerId;
+    let roomCode = playerInfo?.roomCode || socket.data?.roomCode;
+
+    let game = roomCode ? activeGames.get(roomCode) : undefined;
+    if (!game && playerId) {
+      game = Array.from(activeGames.values()).find(g => g.players.some(p => p.id === playerId));
+    }
+
+    if (!game || !payload.cardId || !playerId) {
+      if (callback) callback({ success: false, error: 'Jump-in invalid' });
+      return;
+    }
+
+    const result = game.jumpIn(playerId, payload.cardId, payload.chosenColor);
+    if (callback) callback(result);
+
+    if (result.success) {
+      broadcastGameState(game);
+      checkAndExecuteAIMove(game);
+    }
+  });
+
+  // 4c. 7-Zero Hand Swap
+  socket.on('game:swapHand', ({ targetSwapPlayerId }: { targetSwapPlayerId: string }, callback) => {
+    let playerInfo = socketPlayerMap.get(socket.id);
+    let playerId = playerInfo?.playerId || socket.data?.playerId;
+    let roomCode = playerInfo?.roomCode || socket.data?.roomCode;
+
+    let game = roomCode ? activeGames.get(roomCode) : undefined;
+    if (!game || !playerId || !targetSwapPlayerId) {
+      if (callback) callback({ success: false, error: 'Swap invalid' });
+      return;
+    }
+
+    const result = game.swapHands(playerId, targetSwapPlayerId);
+    if (callback) callback(result);
+
+    if (result.success) {
+      broadcastGameState(game);
+      checkAndExecuteAIMove(game);
+    }
+  });
+
   // 5. Draw Card
   socket.on('game:drawCard', (_, callback) => {
     let playerInfo = socketPlayerMap.get(socket.id);
@@ -408,7 +475,7 @@ io.on('connection', (socket) => {
     }
   });
 
-  // 5b. Pass / End Turn
+  // 5b. Pass Turn
   socket.on('game:passTurn', (payload: any, callback: any) => {
     let cb = typeof payload === 'function' ? payload : callback;
     let payloadData = typeof payload === 'object' ? payload : {};
@@ -460,7 +527,42 @@ io.on('connection', (socket) => {
     }
   });
 
-  // 6b. Sync Game State
+  // 6b. Challenge Uncaught UNO
+  socket.on('game:challengeUno', ({ targetPlayerId }: { targetPlayerId: string }, callback) => {
+    let playerInfo = socketPlayerMap.get(socket.id);
+    let challengerId = playerInfo?.playerId || socket.data?.playerId;
+    let roomCode = playerInfo?.roomCode || socket.data?.roomCode;
+
+    let game = roomCode ? activeGames.get(roomCode) : undefined;
+    if (!game || !challengerId || !targetPlayerId) {
+      if (callback) callback({ success: false, error: 'Invalid challenge' });
+      return;
+    }
+
+    const result = game.challengeUno(challengerId, targetPlayerId);
+    if (callback) callback(result);
+
+    if (result.success) {
+      broadcastGameState(game);
+    }
+  });
+
+  // 6c. Send Live Emote
+  socket.on('game:sendEmote', ({ emote }: { emote: string }) => {
+    let playerInfo = socketPlayerMap.get(socket.id);
+    let senderId = playerInfo?.playerId || socket.data?.playerId;
+    let roomCode = playerInfo?.roomCode || socket.data?.roomCode;
+
+    let game = roomCode ? activeGames.get(roomCode) : undefined;
+    if (!game || !senderId || !emote) return;
+
+    const success = game.sendEmote(senderId, emote);
+    if (success) {
+      broadcastGameState(game);
+    }
+  });
+
+  // 6d. Sync Game State
   socket.on('game:sync', ({ roomCode, playerId, gameId }: { roomCode?: string; playerId?: string; gameId?: string } = {}, callback?: (res: any) => void) => {
     const playerInfo = socketPlayerMap.get(socket.id);
     let formattedCode = roomCode ? roomCode.trim().toUpperCase() : undefined;
@@ -480,14 +582,12 @@ io.on('connection', (socket) => {
     }
 
     if (!game) {
-      console.log(`[ROOM] game:sync failed for roomCode="${roomCode}", gameId="${gameId}", playerId="${playerId}"`);
       if (callback) callback({ success: false, error: 'Game not found' });
       return;
     }
 
     const pId = playerId || playerInfo?.playerId || game.players.find(p => !p.id.startsWith('bot_'))?.id || game.players[0]?.id;
 
-    // Bind socket.id to socketPlayerMap and join socket room for state broadcasts
     if (pId) {
       const targetPlayer = game.players.find(p => p.id === pId);
       if (targetPlayer) {
@@ -499,12 +599,11 @@ io.on('connection', (socket) => {
       }
     }
 
-    console.log(`[ROOM] game:sync success for room ${game.roomCode}, player ${pId}`);
     const privateState = game.getPrivateState(pId);
     if (callback) callback({ success: true, state: privateState });
   });
 
-  // 6c. Rematch Game
+  // 6e. Rematch
   socket.on('game:rematch', (_, callback) => {
     const playerInfo = socketPlayerMap.get(socket.id);
     if (!playerInfo) return;
@@ -546,7 +645,6 @@ io.on('connection', (socket) => {
     }
     if (!sender) return;
 
-    // Bind socket mapping & join room channel
     socketPlayerMap.set(socket.id, { roomCode: game.roomCode, playerId: sender.id, sessionId: sender.sessionId });
     socket.join(`room_${game.roomCode}`);
 
@@ -562,17 +660,7 @@ io.on('connection', (socket) => {
       game.chatMessages.push(msg);
     }
 
-    // Broadcast chat message to room channel
     io.to(`room_${game.roomCode}`).emit('chat:message', msg);
-
-    // Also broadcast to all socket IDs of players in this game
-    game.players.forEach((p) => {
-      const pSockets = Array.from(socketPlayerMap.entries())
-        .filter(([_, data]) => data.roomCode === game!.roomCode && data.playerId === p.id)
-        .map(([sId]) => sId);
-      pSockets.forEach(sId => io.to(sId).emit('chat:message', msg));
-    });
-
     broadcastGameState(game);
   });
 
@@ -593,7 +681,6 @@ io.on('connection', (socket) => {
   });
 });
 
-// Serve frontend build in production
 if (process.env.NODE_ENV === 'production') {
   app.use(express.static(path.join(__dirname, '../../client/dist')));
   app.get('*', (req, res) => {
