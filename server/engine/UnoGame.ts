@@ -207,16 +207,7 @@ export class UnoGame {
   }
 
   public isPlayable(card: Card): boolean {
-    if (!this.isBasePlayable(card)) return false;
-
-    if (this.activeStackCount > 0 && this.settings.houseRules.stacking) {
-      const cardVal = String(card.value || '').trim().toUpperCase();
-      const isStackingCard = cardVal === 'DRAW_TWO' || cardVal === 'WILD_DRAW_FOUR' ||
-        Boolean(this.settings.houseRules.counterDeflect && (cardVal === 'SKIP' || cardVal === 'REVERSE' || cardVal === 'SKIP_WILD'));
-      return Boolean(isStackingCard);
-    }
-
-    return true;
+    return this.isBasePlayable(card);
   }
 
   public playCard(playerId: string, cardId: string, chosenColor?: CardColor, cardColor?: CardColor, cardValue?: any): { success: boolean; error?: string } {
@@ -247,15 +238,17 @@ export class UnoGame {
     const isStackingCard = cardVal === 'DRAW_TWO' || cardVal === 'WILD_DRAW_FOUR' ||
       (this.settings.houseRules.counterDeflect && (cardVal === 'SKIP' || cardVal === 'REVERSE' || cardVal === 'SKIP_WILD'));
 
-    // If targeted by +2/+4 stack penalty, player MUST play a stacking card or draw the stack penalty!
+    // If targeted by +2/+4 stack penalty and player plays a non-stacking card (e.g. Red 5),
+    // player MUST absorb the accumulated penalty stack cards into their hand!
+    let absorbedStackCount = 0;
     if (this.activeStackCount > 0 && !isStackingCard) {
-      return {
-        success: false,
-        error: `Targeted by +${this.activeStackCount} stack penalty! You must play a +2/+4 card to stack or draw the penalty cards.`
-      };
+      absorbedStackCount = this.activeStackCount;
+      const penaltyCards = this.deck.drawMultiple(absorbedStackCount, this.discardPile);
+      hand.push(...penaltyCards);
+      this.activeStackCount = 0;
     }
 
-    // Remove from hand and add to discard pile
+    // Remove played card from hand and add to discard pile
     if (cardIndex !== -1) {
       hand.splice(cardIndex, 1);
     }
@@ -279,7 +272,17 @@ export class UnoGame {
       this.currentColor = card.color;
     }
 
-    this.lastActionMessage = `${currentPlayer.name} played ${card.color} ${card.value}`;
+    if (absorbedStackCount > 0) {
+      this.lastActionEvent = {
+        type: 'STACK',
+        title: `+${absorbedStackCount} CARDS ABSORBED! 📥`,
+        playerName: currentPlayer.name,
+        timestamp: Date.now()
+      };
+      this.lastActionMessage = `📥 ${currentPlayer.name} played ${card.color} ${card.value} & took +${absorbedStackCount} penalty cards!`;
+    } else {
+      this.lastActionMessage = `${currentPlayer.name} played ${card.color} ${card.value}`;
+    }
 
     // Apply special card action
     this.applyCardAction(card, playerId);

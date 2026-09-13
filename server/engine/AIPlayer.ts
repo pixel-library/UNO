@@ -17,28 +17,32 @@ export class AIPlayer {
       const activeColor = String(gameState.currentColor || '').trim().toUpperCase();
       const topVal = String(gameState.topDiscardCard?.value || '').trim().toUpperCase();
 
-      if (isStackActive) {
-        if (cardVal === 'DRAW_TWO' || cardVal === 'WILD_DRAW_FOUR') return true;
-        if (gameState.settings?.houseRules?.counterDeflect && (cardVal === 'SKIP' || cardVal === 'REVERSE' || cardVal === 'SKIP_WILD')) {
-          return true;
-        }
-        return false;
-      }
-
       if (cardColor === 'WILD') return true;
       if (cardColor === activeColor) return true;
       if (topVal && cardVal === topVal) return true;
       return false;
     });
 
-    // If no playable cards, return null (AI must draw)
     if (playableCards.length === 0) {
       return null;
     }
 
     let chosenCard: Card;
 
-    if (difficulty === 'EASY') {
+    if (isStackActive) {
+      // Prioritize counter cards (+2 / +4 / deflect) first when a stack penalty is active
+      const counterCards = playableCards.filter(c => {
+        const val = String(c.value || '').trim().toUpperCase();
+        return val === 'DRAW_TWO' || val === 'WILD_DRAW_FOUR' ||
+          Boolean(gameState.settings?.houseRules?.counterDeflect && (val === 'SKIP' || val === 'REVERSE' || val === 'SKIP_WILD'));
+      });
+
+      if (counterCards.length > 0) {
+        chosenCard = counterCards[0];
+      } else {
+        chosenCard = playableCards[0];
+      }
+    } else if (difficulty === 'EASY') {
       // Pick random playable card
       chosenCard = playableCards[Math.floor(Math.random() * playableCards.length)];
     } else if (difficulty === 'MEDIUM') {

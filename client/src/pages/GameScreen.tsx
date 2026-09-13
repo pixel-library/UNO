@@ -464,12 +464,6 @@ export const GameScreen: React.FC = () => {
     const cardColor = String(card.color || '').trim().toUpperCase();
     const cardVal = String(card.value || '').trim().toUpperCase();
 
-    if ((gameState?.activeStackCount || 0) > 0 && gameState?.settings?.houseRules?.stacking) {
-      const isDeflectSupported = Boolean(gameState?.settings?.houseRules?.counterDeflect);
-      return cardVal === 'DRAW_TWO' || cardVal === 'WILD_DRAW_FOUR' ||
-        (isDeflectSupported && (cardVal === 'SKIP' || cardVal === 'REVERSE' || cardVal === 'SKIP_WILD'));
-    }
-
     if (cardColor === 'WILD') return true;
     if (cardColor === String(gameState?.currentColor || '').trim().toUpperCase()) return true;
     if (topDiscard && cardVal === String(topDiscard.value || '').trim().toUpperCase()) return true;
@@ -672,9 +666,9 @@ export const GameScreen: React.FC = () => {
             {(gameState.activeStackCount || 0) > 0 && (
               <div className="mb-2 bg-gradient-to-r from-red-600 via-amber-500 to-red-600 border-2 border-yellow-300 px-3 py-1 sm:px-5 sm:py-1.5 rounded-full text-white font-black text-[11px] sm:text-sm shadow-[0_0_20px_rgba(239,68,68,0.8)] animate-pulse flex items-center gap-2 z-20">
                 <span className="text-base sm:text-lg">⚡</span>
-                <span>+{gameState.activeStackCount} CARDS STACKED!</span>
+                <span>+{gameState.activeStackCount} PENALTY STACK ACTIVE!</span>
                 <span className="text-[9px] sm:text-xs font-bold opacity-90 hidden sm:inline">
-                  (Stack +2/+4 or draw {gameState.activeStackCount})
+                  (Stack +2/+4 or play matching color card & absorb +{gameState.activeStackCount})
                 </span>
               </div>
             )}

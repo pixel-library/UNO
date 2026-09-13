@@ -119,6 +119,39 @@ describe('UnoGame Engine Unit Tests', () => {
     expect(stackGame.getCurrentPlayer().id).toBe('p1');
   });
 
+  it('should allow playing a same-color card against an active stack and absorb the penalty cards into hand', () => {
+    const stackGame = new UnoGame('g_stack2', 'STACK2', {
+      houseRules: { stacking: true }
+    });
+    stackGame.addPlayer('p1', 's1', 'Player 1', true);
+    stackGame.addPlayer('p2', 's2', 'Player 2', false);
+    stackGame.startGame();
+
+    const cardPlusTwo = { id: 'dt_red', color: 'RED' as const, value: 'DRAW_TWO' as const, score: 20 };
+    const redFive = { id: 'r_five', color: 'RED' as const, value: '5' as const, score: 5 };
+    const extraP1 = { id: 'ext_p1', color: 'BLUE' as const, value: '1' as const, score: 1 };
+    const extraP2 = { id: 'ext_p2', color: 'GREEN' as const, value: '2' as const, score: 2 };
+
+    stackGame.playerHands.set('p1', [cardPlusTwo, extraP1]);
+    stackGame.playerHands.set('p2', [redFive, extraP2]);
+    stackGame.currentColor = 'RED';
+
+    // Player 1 plays +2 (RED)
+    stackGame.playCard('p1', 'dt_red');
+    expect(stackGame.activeStackCount).toBe(2);
+    expect(stackGame.getCurrentPlayer().id).toBe('p2');
+
+    // Player 2 plays Red 5 (same color as Red +2) without a +2 counter card
+    const handBeforeP2 = stackGame.playerHands.get('p2')?.length || 2;
+    const res = stackGame.playCard('p2', 'r_five');
+    expect(res.success).toBe(true);
+    // Player 2 played 1 card (-1) and absorbed +2 penalty cards (+2) -> net +1 card!
+    expect(stackGame.playerHands.get('p2')?.length).toBe(handBeforeP2 + 1);
+    expect(stackGame.activeStackCount).toBe(0);
+    expect(stackGame.topDiscardCard?.value).toBe('5');
+    expect(stackGame.currentColor).toBe('RED');
+  });
+
   it('should handle DISCARD_ALL rule and discard all cards of matching color from hand', () => {
     game.startGame();
     game.currentColor = 'RED';
