@@ -152,6 +152,49 @@ describe('UnoGame Engine Unit Tests', () => {
     expect(stackGame.currentColor).toBe('RED');
   });
 
+  it('should handle 3-player stack: Player 2 plays same-color card, absorbs stack, and Player 3 receives turn with zero stack penalty', () => {
+    const stack3Game = new UnoGame('g_stack3', 'STACK3', {
+      houseRules: { stacking: true }
+    });
+    stack3Game.addPlayer('p1', 's1', 'Player 1', true);
+    stack3Game.addPlayer('p2', 's2', 'Player 2', false);
+    stack3Game.addPlayer('p3', 's3', 'Player 3', false);
+    stack3Game.startGame();
+
+    const dtRed = { id: 'dt_red3', color: 'RED' as const, value: 'DRAW_TWO' as const, score: 20 };
+    const redFive = { id: 'r_five3', color: 'RED' as const, value: '5' as const, score: 5 };
+    const redSeven = { id: 'r_seven3', color: 'RED' as const, value: '7' as const, score: 7 };
+    const ext1 = { id: 'ext1_3', color: 'BLUE' as const, value: '1' as const, score: 1 };
+    const ext2 = { id: 'ext2_3', color: 'GREEN' as const, value: '2' as const, score: 2 };
+    const ext3 = { id: 'ext3_3', color: 'YELLOW' as const, value: '3' as const, score: 3 };
+
+    stack3Game.playerHands.set('p1', [dtRed, ext1]);
+    stack3Game.playerHands.set('p2', [redFive, ext2]);
+    stack3Game.playerHands.set('p3', [redSeven, ext3]);
+    stack3Game.currentColor = 'RED';
+
+    // Player 1 plays Red +2 -> activeStackCount = 2, turn passes to Player 2
+    stack3Game.playCard('p1', 'dt_red3');
+    expect(stack3Game.activeStackCount).toBe(2);
+    expect(stack3Game.getCurrentPlayer().id).toBe('p2');
+
+    // Player 2 plays Red 5 -> absorbs 2 penalty cards, activeStackCount = 0, turn passes to Player 3
+    const p2HandBefore = stack3Game.playerHands.get('p2')?.length || 2;
+    const resP2 = stack3Game.playCard('p2', 'r_five3');
+    expect(resP2.success).toBe(true);
+    expect(stack3Game.activeStackCount).toBe(0);
+    expect(stack3Game.playerHands.get('p2')?.length).toBe(p2HandBefore + 1);
+    expect(stack3Game.getCurrentPlayer().id).toBe('p3');
+
+    // Player 3's turn starts with activeStackCount = 0 -> Player 3 plays Red 7 without absorbing penalty cards!
+    const p3HandBefore = stack3Game.playerHands.get('p3')?.length || 2;
+    const resP3 = stack3Game.playCard('p3', 'r_seven3');
+    expect(resP3.success).toBe(true);
+    expect(stack3Game.activeStackCount).toBe(0);
+    expect(stack3Game.playerHands.get('p3')?.length).toBe(p3HandBefore - 1);
+    expect(stack3Game.getCurrentPlayer().id).toBe('p1');
+  });
+
   it('should handle DISCARD_ALL rule and discard all cards of matching color from hand', () => {
     game.startGame();
     game.currentColor = 'RED';

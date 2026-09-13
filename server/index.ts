@@ -568,6 +568,15 @@ io.on('connection', (socket) => {
       return;
     }
 
+    // Ensure socket map & room join are registered
+    if (!playerInfo && game) {
+      socket.data.playerId = playerId;
+      socket.data.roomCode = game.roomCode;
+      const targetPlayer = game.players.find(p => p.id === playerId);
+      socketPlayerMap.set(socket.id, { roomCode: game.roomCode, playerId, sessionId: targetPlayer?.sessionId || `sess_${playerId}` });
+      socket.join(`room_${game.roomCode}`);
+    }
+
     if (game.getCurrentPlayer().id !== playerId) {
       if (cb) cb({ success: false, error: 'Not your turn' });
       return;
@@ -599,6 +608,15 @@ io.on('connection', (socket) => {
     if (!game || !playerId) {
       if (cb) cb({ success: false, error: 'Game not found' });
       return;
+    }
+
+    // Ensure socket map & room join are registered
+    if (!playerInfo && game) {
+      socket.data.playerId = playerId;
+      socket.data.roomCode = game.roomCode;
+      const targetPlayer = game.players.find(p => p.id === playerId);
+      socketPlayerMap.set(socket.id, { roomCode: game.roomCode, playerId, sessionId: targetPlayer?.sessionId || `sess_${playerId}` });
+      socket.join(`room_${game.roomCode}`);
     }
 
     const result = game.passTurn(playerId);

@@ -67,10 +67,14 @@ export const GameScreen: React.FC = () => {
     };
 
     socket.on('game:state', (newState: PlayerPrivateState & { targetPlayerId?: string }) => {
-      if (newState.targetPlayerId && myId && newState.targetPlayerId !== myId) {
+      const currentLocalId = localStorage.getItem('uno_player_id');
+      if (newState.targetPlayerId && currentLocalId && newState.targetPlayerId !== currentLocalId) {
         return;
       }
       setGameState(newState);
+      if (newState.targetPlayerId) {
+        localStorage.setItem('uno_player_id', newState.targetPlayerId);
+      }
       if (newState.chatMessages && newState.chatMessages.length > 0) {
         setChatMessages((prev) => {
           const map = new Map<string, ChatMessage>();

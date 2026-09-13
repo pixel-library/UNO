@@ -287,7 +287,7 @@ class SocketService {
           this.checkAndExecuteLocalAIMove(game);
         }
       } else {
-        supabaseRoomService.drawCloudCard().then(res => {
+        supabaseRoomService.drawCloudCard(payload).then(res => {
           if (ackCallback) ackCallback(res);
         });
       }
