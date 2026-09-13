@@ -78,60 +78,44 @@ describe('UnoGame Engine Unit Tests', () => {
     expect(customGame.players.length).toBe(2);
   });
 
-  it('should stack +2 cards and force player without +2 to draw total accumulated cards', () => {
+  it('should stack +2 cards and automatically absorb accumulated penalty cards when playing matching color card', () => {
     const stackGame = new UnoGame('g_stack', 'STACK1', {
-      houseRules: { stacking: true, sevenZero: false, jumpIn: false, forcedDraw: true }
+      houseRules: { stacking: true, sevenZero: false, jumpIn: false, counterDeflect: false }
     });
     stackGame.addPlayer('p1', 's1', 'Player 1', true);
     stackGame.addPlayer('p2', 's2', 'Player 2', false);
     stackGame.addPlayer('p3', 's3', 'Player 3', false);
     stackGame.startGame();
 
-    // Give specific hands with extra cards so hands do not empty early
     const cardPlusTwo1 = { id: 'dt_1', color: 'RED' as const, value: 'DRAW_TWO' as const, score: 20 };
     const cardPlusTwo2 = { id: 'dt_2', color: 'BLUE' as const, value: 'DRAW_TWO' as const, score: 20 };
-    const cardNormal1 = { id: 'norm_1', color: 'RED' as const, value: '5' as const, score: 5 };
-    const cardNormal2 = { id: 'norm_2', color: 'GREEN' as const, value: '7' as const, score: 7 };
+    const cardBlueMatching = { id: 'b_matching', color: 'BLUE' as const, value: '3' as const, score: 3 };
+    const extraCard = { id: 'ext_1', color: 'RED' as const, value: '9' as const, score: 9 };
 
-    stackGame.playerHands.set('p1', [cardPlusTwo1, cardNormal1]);
-    stackGame.playerHands.set('p2', [cardPlusTwo2, cardNormal2]);
-    stackGame.playerHands.set('p3', [cardNormal1]);
+    stackGame.playerHands.set('p1', [cardPlusTwo1, extraCard]);
+    stackGame.playerHands.set('p2', [cardPlusTwo2, extraCard]);
+    stackGame.playerHands.set('p3', [cardBlueMatching, extraCard]);
     stackGame.currentColor = 'RED';
 
-    // Player 1 plays +2
+    // Player 1 plays +2 (RED)
     const res1 = stackGame.playCard('p1', 'dt_1');
     expect(res1.success).toBe(true);
     expect(stackGame.activeStackCount).toBe(2);
     expect(stackGame.getCurrentPlayer().id).toBe('p2');
 
-    // Player 2 stacks another +2
+    // Player 2 stacks another +2 (BLUE) -> stack becomes 4
     const res2 = stackGame.playCard('p2', 'dt_2');
     expect(res2.success).toBe(true);
     expect(stackGame.activeStackCount).toBe(4);
     expect(stackGame.getCurrentPlayer().id).toBe('p3');
 
-    // Player 3 tries to play a non-+2 card -> should fail
-    const illegalRes = stackGame.playCard('p3', 'norm_1');
-    expect(illegalRes.success).toBe(false);
-    expect(illegalRes.error).toContain('+4 Stack active');
-
-    // Player 3 draws cards -> gets 4 penalty cards and activeStackCount resets to 0
-    const handBefore = stackGame.playerHands.get('p3')?.length || 0;
-    const drawRes = stackGame.drawCard('p3');
-    expect(drawRes.success).toBe(true);
+    // Player 3 has BLUE 3 (no +2/+4). Player 3 plays BLUE 3 -> automatically absorbs +4 penalty & plays BLUE 3!
+    const handBeforeP3 = stackGame.playerHands.get('p3')?.length || 1;
+    const res3 = stackGame.playCard('p3', 'b_matching');
+    expect(res3.success).toBe(true);
     expect(stackGame.activeStackCount).toBe(0);
-    expect(stackGame.playerHands.get('p3')?.length).toBe(handBefore + 4);
-
-    // Player 3 should STILL be the current player and able to play a card matching currentColor ('BLUE')
-    expect(stackGame.getCurrentPlayer().id).toBe('p3');
-    expect(stackGame.currentColor).toBe('BLUE');
-
-    // Give p3 a BLUE 5 card to play
-    const blueCard = { id: 'b_5', color: 'BLUE' as const, value: '5' as const, score: 5 };
-    stackGame.playerHands.get('p3')?.push(blueCard);
-
-    const playBlueRes = stackGame.playCard('p3', 'b_5');
-    expect(playBlueRes.success).toBe(true);
+    // Player 3 started with 1 card, absorbed +4 penalty cards, and played 1 card -> net cards: 1 + 4 - 1 = 4 cards
+    expect(stackGame.playerHands.get('p3')?.length).toBe(handBeforeP3 + 4 - 1);
     expect(stackGame.getCurrentPlayer().id).toBe('p1');
   });
 

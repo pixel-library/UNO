@@ -183,7 +183,7 @@ export class UnoGame {
     return activePlayers[this.currentPlayerIndex % activePlayers.length];
   }
 
-  public isPlayable(card: Card): boolean {
+  public isBasePlayable(card: Card): boolean {
     const top = this.topDiscardCard;
     if (!top) return true;
 
@@ -192,16 +192,6 @@ export class UnoGame {
     const activeColor = String(this.currentColor || top.color || '').trim().toUpperCase();
     const topColor = String(top.color || '').trim().toUpperCase();
     const topVal = String(top.value || '').trim().toUpperCase();
-
-    // Stacking rule validation: when active stack is active
-    if (this.activeStackCount > 0 && this.settings.houseRules.stacking) {
-      if (cardVal === 'DRAW_TWO' || cardVal === 'WILD_DRAW_FOUR') return true;
-      // Deflect Shield rule: SKIP or REVERSE can deflect active stack back to attacker
-      if (this.settings.houseRules.counterDeflect && (cardVal === 'SKIP' || cardVal === 'REVERSE' || cardVal === 'SKIP_WILD')) {
-        return true;
-      }
-      return false;
-    }
 
     // Wild cards are always playable
     if (cardColor === 'WILD') return true;
@@ -214,6 +204,10 @@ export class UnoGame {
     if (cardVal === topVal) return true;
 
     return false;
+  }
+
+  public isPlayable(card: Card): boolean {
+    return this.isBasePlayable(card);
   }
 
   public playCard(playerId: string, cardId: string, chosenColor?: CardColor, cardColor?: CardColor, cardValue?: any): { success: boolean; error?: string } {
@@ -237,14 +231,35 @@ export class UnoGame {
     const card = hand[cardIndex];
 
     if (!this.isPlayable(card)) {
-      if (this.activeStackCount > 0 && this.settings.houseRules.stacking) {
-        return { success: false, error: `+${this.activeStackCount} Stack active! You must play a matching +2/+4 or draw ${this.activeStackCount} penalty cards.` };
-      }
       return { success: false, error: 'Illegal move. Card does not match active color or value.' };
     }
 
+    const cardVal = String(card.value || '').trim().toUpperCase();
+    const isStackingCard = cardVal === 'DRAW_TWO' || cardVal === 'WILD_DRAW_FOUR' ||
+      (this.settings.houseRules.counterDeflect && (cardVal === 'SKIP' || cardVal === 'REVERSE' || cardVal === 'SKIP_WILD'));
+
+    // If active stack is active and player plays a non-stacking matching card, absorb the stack penalty first!
+    if (this.activeStackCount > 0 && !isStackingCard) {
+      const penaltyCount = this.activeStackCount;
+      const penaltyCards = this.deck.drawMultiple(penaltyCount, this.discardPile);
+      hand.push(...penaltyCards);
+      this.activeStackCount = 0;
+      this.lastActionEvent = {
+        type: 'STACK',
+        title: `+${penaltyCount} CARDS TAKEN! 📥`,
+        playerName: currentPlayer.name,
+        timestamp: Date.now()
+      };
+      cardIndex = hand.findIndex(c => c.id === card.id);
+      if (cardIndex === -1) {
+        cardIndex = hand.indexOf(card);
+      }
+    }
+
     // Remove from hand and add to discard pile
-    hand.splice(cardIndex, 1);
+    if (cardIndex !== -1) {
+      hand.splice(cardIndex, 1);
+    }
     this.discardPile.push(card);
     currentPlayer.cardCount = hand.length;
 
