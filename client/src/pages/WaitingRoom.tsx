@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Copy, Check, Play, Users, Crown, Shield, UserX, Settings, Zap, RotateCcw, Layers } from 'lucide-react';
 import { socketService } from '@/services/socketService';
 import { GamePublicState, PlayerPublic, GameSettings } from '@shared/types/game';
+import { DEFAULT_GAME_SETTINGS } from '@shared/constants/gameConstants';
 
 export const WaitingRoom: React.FC = () => {
   const { roomCode } = useParams<{ roomCode: string }>();
@@ -262,7 +263,7 @@ export const WaitingRoom: React.FC = () => {
   const hostPlayer = players.find(p => p.isHost);
   const isHost = hostPlayer ? hostPlayer.id === currentMyId : false;
   const maxPlayers = gameState?.settings.maxPlayers || 4;
-  const houseRules = gameState?.settings.houseRules || { stacking: true, jumpIn: false, sevenZero: false };
+  const houseRules = gameState?.settings.houseRules || DEFAULT_GAME_SETTINGS.houseRules;
 
   return (
     <div className="w-full min-h-[calc(100vh-80px)] bg-neutral-50 py-12 px-4 sm:px-6 lg:px-8">
