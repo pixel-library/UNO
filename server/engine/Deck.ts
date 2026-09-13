@@ -47,6 +47,27 @@ export class Deck {
       this.cards.push({ id: `c_${cardIdCounter++}`, color: 'WILD', value: 'WILD_DRAW_FOUR', score: 50 });
     }
 
+    // Discard All cards (1 per color) if enabled or in customCards mode
+    if (houseRules?.discardAll || houseRules?.customCards) {
+      colors.forEach((color) => {
+        this.cards.push({ id: `c_${cardIdCounter++}`, color, value: 'DISCARD_ALL', score: 30 });
+      });
+    }
+
+    // Wild Shuffle cards (2 per deck) if enabled or in customCards mode
+    if (houseRules?.shuffleHands || houseRules?.customCards) {
+      for (let i = 0; i < 2; i++) {
+        this.cards.push({ id: `c_${cardIdCounter++}`, color: 'WILD', value: 'WILD_SHUFFLE', score: 50 });
+      }
+    }
+
+    // Wild Swap cards (2 per deck) if enabled or in customCards mode
+    if (houseRules?.wildSwap || houseRules?.customCards) {
+      for (let i = 0; i < 2; i++) {
+        this.cards.push({ id: `c_${cardIdCounter++}`, color: 'WILD', value: 'WILD_SWAP', score: 50 });
+      }
+    }
+
     // Custom cards if enabled in house rules
     if (houseRules?.customCards) {
       colors.forEach((color) => {

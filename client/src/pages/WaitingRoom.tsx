@@ -328,6 +328,26 @@ export const WaitingRoom: React.FC = () => {
             }`}>
               <Zap className="w-3.5 h-3.5" /> {houseRules.jumpIn ? 'Jump-In ON' : 'Jump-In OFF'}
             </span>
+            <span className={`px-3 py-1.5 rounded-xl border flex items-center gap-1 ${
+              houseRules.discardAll ? 'bg-rose-50 border-rose-300 text-rose-900' : 'bg-neutral-100 border-neutral-200 text-neutral-400 opacity-60'
+            }`}>
+              🎨 {houseRules.discardAll ? 'Discard All ON' : 'Discard All OFF'}
+            </span>
+            <span className={`px-3 py-1.5 rounded-xl border flex items-center gap-1 ${
+              houseRules.counterDeflect !== false ? 'bg-blue-50 border-blue-300 text-blue-900' : 'bg-neutral-100 border-neutral-200 text-neutral-400 opacity-60'
+            }`}>
+              🛡️ {houseRules.counterDeflect !== false ? 'Deflect Shield ON' : 'Deflect Shield OFF'}
+            </span>
+            <span className={`px-3 py-1.5 rounded-xl border flex items-center gap-1 ${
+              houseRules.shuffleHands ? 'bg-indigo-50 border-indigo-300 text-indigo-900' : 'bg-neutral-100 border-neutral-200 text-neutral-400 opacity-60'
+            }`}>
+              🌀 {houseRules.shuffleHands ? 'Wild Shuffle ON' : 'Wild Shuffle OFF'}
+            </span>
+            <span className={`px-3 py-1.5 rounded-xl border flex items-center gap-1 ${
+              houseRules.wildSwap ? 'bg-amber-50 border-amber-300 text-amber-900' : 'bg-neutral-100 border-neutral-200 text-neutral-400 opacity-60'
+            }`}>
+              🎯 {houseRules.wildSwap ? 'Wild Swap ON' : 'Wild Swap OFF'}
+            </span>
           </div>
         </div>
 

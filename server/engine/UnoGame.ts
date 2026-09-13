@@ -193,9 +193,13 @@ export class UnoGame {
     const topColor = String(top.color || '').trim().toUpperCase();
     const topVal = String(top.value || '').trim().toUpperCase();
 
-    // Stacking rule validation: when active stack is active, only draw cards can stack
+    // Stacking rule validation: when active stack is active
     if (this.activeStackCount > 0 && this.settings.houseRules.stacking) {
       if (cardVal === 'DRAW_TWO' || cardVal === 'WILD_DRAW_FOUR') return true;
+      // Deflect Shield rule: SKIP or REVERSE can deflect active stack back to attacker
+      if (this.settings.houseRules.counterDeflect && (cardVal === 'SKIP' || cardVal === 'REVERSE' || cardVal === 'SKIP_WILD')) {
+        return true;
+      }
       return false;
     }
 
@@ -243,6 +247,16 @@ export class UnoGame {
     hand.splice(cardIndex, 1);
     this.discardPile.push(card);
     currentPlayer.cardCount = hand.length;
+
+    // Discard All rule: remove all other matching color cards from hand
+    if (card.value === 'DISCARD_ALL' && card.color !== 'WILD') {
+      const matchColor = card.color;
+      const discardedMatchingCards = hand.filter(c => c.color === matchColor);
+      const remainingHand = hand.filter(c => c.color !== matchColor);
+      this.playerHands.set(playerId, remainingHand);
+      this.discardPile.push(...discardedMatchingCards);
+      currentPlayer.cardCount = remainingHand.length;
+    }
 
     // Set new current color
     if (card.color === 'WILD') {
@@ -528,7 +542,34 @@ export class UnoGame {
     const player = this.players.find(p => p.id === playerId);
     const playerName = player?.name || 'Player';
 
+    // Deflect Shield Rule: If active stack is active and player plays SKIP/REVERSE, deflect stack penalty!
+    if (this.activeStackCount > 0 && this.settings.houseRules.counterDeflect && (card.value === 'SKIP' || card.value === 'REVERSE' || card.value === 'SKIP_WILD')) {
+      if (card.value === 'REVERSE' && activePlayers.length > 2) {
+        this.direction = this.direction === 'CW' ? 'CCW' : 'CW';
+      }
+      this.lastActionEvent = { type: 'DEFLECT', title: 'DEFLECTED! 🛡️', playerName, timestamp: Date.now() };
+      this.lastActionMessage = `🛡️ ${playerName} DEFLECTED the +${this.activeStackCount} stack penalty!`;
+      return;
+    }
+
     switch (card.value) {
+      case 'DISCARD_ALL':
+        this.lastActionEvent = { type: 'DISCARD_ALL', title: 'DISCARD ALL! 🎨', playerName, timestamp: Date.now() };
+        this.lastActionMessage = `🎨 ${playerName} discarded all ${card.color} cards from hand!`;
+        break;
+
+      case 'WILD_SHUFFLE':
+        this.shuffleAllPlayerHands();
+        this.lastActionEvent = { type: 'SHUFFLE_HANDS', title: 'WILD SHUFFLE! 🌀', playerName, timestamp: Date.now() };
+        this.lastActionMessage = `🌀 ${playerName} played WILD SHUFFLE! All player hands were gathered and redistributed!`;
+        break;
+
+      case 'WILD_SWAP':
+        this.pendingHandSwapPlayerId = playerId;
+        this.lastActionEvent = { type: 'WILD_SWAP', title: 'WILD SWAP! 🎯', playerName, timestamp: Date.now() };
+        this.lastActionMessage = `🎯 ${playerName} played WILD SWAP! Select a player to swap hands with.`;
+        break;
+
       case 'SKIP':
       case 'SKIP_WILD':
         this.advanceTurnIndex();
@@ -579,6 +620,35 @@ export class UnoGame {
         this.lastActionMessage += ' — Replay turn!';
         break;
     }
+  }
+
+  private shuffleAllPlayerHands(): void {
+    const activePlayers = this.players.filter(p => !p.isSpectator);
+    if (activePlayers.length === 0) return;
+
+    let allCards: Card[] = [];
+    activePlayers.forEach(p => {
+      const hand = this.playerHands.get(p.id) || [];
+      allCards.push(...hand);
+    });
+
+    for (let i = allCards.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [allCards[i], allCards[j]] = [allCards[j], allCards[i]];
+    }
+
+    const baseCount = Math.floor(allCards.length / activePlayers.length);
+    let extra = allCards.length % activePlayers.length;
+
+    let cardIdx = 0;
+    activePlayers.forEach(p => {
+      const giveCount = baseCount + (extra > 0 ? 1 : 0);
+      if (extra > 0) extra--;
+      const newHand = allCards.slice(cardIdx, cardIdx + giveCount);
+      cardIdx += giveCount;
+      this.playerHands.set(p.id, newHand);
+      p.cardCount = newHand.length;
+    });
   }
 
   private rotateAllHands(): void {

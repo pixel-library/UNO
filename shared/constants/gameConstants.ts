@@ -46,7 +46,11 @@ export const DEFAULT_GAME_SETTINGS: GameSettings = {
     forcePlay: true,
     drawUntilPlayable: false,
     multipleCardPlay: false,
-    customCards: false
+    customCards: false,
+    discardAll: false,
+    counterDeflect: true,
+    shuffleHands: false,
+    wildSwap: false
   }
 };
 

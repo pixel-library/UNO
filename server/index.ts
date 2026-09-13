@@ -106,6 +106,12 @@ function checkAndExecuteAIMove(game: UnoGame) {
         game.drawCard(currentPlayer.id);
       }
 
+      // Check if AI bot should call UNO! (85% chance if holding 1 card)
+      const botHand = game.playerHands.get(currentPlayer.id) || [];
+      if (botHand.length === 1 && Math.random() < 0.85) {
+        game.callUno(currentPlayer.id);
+      }
+
       broadcastGameState(game);
 
       if (game.status === 'PLAYING' && game.getCurrentPlayer().id.startsWith('bot_')) {

@@ -113,6 +113,32 @@ export const UnoCard: React.FC<UnoCardProps> = ({
             <span className="absolute font-black italic tracking-tighter text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)] text-2xl sm:text-3xl">+4</span>
           </div>
         );
+      case 'DISCARD_ALL':
+        return <span className="font-black italic tracking-tighter drop-shadow-[0_2px_2px_rgba(0,0,0,0.3)] text-sm sm:text-lg">ALL 🎨</span>;
+      case 'WILD_SHUFFLE':
+        return (
+          <div className="w-full h-full flex items-center justify-center relative">
+            <div className="w-[88%] h-[88%] rounded-full overflow-hidden grid grid-cols-2 grid-rows-2 shadow-inner border border-white/60 transform -rotate-[28deg]">
+              <div className="bg-[#E52521]" />
+              <div className="bg-[#0082CA]" />
+              <div className="bg-[#FCD116]" />
+              <div className="bg-[#2D963F]" />
+            </div>
+            <span className="absolute font-black italic tracking-tighter text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)] text-lg sm:text-2xl">🌀</span>
+          </div>
+        );
+      case 'WILD_SWAP':
+        return (
+          <div className="w-full h-full flex items-center justify-center relative">
+            <div className="w-[88%] h-[88%] rounded-full overflow-hidden grid grid-cols-2 grid-rows-2 shadow-inner border border-white/60 transform -rotate-[28deg]">
+              <div className="bg-[#E52521]" />
+              <div className="bg-[#0082CA]" />
+              <div className="bg-[#FCD116]" />
+              <div className="bg-[#2D963F]" />
+            </div>
+            <span className="absolute font-black italic tracking-tighter text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)] text-lg sm:text-2xl">🎯</span>
+          </div>
+        );
       case 'REPLAY':
         return (
           <svg className="w-2/3 h-2/3 fill-current" viewBox="0 0 24 24">
@@ -151,6 +177,9 @@ export const UnoCard: React.FC<UnoCardProps> = ({
       case 'DRAW_TWO': return '+2';
       case 'WILD': return '★';
       case 'WILD_DRAW_FOUR': return '+4';
+      case 'DISCARD_ALL': return 'ALL';
+      case 'WILD_SHUFFLE': return '🌀';
+      case 'WILD_SWAP': return '🎯';
       case 'REPLAY': return '↺';
       case 'SKIP_WILD': return '⊘';
       case 'HASH':

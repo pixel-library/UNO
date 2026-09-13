@@ -6,6 +6,7 @@ export type CardValue =
   | '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9'
   | 'SKIP' | 'REVERSE' | 'DRAW_TWO'
   | 'WILD' | 'WILD_DRAW_FOUR'
+  | 'DISCARD_ALL' | 'WILD_SHUFFLE' | 'WILD_SWAP'
   | 'REPLAY' | 'SKIP_WILD' | 'HASH' | 'HASH_WILD' | 'MINUS_ONE' | 'MINUS_TWO_WILD';
 
 export interface Card {
@@ -25,6 +26,10 @@ export interface HouseRules {
   drawUntilPlayable: boolean;   // Draw continuously until playable card drawn
   multipleCardPlay: boolean;    // Play multiple same value cards at once
   customCards: boolean;         // Enable Replay, Skip Wild, #, -1, etc.
+  discardAll?: boolean;         // Discard all cards of matching color in single move
+  counterDeflect?: boolean;     // Skip/Reverse deflects +2/+4 stack penalty back to attacker
+  shuffleHands?: boolean;       // Wild Shuffle collects & redistributes all player hands
+  wildSwap?: boolean;           // Wild Swap card lets player swap hands with any target
 }
 
 export interface GameSettings {
@@ -52,7 +57,7 @@ export interface PlayerPublic {
 }
 
 export interface ActionEvent {
-  type: 'SKIP' | 'REVERSE' | 'DRAW_TWO' | 'WILD_DRAW_FOUR' | 'STACK' | 'HAND_SWAP' | 'HAND_ROTATE' | 'UNO_CALL' | 'UNO_CHALLENGE' | 'JUMP_IN';
+  type: 'SKIP' | 'REVERSE' | 'DRAW_TWO' | 'WILD_DRAW_FOUR' | 'STACK' | 'HAND_SWAP' | 'HAND_ROTATE' | 'UNO_CALL' | 'UNO_CHALLENGE' | 'JUMP_IN' | 'DISCARD_ALL' | 'DEFLECT' | 'SHUFFLE_HANDS' | 'WILD_SWAP';
   title: string;
   playerName: string;
   timestamp: number;

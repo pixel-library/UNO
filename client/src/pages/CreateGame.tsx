@@ -15,6 +15,10 @@ export const CreateGame: React.FC = () => {
   const [jumpIn, setJumpIn] = useState<boolean>(false);
   const [forcePlay, setForcePlay] = useState<boolean>(true);
   const [customCards, setCustomCards] = useState<boolean>(false);
+  const [discardAll, setDiscardAll] = useState<boolean>(false);
+  const [counterDeflect, setCounterDeflect] = useState<boolean>(true);
+  const [shuffleHands, setShuffleHands] = useState<boolean>(false);
+  const [wildSwap, setWildSwap] = useState<boolean>(false);
   const [allowSpectators, setAllowSpectators] = useState<boolean>(true);
   const [enableChat, setEnableChat] = useState<boolean>(true);
   const [isPrivate, setIsPrivate] = useState<boolean>(false);
@@ -30,6 +34,10 @@ export const CreateGame: React.FC = () => {
       setSevenZero(false);
       setJumpIn(false);
       setCustomCards(false);
+      setDiscardAll(false);
+      setCounterDeflect(true);
+      setShuffleHands(false);
+      setWildSwap(false);
     } else if (p === 'SPEED') {
       setMaxPlayers(4);
       setStartingCards(5);
@@ -38,6 +46,10 @@ export const CreateGame: React.FC = () => {
       setSevenZero(false);
       setJumpIn(false);
       setCustomCards(false);
+      setDiscardAll(false);
+      setCounterDeflect(true);
+      setShuffleHands(false);
+      setWildSwap(false);
     } else if (p === 'CHAOS') {
       setMaxPlayers(4);
       setStartingCards(7);
@@ -46,6 +58,10 @@ export const CreateGame: React.FC = () => {
       setSevenZero(true);
       setJumpIn(true);
       setCustomCards(true);
+      setDiscardAll(true);
+      setCounterDeflect(true);
+      setShuffleHands(true);
+      setWildSwap(true);
     }
   };
 
@@ -87,7 +103,11 @@ export const CreateGame: React.FC = () => {
               forcePlay,
               drawUntilPlayable: false,
               multipleCardPlay: false,
-              customCards
+              customCards,
+              discardAll,
+              counterDeflect,
+              shuffleHands,
+              wildSwap
             }
           }
         },
@@ -313,6 +333,78 @@ export const CreateGame: React.FC = () => {
                   type="checkbox"
                   checked={forcePlay}
                   onChange={(e) => setForcePlay(e.target.checked)}
+                  className="w-5 h-5 accent-uno-blue rounded cursor-pointer"
+                />
+              </label>
+
+              <label className="flex items-center justify-between p-3.5 rounded-2xl border border-neutral-200 cursor-pointer hover:bg-neutral-50 transition-colors">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-xl bg-rose-100 text-rose-600">
+                    <Sparkles className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <div className="font-bold text-sm text-uno-navy">Discard All Color Rule 🎨</div>
+                    <div className="text-xs text-neutral-500">Discard all matching color cards at once.</div>
+                  </div>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={discardAll}
+                  onChange={(e) => setDiscardAll(e.target.checked)}
+                  className="w-5 h-5 accent-uno-blue rounded cursor-pointer"
+                />
+              </label>
+
+              <label className="flex items-center justify-between p-3.5 rounded-2xl border border-neutral-200 cursor-pointer hover:bg-neutral-50 transition-colors">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-xl bg-blue-100 text-blue-600">
+                    <Zap className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <div className="font-bold text-sm text-uno-navy">Counter / Deflect Shield 🛡️</div>
+                    <div className="text-xs text-neutral-500">Skip/Reverse deflects +2/+4 stack back to attacker.</div>
+                  </div>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={counterDeflect}
+                  onChange={(e) => setCounterDeflect(e.target.checked)}
+                  className="w-5 h-5 accent-uno-blue rounded cursor-pointer"
+                />
+              </label>
+
+              <label className="flex items-center justify-between p-3.5 rounded-2xl border border-neutral-200 cursor-pointer hover:bg-neutral-50 transition-colors">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-xl bg-indigo-100 text-indigo-600">
+                    <RotateCcw className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <div className="font-bold text-sm text-uno-navy">Wild Shuffle Hands 🌀</div>
+                    <div className="text-xs text-neutral-500">Gather, shuffle, & redeal all player hands.</div>
+                  </div>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={shuffleHands}
+                  onChange={(e) => setShuffleHands(e.target.checked)}
+                  className="w-5 h-5 accent-uno-blue rounded cursor-pointer"
+                />
+              </label>
+
+              <label className="flex items-center justify-between p-3.5 rounded-2xl border border-neutral-200 cursor-pointer hover:bg-neutral-50 transition-colors">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-xl bg-amber-100 text-amber-600">
+                    <Sparkles className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <div className="font-bold text-sm text-uno-navy">Wild Swap Card 🎯</div>
+                    <div className="text-xs text-neutral-500">Wild card allowing direct hand swap with target.</div>
+                  </div>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={wildSwap}
+                  onChange={(e) => setWildSwap(e.target.checked)}
                   className="w-5 h-5 accent-uno-blue rounded cursor-pointer"
                 />
               </label>

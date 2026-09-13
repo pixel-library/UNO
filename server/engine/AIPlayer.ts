@@ -18,7 +18,11 @@ export class AIPlayer {
       const topVal = String(gameState.topDiscardCard?.value || '').trim().toUpperCase();
 
       if (isStackActive) {
-        return cardVal === 'DRAW_TWO' || cardVal === 'WILD_DRAW_FOUR';
+        if (cardVal === 'DRAW_TWO' || cardVal === 'WILD_DRAW_FOUR') return true;
+        if (gameState.settings?.houseRules?.counterDeflect && (cardVal === 'SKIP' || cardVal === 'REVERSE' || cardVal === 'SKIP_WILD')) {
+          return true;
+        }
+        return false;
       }
 
       if (cardColor === 'WILD') return true;

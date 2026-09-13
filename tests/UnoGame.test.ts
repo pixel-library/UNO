@@ -134,4 +134,69 @@ describe('UnoGame Engine Unit Tests', () => {
     expect(playBlueRes.success).toBe(true);
     expect(stackGame.getCurrentPlayer().id).toBe('p1');
   });
+
+  it('should handle DISCARD_ALL rule and discard all cards of matching color from hand', () => {
+    game.startGame();
+    game.currentColor = 'RED';
+    const discardAllCard = { id: 'da_red', color: 'RED' as const, value: 'DISCARD_ALL' as const, score: 30 };
+    const red1 = { id: 'r1', color: 'RED' as const, value: '3' as const, score: 3 };
+    const red2 = { id: 'r2', color: 'RED' as const, value: '7' as const, score: 7 };
+    const blue1 = { id: 'b1', color: 'BLUE' as const, value: '5' as const, score: 5 };
+
+    game.playerHands.set('p1', [discardAllCard, red1, red2, blue1]);
+
+    const res = game.playCard('p1', 'da_red');
+    expect(res.success).toBe(true);
+    // After playing DISCARD_ALL (RED), p1 should only have blue1 left in hand!
+    const handAfter = game.playerHands.get('p1') || [];
+    expect(handAfter.length).toBe(1);
+    expect(handAfter[0].id).toBe('b1');
+  });
+
+  it('should handle Deflect Shield rule by deflecting +2 stack with SKIP or REVERSE', () => {
+    const deflectGame = new UnoGame('g_deflect', 'DEF1', {
+      houseRules: { stacking: true, counterDeflect: true }
+    });
+    deflectGame.addPlayer('p1', 's1', 'Player 1', true);
+    deflectGame.addPlayer('p2', 's2', 'Player 2', false);
+    deflectGame.startGame();
+
+    const dtCard = { id: 'dt1', color: 'RED' as const, value: 'DRAW_TWO' as const, score: 20 };
+    const skipCard = { id: 'sk1', color: 'RED' as const, value: 'SKIP' as const, score: 20 };
+    const normCard = { id: 'n1', color: 'RED' as const, value: '1' as const, score: 1 };
+
+    deflectGame.playerHands.set('p1', [dtCard, normCard]);
+    deflectGame.playerHands.set('p2', [skipCard, normCard]);
+    deflectGame.currentColor = 'RED';
+
+    // p1 plays +2
+    deflectGame.playCard('p1', 'dt1');
+    expect(deflectGame.activeStackCount).toBe(2);
+
+    // p2 plays SKIP to DEFLECT stack penalty!
+    const res = deflectGame.playCard('p2', 'sk1');
+    expect(res.success).toBe(true);
+    expect(deflectGame.lastActionEvent?.type).toBe('DEFLECT');
+  });
+
+  it('should handle WILD_SHUFFLE rule by gathering and redistributing all cards', () => {
+    game.startGame();
+    game.playerHands.set('p1', [
+      { id: 'ws1', color: 'WILD' as const, value: 'WILD_SHUFFLE' as const, score: 50 },
+      { id: 'c1', color: 'RED' as const, value: '1' as const, score: 1 }
+    ]);
+    game.playerHands.set('p2', [
+      { id: 'c2', color: 'BLUE' as const, value: '2' as const, score: 2 },
+      { id: 'c3', color: 'GREEN' as const, value: '3' as const, score: 3 }
+    ]);
+
+    const totalBefore = (game.playerHands.get('p1')?.length || 0) + (game.playerHands.get('p2')?.length || 0);
+
+    const res = game.playCard('p1', 'ws1', 'RED');
+    expect(res.success).toBe(true);
+
+    const totalAfter = (game.playerHands.get('p1')?.length || 0) + (game.playerHands.get('p2')?.length || 0);
+    // Total remaining cards across hands should equal totalBefore minus the 1 played card
+    expect(totalAfter).toBe(totalBefore - 1);
+  });
 });
