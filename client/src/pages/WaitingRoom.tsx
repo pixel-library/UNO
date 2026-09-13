@@ -15,10 +15,7 @@ export const WaitingRoom: React.FC = () => {
   const [isStarting, setIsStarting] = useState(false);
 
   const hasJoinedCurrentRoom = useRef(false);
-
   const formattedRoomCode = roomCode ? roomCode.trim().toUpperCase() : '';
-  const myId = localStorage.getItem('uno_player_id');
-  const playerName = localStorage.getItem('uno_player_name');
 
   useEffect(() => {
     if (!formattedRoomCode) {
@@ -26,7 +23,8 @@ export const WaitingRoom: React.FC = () => {
       return;
     }
 
-    if (!playerName) {
+    const currentName = localStorage.getItem('uno_player_name');
+    if (!currentName) {
       navigate(`/join/${formattedRoomCode}`);
       return;
     }
@@ -36,8 +34,8 @@ export const WaitingRoom: React.FC = () => {
 
     const handleGameState = (newState: GamePublicState) => {
       if (newState.roomCode === formattedRoomCode) {
-        const currentMyId = localStorage.getItem('uno_player_id') || myId;
-        const isStillInRoom = currentMyId && newState.players.some(p => p.id === currentMyId);
+        const currentMyId = localStorage.getItem('uno_player_id');
+        const isStillInRoom = currentMyId ? newState.players.some(p => p.id === currentMyId) : false;
         
         if (hasJoinedCurrentRoom.current && currentMyId && !isStillInRoom && newState.status === 'WAITING') {
           setError('You were removed from this room by the host.');
@@ -59,11 +57,12 @@ export const WaitingRoom: React.FC = () => {
     socket.on('game:state', handleGameState);
 
     // Initial Sync
-    socket.emit('game:sync', { roomCode: formattedRoomCode, playerId: myId }, (res: any) => {
+    const initialMyId = localStorage.getItem('uno_player_id');
+    socket.emit('game:sync', { roomCode: formattedRoomCode, playerId: initialMyId }, (res: any) => {
       if (res?.success && res?.state) {
         const state: GamePublicState = res.state;
-        const currentMyId = localStorage.getItem('uno_player_id') || myId;
-        const inRoom = currentMyId && state.players.some(p => p.id === currentMyId);
+        const currentMyId = localStorage.getItem('uno_player_id') || initialMyId;
+        const inRoom = currentMyId ? state.players.some(p => p.id === currentMyId) : false;
 
         setGameState(state);
         setLoading(false);
@@ -71,7 +70,7 @@ export const WaitingRoom: React.FC = () => {
         if (inRoom) {
           hasJoinedCurrentRoom.current = true;
         } else {
-          socket.emit('room:join', { roomCode: formattedRoomCode, playerName }, (joinRes: any) => {
+          socket.emit('room:join', { roomCode: formattedRoomCode, playerName: currentName }, (joinRes: any) => {
             if (joinRes?.success) {
               hasJoinedCurrentRoom.current = true;
               if (joinRes.playerId) {
@@ -90,7 +89,7 @@ export const WaitingRoom: React.FC = () => {
           navigate(`/game/${state.id}`, { state: { initialGameState: state } });
         }
       } else {
-        socket.emit('room:join', { roomCode: formattedRoomCode, playerName }, (joinRes: any) => {
+        socket.emit('room:join', { roomCode: formattedRoomCode, playerName: currentName }, (joinRes: any) => {
           setLoading(false);
           if (joinRes?.success) {
             hasJoinedCurrentRoom.current = true;
@@ -108,11 +107,11 @@ export const WaitingRoom: React.FC = () => {
     });
 
     const heartbeatTimer = setInterval(() => {
-      const currentMyId = localStorage.getItem('uno_player_id') || myId;
+      const currentMyId = localStorage.getItem('uno_player_id');
       socket.emit('game:sync', { roomCode: formattedRoomCode, playerId: currentMyId }, (res: any) => {
         if (res?.success && res?.state) {
           const state: GamePublicState = res.state;
-          const isStillInRoom = currentMyId && state.players.some(p => p.id === currentMyId);
+          const isStillInRoom = currentMyId ? state.players.some(p => p.id === currentMyId) : false;
           if (hasJoinedCurrentRoom.current && currentMyId && !isStillInRoom && state.status === 'WAITING') {
             setError('You were removed from this room by the host.');
             clearInterval(heartbeatTimer);
@@ -135,7 +134,7 @@ export const WaitingRoom: React.FC = () => {
       clearInterval(heartbeatTimer);
       socket.off('game:state', handleGameState);
     };
-  }, [formattedRoomCode, navigate, myId, playerName]);
+  }, [formattedRoomCode, navigate]);
 
   const handleCopyCode = () => {
     const codeToCopy = formattedRoomCode || gameState?.roomCode || '';
