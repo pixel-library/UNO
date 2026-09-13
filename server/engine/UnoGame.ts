@@ -170,22 +170,28 @@ export class UnoGame {
     const top = this.topDiscardCard;
     if (!top) return true;
 
+    const cardColor = String(card.color || '').trim().toUpperCase();
+    const cardVal = String(card.value || '').trim().toUpperCase();
+    const activeColor = String(this.currentColor || top.color || '').trim().toUpperCase();
+    const topColor = String(top.color || '').trim().toUpperCase();
+    const topVal = String(top.value || '').trim().toUpperCase();
+
     // Stacking rule validation: when active stack is active, only draw cards can stack
     if (this.activeStackCount > 0 && this.settings.houseRules.stacking) {
-      if (top.value === 'DRAW_TWO' && card.value === 'DRAW_TWO') return true;
-      if (top.value === 'WILD_DRAW_FOUR' && (card.value === 'WILD_DRAW_FOUR' || card.value === 'DRAW_TWO')) return true;
+      if (topVal === 'DRAW_TWO' && cardVal === 'DRAW_TWO') return true;
+      if (topVal === 'WILD_DRAW_FOUR' && (cardVal === 'WILD_DRAW_FOUR' || cardVal === 'DRAW_TWO')) return true;
       return false;
     }
 
     // Wild cards are always playable
-    if (card.color === 'WILD') return true;
+    if (cardColor === 'WILD') return true;
 
     // Matching active color or top card color
-    if (card.color === this.currentColor) return true;
-    if (top.color !== 'WILD' && card.color === top.color) return true;
+    if (cardColor === activeColor) return true;
+    if (topColor !== 'WILD' && cardColor === topColor) return true;
 
     // Matching card value / symbol / number
-    if (card.value === top.value) return true;
+    if (cardVal === topVal) return true;
 
     return false;
   }

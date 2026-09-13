@@ -219,12 +219,12 @@ class SocketService {
     }
 
     if (eventName === 'game:playCard') {
-      const payload: MovePayload = args[0];
+      const payload: any = args[0] || {};
       const game = Array.from(this.localGames.values())[0];
       if (game && payload?.cardId) {
         const humanPlayer = game.players.find(p => !p.id.startsWith('bot_')) || game.players[0];
         const playerId = humanPlayer?.id || game.getCurrentPlayer().id;
-        const result = game.playCard(playerId, payload.cardId, payload.chosenColor);
+        const result = game.playCard(playerId, payload.cardId, payload.chosenColor, payload.cardColor, payload.cardValue);
         if (ackCallback) ackCallback(result);
         if (result.success && humanPlayer) {
           const state = game.getPrivateState(humanPlayer.id);
