@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Copy, Check, Play, Users, Crown, Shield, UserX, Settings, Zap, RotateCcw, Layers } from 'lucide-react';
 import { socketService } from '@/services/socketService';
@@ -13,6 +13,8 @@ export const WaitingRoom: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [isStarting, setIsStarting] = useState(false);
+
+  const hasJoinedCurrentRoom = useRef(false);
 
   const formattedRoomCode = roomCode ? roomCode.trim().toUpperCase() : '';
   const myId = localStorage.getItem('uno_player_id');
@@ -29,15 +31,21 @@ export const WaitingRoom: React.FC = () => {
       return;
     }
 
+    hasJoinedCurrentRoom.current = false;
     const socket = socketService.getSocket();
 
     const handleGameState = (newState: GamePublicState) => {
       if (newState.roomCode === formattedRoomCode) {
         const currentMyId = localStorage.getItem('uno_player_id') || myId;
         const isStillInRoom = currentMyId && newState.players.some(p => p.id === currentMyId);
-        if (currentMyId && !isStillInRoom && newState.status === 'WAITING') {
+        
+        if (hasJoinedCurrentRoom.current && currentMyId && !isStillInRoom && newState.status === 'WAITING') {
           setError('You were removed from this room by the host.');
           return;
+        }
+
+        if (isStillInRoom) {
+          hasJoinedCurrentRoom.current = true;
         }
 
         setGameState(newState);
@@ -60,9 +68,12 @@ export const WaitingRoom: React.FC = () => {
         setGameState(state);
         setLoading(false);
 
-        if (!inRoom) {
+        if (inRoom) {
+          hasJoinedCurrentRoom.current = true;
+        } else {
           socket.emit('room:join', { roomCode: formattedRoomCode, playerName }, (joinRes: any) => {
             if (joinRes?.success) {
+              hasJoinedCurrentRoom.current = true;
               if (joinRes.playerId) {
                 localStorage.setItem('uno_player_id', joinRes.playerId);
               }
@@ -82,6 +93,7 @@ export const WaitingRoom: React.FC = () => {
         socket.emit('room:join', { roomCode: formattedRoomCode, playerName }, (joinRes: any) => {
           setLoading(false);
           if (joinRes?.success) {
+            hasJoinedCurrentRoom.current = true;
             if (joinRes.playerId) {
               localStorage.setItem('uno_player_id', joinRes.playerId);
             }
@@ -101,11 +113,16 @@ export const WaitingRoom: React.FC = () => {
         if (res?.success && res?.state) {
           const state: GamePublicState = res.state;
           const isStillInRoom = currentMyId && state.players.some(p => p.id === currentMyId);
-          if (currentMyId && !isStillInRoom && state.status === 'WAITING') {
+          if (hasJoinedCurrentRoom.current && currentMyId && !isStillInRoom && state.status === 'WAITING') {
             setError('You were removed from this room by the host.');
             clearInterval(heartbeatTimer);
             return;
           }
+
+          if (isStillInRoom) {
+            hasJoinedCurrentRoom.current = true;
+          }
+
           setGameState(state);
           if (state.status === 'PLAYING') {
             navigate(`/game/${state.id}`, { state: { initialGameState: state } });

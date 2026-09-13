@@ -646,5 +646,50 @@ export const supabaseRoomService = {
     socketService.triggerLocalEvent('chat:message', msg);
     this.broadcastState(game.roomCode);
     return { success: true, msg };
+  },
+
+  /**
+   * Kick player in cloud match
+   */
+  kickCloudPlayer(targetPlayerId: string): { success: boolean } {
+    const game = getGameFromCache();
+    if (!game) return { success: false };
+    const myId = localStorage.getItem('uno_player_id');
+    if (!myId) return { success: false };
+    const success = game.kickPlayer(myId, targetPlayerId);
+    if (success && game.roomCode) {
+      this.broadcastState(game.roomCode);
+    }
+    return { success };
+  },
+
+  /**
+   * Transfer host in cloud match
+   */
+  transferCloudHost(newHostId: string): { success: boolean } {
+    const game = getGameFromCache();
+    if (!game) return { success: false };
+    const myId = localStorage.getItem('uno_player_id');
+    if (!myId) return { success: false };
+    const success = game.transferHost(myId, newHostId);
+    if (success && game.roomCode) {
+      this.broadcastState(game.roomCode);
+    }
+    return { success };
+  },
+
+  /**
+   * Update room settings in cloud match
+   */
+  updateCloudSettings(settings: Partial<GameSettings>): { success: boolean } {
+    const game = getGameFromCache();
+    if (!game) return { success: false };
+    const myId = localStorage.getItem('uno_player_id');
+    if (!myId) return { success: false };
+    const success = game.updateSettings(myId, settings);
+    if (success && game.roomCode) {
+      this.broadcastState(game.roomCode);
+    }
+    return { success };
   }
 };

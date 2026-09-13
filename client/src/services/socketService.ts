@@ -173,6 +173,27 @@ class SocketService {
       return;
     }
 
+    if (eventName === 'room:kickPlayer') {
+      const { targetPlayerId } = args[0] || {};
+      const res = supabaseRoomService.kickCloudPlayer(targetPlayerId);
+      if (ackCallback) ackCallback(res);
+      return;
+    }
+
+    if (eventName === 'room:transferHost') {
+      const { newHostId } = args[0] || {};
+      const res = supabaseRoomService.transferCloudHost(newHostId);
+      if (ackCallback) ackCallback(res);
+      return;
+    }
+
+    if (eventName === 'room:updateSettings') {
+      const { settings } = args[0] || {};
+      const res = supabaseRoomService.updateCloudSettings(settings);
+      if (ackCallback) ackCallback(res);
+      return;
+    }
+
     if (eventName === 'game:start') {
       const { roomCode } = args[0] || {};
       const targetRoomCode = roomCode || localStorage.getItem('uno_room_code');
