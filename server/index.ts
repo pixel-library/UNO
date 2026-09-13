@@ -86,7 +86,15 @@ function checkAndExecuteAIMove(game: UnoGame) {
         const opponents = game.players.filter(p => !p.isSpectator && p.id !== currentPlayer.id);
         if (opponents.length > 0) {
           opponents.sort((a, b) => a.cardCount - b.cardCount);
-          game.swapHands(currentPlayer.id, opponents[0].id);
+          const botHand = game.playerHands.get(currentPlayer.id) || [];
+          const colorCounts: Record<string, number> = { RED: 0, YELLOW: 0, GREEN: 0, BLUE: 0 };
+          botHand.forEach(c => { if (c.color !== 'WILD') colorCounts[c.color] = (colorCounts[c.color] || 0) + 1; });
+          let botColor: any = 'RED';
+          let maxC = -1;
+          ['RED', 'YELLOW', 'GREEN', 'BLUE'].forEach(c => {
+            if (colorCounts[c] > maxC) { maxC = colorCounts[c]; botColor = c; }
+          });
+          game.swapHands(currentPlayer.id, opponents[0].id, botColor);
         } else {
           game.pendingHandSwapPlayerId = null;
         }

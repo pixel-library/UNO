@@ -207,7 +207,16 @@ export class UnoGame {
   }
 
   public isPlayable(card: Card): boolean {
-    return this.isBasePlayable(card);
+    if (!this.isBasePlayable(card)) return false;
+
+    if (this.activeStackCount > 0 && this.settings.houseRules.stacking) {
+      const cardVal = String(card.value || '').trim().toUpperCase();
+      const isStackingCard = cardVal === 'DRAW_TWO' || cardVal === 'WILD_DRAW_FOUR' ||
+        (this.settings.houseRules.counterDeflect && (cardVal === 'SKIP' || cardVal === 'REVERSE' || cardVal === 'SKIP_WILD'));
+      return isStackingCard;
+    }
+
+    return true;
   }
 
   public playCard(playerId: string, cardId: string, chosenColor?: CardColor, cardColor?: CardColor, cardValue?: any): { success: boolean; error?: string } {
@@ -344,6 +353,13 @@ export class UnoGame {
       timestamp: Date.now()
     };
     this.lastActionMessage = `⚡ ${player.name} JUMPED IN with ${card.color} ${card.value}!`;
+
+    // Apply special card action
+    this.applyCardAction(card, playerId);
+
+    if (this.pendingHandSwapPlayerId === playerId) {
+      return { success: true };
+    }
 
     if (hand.length === 0) {
       this.status = 'FINISHED';
@@ -729,6 +745,13 @@ export class UnoGame {
       this.playerHands.set(p.id, handsArray[idx]);
       p.cardCount = handsArray[idx].length;
     });
+
+    const winner = activePlayers.find(p => p.cardCount === 0);
+    if (winner) {
+      this.status = 'FINISHED';
+      this.winner = winner;
+      this.calculateScores();
+    }
   }
 
   private advanceTurnIndex(): void {
