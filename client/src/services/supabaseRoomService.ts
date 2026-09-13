@@ -726,5 +726,36 @@ export const supabaseRoomService = {
       return result;
     }
     return { success: false, error: 'Game not found' };
+  },
+
+  /**
+   * Challenge uncaught UNO in cloud match
+   */
+  async challengeCloudUno(payload?: any): Promise<{ success: boolean; message?: string; error?: string }> {
+    const game = getGameFromCache(payload?.roomCode);
+    if (game) {
+      const challengerId = payload?.playerId || localStorage.getItem('uno_player_id') || game.players[0].id;
+      const result = game.challengeUno(challengerId, payload?.targetPlayerId);
+      if (result.success && game.roomCode) {
+        this.broadcastState(game.roomCode);
+      }
+      return result;
+    }
+    return { success: false, error: 'Game not found' };
+  },
+
+  /**
+   * Send live table emote in cloud match
+   */
+  sendCloudEmote(emote: string): boolean {
+    const game = getGameFromCache();
+    if (!game) return false;
+    const myId = localStorage.getItem('uno_player_id');
+    if (!myId) return false;
+    const success = game.sendEmote(myId, emote);
+    if (success && game.roomCode) {
+      this.broadcastState(game.roomCode);
+    }
+    return success;
   }
 };

@@ -79,6 +79,34 @@ class SocketService {
     const currentPlayer = game.getCurrentPlayer();
     if (currentPlayer && currentPlayer.id.startsWith('bot_')) {
       setTimeout(() => {
+        // Handle AI bot hand swap (WILD_SWAP or 7)
+        if (game.pendingHandSwapPlayerId === currentPlayer.id) {
+          const opponents = game.players.filter(p => !p.isSpectator && p.id !== currentPlayer.id);
+          if (opponents.length > 0) {
+            opponents.sort((a, b) => a.cardCount - b.cardCount);
+            const botHand = game.playerHands.get(currentPlayer.id) || [];
+            const colorCounts: Record<string, number> = { RED: 0, YELLOW: 0, GREEN: 0, BLUE: 0 };
+            botHand.forEach(c => { if (c.color !== 'WILD') colorCounts[c.color] = (colorCounts[c.color] || 0) + 1; });
+            let botColor: any = 'RED';
+            let maxC = -1;
+            ['RED', 'YELLOW', 'GREEN', 'BLUE'].forEach(c => {
+              if (colorCounts[c] > maxC) { maxC = colorCounts[c]; botColor = c; }
+            });
+            game.swapHands(currentPlayer.id, opponents[0].id, botColor);
+          } else {
+            game.pendingHandSwapPlayerId = null;
+          }
+
+          const humanPlayer = game.players.find(p => !p.id.startsWith('bot_')) || game.players[0];
+          if (humanPlayer) {
+            this.triggerLocalEvent('game:state', game.getPrivateState(humanPlayer.id));
+          }
+          if (game.status === 'PLAYING' && game.getCurrentPlayer().id.startsWith('bot_')) {
+            this.checkAndExecuteLocalAIMove(game);
+          }
+          return;
+        }
+
         const hand = game.playerHands.get(currentPlayer.id) || [];
         const move = AIPlayer.selectMove(hand, game.getPublicState(), 'MEDIUM');
 
@@ -86,6 +114,12 @@ class SocketService {
           game.playCard(currentPlayer.id, move.cardId, move.chosenColor);
         } else {
           game.drawCard(currentPlayer.id);
+        }
+
+        // Check if AI bot should call UNO! (85% chance if holding 1 card)
+        const botHand = game.playerHands.get(currentPlayer.id) || [];
+        if (botHand.length === 1 && Math.random() < 0.85) {
+          game.callUno(currentPlayer.id);
         }
 
         const humanPlayer = game.players.find(p => !p.id.startsWith('bot_')) || game.players[0];
@@ -273,6 +307,42 @@ class SocketService {
         supabaseRoomService.callCloudUno().then(res => {
           if (ackCallback) ackCallback(res);
         });
+      }
+      return;
+    }
+
+    if (eventName === 'game:challengeUno') {
+      const payload: any = args[0] || {};
+      const localGame = Array.from(this.localGames.values())[0];
+      if (localGame) {
+        const humanPlayer = localGame.players.find(p => !p.id.startsWith('bot_')) || localGame.players[0];
+        const challengerId = payload?.playerId || humanPlayer?.id || localGame.players[0].id;
+        const result = localGame.challengeUno(challengerId, payload?.targetPlayerId);
+        if (ackCallback) ackCallback(result);
+        if (result.success && humanPlayer) {
+          const state = localGame.getPrivateState(humanPlayer.id);
+          this.triggerLocalEvent('game:state', state);
+        }
+      } else {
+        supabaseRoomService.challengeCloudUno(payload).then(res => {
+          if (ackCallback) ackCallback(res);
+        });
+      }
+      return;
+    }
+
+    if (eventName === 'game:sendEmote') {
+      const { emote } = args[0] || {};
+      const localGame = Array.from(this.localGames.values())[0];
+      if (localGame && emote) {
+        const humanPlayer = localGame.players.find(p => !p.id.startsWith('bot_')) || localGame.players[0];
+        const senderId = humanPlayer?.id || localGame.players[0].id;
+        localGame.sendEmote(senderId, emote);
+        if (humanPlayer) {
+          this.triggerLocalEvent('game:state', localGame.getPrivateState(humanPlayer.id));
+        }
+      } else if (emote) {
+        supabaseRoomService.sendCloudEmote(emote);
       }
       return;
     }

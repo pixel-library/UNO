@@ -292,7 +292,8 @@ export const GameScreen: React.FC = () => {
   const handleChallengeUno = () => {
     audioService.playExplosionSound();
     const socket = socketService.getSocket();
-    socket.emit('game:challengeUno');
+    const myId = localStorage.getItem('uno_player_id') || gameState?.targetPlayerId;
+    socket.emit('game:challengeUno', { roomCode: gameState?.roomCode, playerId: myId });
   };
 
   // Send Chat Message
