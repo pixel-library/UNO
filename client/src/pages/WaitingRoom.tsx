@@ -273,111 +273,39 @@ export const WaitingRoom: React.FC = () => {
           </button>
         </div>
 
-        {/* Host Settings Customization Panel */}
-        {isHost ? (
-          <div className="bg-white rounded-3xl p-6 border border-neutral-200 shadow-lg space-y-6">
-            <div className="flex items-center gap-2 border-b border-neutral-100 pb-3">
-              <Settings className="w-5 h-5 text-uno-blue" />
-              <h3 className="font-black text-sm text-uno-navy uppercase tracking-wider">ROOM & HOUSE RULES SETTINGS</h3>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {/* Max Players & Turn Timer */}
-              <div className="space-y-3">
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-neutral-600 uppercase">MAX PLAYERS</label>
-                  <select
-                    value={maxPlayers}
-                    onChange={(e) => handleUpdateSetting({ maxPlayers: Number(e.target.value) })}
-                    className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-3 py-2 text-xs font-bold text-uno-navy focus:outline-none focus:ring-2 focus:ring-uno-blue"
-                  >
-                    <option value={2}>2 Players</option>
-                    <option value={3}>3 Players</option>
-                    <option value={4}>4 Players</option>
-                  </select>
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-neutral-600 uppercase">TURN TIMER</label>
-                  <select
-                    value={gameState?.settings.turnTimerSeconds || 30}
-                    onChange={(e) => handleUpdateSetting({ turnTimerSeconds: Number(e.target.value) })}
-                    className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-3 py-2 text-xs font-bold text-uno-navy focus:outline-none focus:ring-2 focus:ring-uno-blue"
-                  >
-                    <option value={0}>OFF (No Timer)</option>
-                    <option value={15}>15 Seconds (Fast)</option>
-                    <option value={30}>30 Seconds (Standard)</option>
-                    <option value={60}>60 Seconds (Relaxed)</option>
-                  </select>
-                </div>
-              </div>
-
-              {/* House Rules Toggles */}
-              <div className="space-y-2">
-                <label className="text-xs font-bold text-neutral-600 uppercase block">TOGGLE HOUSE RULES</label>
-                <div className="flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    onClick={() => handleUpdateSetting({ houseRules: { ...houseRules, stacking: !houseRules.stacking } })}
-                    className={`px-3 py-2 rounded-xl text-xs font-bold border transition-all flex items-center gap-1.5 ${
-                      houseRules.stacking ? 'bg-amber-50 border-amber-400 text-amber-900 shadow-sm' : 'bg-neutral-100 border-neutral-200 text-neutral-400 opacity-60'
-                    }`}
-                  >
-                    <Layers className="w-3.5 h-3.5 text-amber-500" /> +2/+4 Stacking
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => handleUpdateSetting({ houseRules: { ...houseRules, sevenZero: !houseRules.sevenZero } })}
-                    className={`px-3 py-2 rounded-xl text-xs font-bold border transition-all flex items-center gap-1.5 ${
-                      houseRules.sevenZero ? 'bg-purple-50 border-purple-400 text-purple-900 shadow-sm' : 'bg-neutral-100 border-neutral-200 text-neutral-400 opacity-60'
-                    }`}
-                  >
-                    <RotateCcw className="w-3.5 h-3.5 text-purple-500" /> 7-Zero Swap
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => handleUpdateSetting({ houseRules: { ...houseRules, jumpIn: !houseRules.jumpIn } })}
-                    className={`px-3 py-2 rounded-xl text-xs font-bold border transition-all flex items-center gap-1.5 ${
-                      houseRules.jumpIn ? 'bg-emerald-50 border-emerald-400 text-emerald-900 shadow-sm' : 'bg-neutral-100 border-neutral-200 text-neutral-400 opacity-60'
-                    }`}
-                  >
-                    <Zap className="w-3.5 h-3.5 text-emerald-500" /> Jump-In Match
-                  </button>
-                </div>
-              </div>
-            </div>
+        {/* Active Match Rules Summary Badge Panel (Configured Pre-Game) */}
+        <div className="bg-white rounded-3xl p-5 border border-neutral-200 shadow-md space-y-3">
+          <div className="flex items-center gap-2 border-b border-neutral-100 pb-2">
+            <Settings className="w-4 h-4 text-uno-blue" />
+            <h3 className="font-extrabold text-xs text-uno-navy uppercase tracking-wider">CONFIGURED MATCH RULES</h3>
           </div>
-        ) : (
-          /* Rules Summary Badge Panel (For Non-Host Players) */
-          <div className="bg-white rounded-3xl p-5 border border-neutral-200 shadow-md space-y-3">
-            <div className="flex items-center gap-2 border-b border-neutral-100 pb-2">
-              <Settings className="w-4 h-4 text-uno-blue" />
-              <h3 className="font-extrabold text-xs text-uno-navy uppercase tracking-wider">ACTIVE MATCH RULES</h3>
-            </div>
-            <div className="flex flex-wrap gap-2 text-xs font-bold">
-              <span className="bg-blue-50 border border-blue-200 text-blue-900 px-3 py-1.5 rounded-xl flex items-center gap-1">
-                ⏱️ {gameState?.settings.turnTimerSeconds ? `${gameState.settings.turnTimerSeconds}s Turn Timer` : 'No Turn Timer'}
-              </span>
-              <span className={`px-3 py-1.5 rounded-xl border flex items-center gap-1 ${
-                houseRules.stacking ? 'bg-amber-50 border-amber-300 text-amber-900' : 'bg-neutral-100 border-neutral-200 text-neutral-400'
-              }`}>
-                <Layers className="w-3.5 h-3.5" /> {houseRules.stacking ? '+2/+4 Stacking ON' : '+2/+4 Stacking OFF'}
-              </span>
-              <span className={`px-3 py-1.5 rounded-xl border flex items-center gap-1 ${
-                houseRules.sevenZero ? 'bg-purple-50 border-purple-300 text-purple-900' : 'bg-neutral-100 border-neutral-200 text-neutral-400'
-              }`}>
-                <RotateCcw className="w-3.5 h-3.5" /> {houseRules.sevenZero ? '7-Zero Swap ON' : '7-Zero Swap OFF'}
-              </span>
-              <span className={`px-3 py-1.5 rounded-xl border flex items-center gap-1 ${
-                houseRules.jumpIn ? 'bg-emerald-50 border-emerald-300 text-emerald-900' : 'bg-neutral-100 border-neutral-200 text-neutral-400'
-              }`}>
-                <Zap className="w-3.5 h-3.5" /> {houseRules.jumpIn ? 'Jump-In ON' : 'Jump-In OFF'}
-              </span>
-            </div>
+          <div className="flex flex-wrap gap-2 text-xs font-bold">
+            <span className="bg-blue-50 border border-blue-200 text-blue-900 px-3 py-1.5 rounded-xl flex items-center gap-1">
+              👥 {maxPlayers} Players Max
+            </span>
+            <span className="bg-emerald-50 border border-emerald-200 text-emerald-900 px-3 py-1.5 rounded-xl flex items-center gap-1">
+              🃏 {gameState?.settings.startingCards || 7} Starting Cards
+            </span>
+            <span className="bg-amber-50 border border-amber-200 text-amber-900 px-3 py-1.5 rounded-xl flex items-center gap-1">
+              ⏱️ {gameState?.settings.turnTimerSeconds ? `${gameState.settings.turnTimerSeconds}s Turn Timer` : 'No Turn Timer'}
+            </span>
+            <span className={`px-3 py-1.5 rounded-xl border flex items-center gap-1 ${
+              houseRules.stacking ? 'bg-amber-50 border-amber-300 text-amber-900' : 'bg-neutral-100 border-neutral-200 text-neutral-400 opacity-60'
+            }`}>
+              <Layers className="w-3.5 h-3.5" /> {houseRules.stacking ? '+2/+4 Stacking ON' : '+2/+4 Stacking OFF'}
+            </span>
+            <span className={`px-3 py-1.5 rounded-xl border flex items-center gap-1 ${
+              houseRules.sevenZero ? 'bg-purple-50 border-purple-300 text-purple-900' : 'bg-neutral-100 border-neutral-200 text-neutral-400 opacity-60'
+            }`}>
+              <RotateCcw className="w-3.5 h-3.5" /> {houseRules.sevenZero ? '7-Zero Swap ON' : '7-Zero Swap OFF'}
+            </span>
+            <span className={`px-3 py-1.5 rounded-xl border flex items-center gap-1 ${
+              houseRules.jumpIn ? 'bg-emerald-50 border-emerald-300 text-emerald-900' : 'bg-neutral-100 border-neutral-200 text-neutral-400 opacity-60'
+            }`}>
+              <Zap className="w-3.5 h-3.5" /> {houseRules.jumpIn ? 'Jump-In ON' : 'Jump-In OFF'}
+            </span>
           </div>
-        )}
+        </div>
 
         {/* Player Slots */}
         <div className="bg-white rounded-3xl p-8 border border-neutral-200 shadow-lg space-y-6">
