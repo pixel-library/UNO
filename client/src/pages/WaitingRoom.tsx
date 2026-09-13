@@ -187,15 +187,6 @@ export const WaitingRoom: React.FC = () => {
     }
   };
 
-  const handleAddBot = () => {
-    const socket = socketService.getSocket();
-    socket.emit('room:addBot', {}, (res: any) => {
-      if (!res?.success) {
-        alert(res?.error || 'Could not add AI bot.');
-      }
-    });
-  };
-
   const handleStartGame = () => {
     if (isStarting) return;
     setIsStarting(true);
@@ -415,29 +406,13 @@ export const WaitingRoom: React.FC = () => {
                 className="border-2 border-dashed border-neutral-200 p-4 rounded-2xl flex items-center justify-between text-neutral-400 font-bold text-xs"
               >
                 <span>Empty Slot</span>
-                {isHost && (
-                  <button
-                    onClick={handleAddBot}
-                    className="bg-blue-50 hover:bg-blue-100 text-uno-blue border border-blue-200 px-3 py-1.5 rounded-xl font-extrabold text-[11px] transition-colors"
-                  >
-                    + ADD AI BOT 🤖
-                  </button>
-                )}
+                <span className="text-neutral-400 text-[11px] font-medium">Waiting for player...</span>
               </div>
             ))}
           </div>
 
           {/* Action Button */}
-          <div className="pt-4 border-t border-neutral-100 flex flex-wrap items-center justify-between gap-3">
-            {isHost && players.length < maxPlayers && (
-              <button
-                onClick={handleAddBot}
-                className="bg-blue-50 hover:bg-blue-100 text-uno-blue border border-blue-200 px-5 py-3 rounded-2xl text-xs font-black transition-colors flex items-center gap-1.5"
-              >
-                🤖 ADD AI BOT TO SLOT
-              </button>
-            )}
-
+          <div className="pt-4 border-t border-neutral-100 flex flex-wrap items-center justify-end gap-3">
             {isHost ? (
               <button
                 onClick={handleStartGame}

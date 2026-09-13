@@ -1,6 +1,5 @@
 import { io, Socket } from 'socket.io-client';
 import { UnoGame } from '../../../server/engine/UnoGame';
-import { AIPlayer } from '../../../server/engine/AIPlayer';
 import { validatePlayerName, validateRoomCode } from '../../../shared/validation/roomValidator';
 import { GameSettings, MovePayload } from '../../../shared/types/game';
 import { supabaseRoomService } from './supabaseRoomService';
@@ -73,66 +72,7 @@ class SocketService {
     }
   }
 
-  private checkAndExecuteLocalAIMove(game: UnoGame) {
-    if (game.status !== 'PLAYING') return;
 
-    const currentPlayer = game.getCurrentPlayer();
-    if (currentPlayer && currentPlayer.id.startsWith('bot_')) {
-      setTimeout(() => {
-        // Handle AI bot hand swap (WILD_SWAP or 7)
-        if (game.pendingHandSwapPlayerId === currentPlayer.id) {
-          const opponents = game.players.filter(p => !p.isSpectator && p.id !== currentPlayer.id);
-          if (opponents.length > 0) {
-            opponents.sort((a, b) => a.cardCount - b.cardCount);
-            const botHand = game.playerHands.get(currentPlayer.id) || [];
-            const colorCounts: Record<string, number> = { RED: 0, YELLOW: 0, GREEN: 0, BLUE: 0 };
-            botHand.forEach(c => { if (c.color !== 'WILD') colorCounts[c.color] = (colorCounts[c.color] || 0) + 1; });
-            let botColor: any = 'RED';
-            let maxC = -1;
-            ['RED', 'YELLOW', 'GREEN', 'BLUE'].forEach(c => {
-              if (colorCounts[c] > maxC) { maxC = colorCounts[c]; botColor = c; }
-            });
-            game.swapHands(currentPlayer.id, opponents[0].id, botColor);
-          } else {
-            game.pendingHandSwapPlayerId = null;
-          }
-
-          const humanPlayer = game.players.find(p => !p.id.startsWith('bot_')) || game.players[0];
-          if (humanPlayer) {
-            this.triggerLocalEvent('game:state', game.getPrivateState(humanPlayer.id));
-          }
-          if (game.status === 'PLAYING' && game.getCurrentPlayer().id.startsWith('bot_')) {
-            this.checkAndExecuteLocalAIMove(game);
-          }
-          return;
-        }
-
-        const hand = game.playerHands.get(currentPlayer.id) || [];
-        const move = AIPlayer.selectMove(hand, game.getPublicState(), 'MEDIUM');
-
-        if (move && move.cardId) {
-          game.playCard(currentPlayer.id, move.cardId, move.chosenColor);
-        } else {
-          game.drawCard(currentPlayer.id);
-        }
-
-        // Check if AI bot should call UNO! (85% chance if holding 1 card)
-        const botHand = game.playerHands.get(currentPlayer.id) || [];
-        if (botHand.length === 1 && Math.random() < 0.85) {
-          game.callUno(currentPlayer.id);
-        }
-
-        const humanPlayer = game.players.find(p => !p.id.startsWith('bot_')) || game.players[0];
-        if (humanPlayer) {
-          this.triggerLocalEvent('game:state', game.getPrivateState(humanPlayer.id));
-        }
-
-        if (game.status === 'PLAYING' && game.getCurrentPlayer().id.startsWith('bot_')) {
-          this.checkAndExecuteLocalAIMove(game);
-        }
-      }, 1000);
-    }
-  }
 
   private handleLocalEmit(eventName: string, args: any[]) {
     const ackCallback = typeof args[args.length - 1] === 'function' ? args[args.length - 1] : null;
@@ -150,36 +90,7 @@ class SocketService {
       return;
     }
 
-    if (eventName === 'room:createVsAI') {
-      const { playerName } = args[0] || {};
-      const valName = validatePlayerName(playerName || 'Player');
-      const roomCode = Math.random().toString(36).substring(2, 8).toUpperCase();
-      const gameId = `game_ai_${Date.now()}`;
-      const game = new UnoGame(gameId, roomCode, { maxPlayers: 4 });
-      const humanId = localStorage.getItem('uno_player_id') || `player_${Math.random().toString(36).substring(2, 9)}`;
-      const sessionId = `sess_${Math.random().toString(36).substring(2, 9)}`;
-      localStorage.setItem('uno_player_id', humanId);
 
-      game.addPlayer(humanId, sessionId, valName.sanitizedName || 'Player', true);
-      const bots = [
-        { id: 'bot_alex', name: 'Bot Alex (AI)' },
-        { id: 'bot_sam', name: 'Bot Sam (AI)' },
-        { id: 'bot_morgan', name: 'Bot Morgan (AI)' }
-      ];
-      bots.forEach(b => game.addPlayer(b.id, `sess_${b.id}`, b.name, false));
-
-      this.localGames.set(roomCode, game);
-      this.localGames.set(gameId, game);
-      game.startGame();
-
-      const state = game.getPrivateState(humanId);
-      if (ackCallback) ackCallback({ success: true, roomCode, gameId, playerId: humanId, sessionId, state });
-      setTimeout(() => {
-        this.triggerLocalEvent('game:state', state);
-        this.checkAndExecuteLocalAIMove(game);
-      }, 50);
-      return;
-    }
 
     if (eventName === 'room:join') {
       const { roomCode, playerName } = args[0] || {};
@@ -234,13 +145,12 @@ class SocketService {
       const game = targetRoomCode ? this.localGames.get(targetRoomCode) : Array.from(this.localGames.values())[0];
       if (game) {
         game.startGame();
-        const humanPlayer = game.players.find(p => !p.id.startsWith('bot_')) || game.players[0];
-        const state = humanPlayer ? game.getPrivateState(humanPlayer.id) : null;
+        const activePlayer = game.players[0];
+        const state = activePlayer ? game.getPrivateState(activePlayer.id) : null;
         if (ackCallback) ackCallback({ success: true, state });
         if (state) {
           this.triggerLocalEvent('game:state', state);
         }
-        this.checkAndExecuteLocalAIMove(game);
       } else {
         supabaseRoomService.startCloudRoom(targetRoomCode || undefined).then(res => {
           if (ackCallback) ackCallback(res);
@@ -256,14 +166,13 @@ class SocketService {
       const payload: any = args[0] || {};
       const game = Array.from(this.localGames.values())[0];
       if (game && payload?.cardId) {
-        const humanPlayer = game.players.find(p => !p.id.startsWith('bot_')) || game.players[0];
-        const playerId = humanPlayer?.id || game.getCurrentPlayer().id;
+        const activePlayer = game.players[0];
+        const playerId = activePlayer?.id || game.getCurrentPlayer().id;
         const result = game.playCard(playerId, payload.cardId, payload.chosenColor, payload.cardColor, payload.cardValue);
         if (ackCallback) ackCallback(result);
-        if (result.success && humanPlayer) {
-          const state = game.getPrivateState(humanPlayer.id);
+        if (result.success && activePlayer) {
+          const state = game.getPrivateState(activePlayer.id);
           this.triggerLocalEvent('game:state', state);
-          this.checkAndExecuteLocalAIMove(game);
         }
       } else {
         supabaseRoomService.playCloudCard(payload).then(res => {
@@ -277,14 +186,13 @@ class SocketService {
       const payload: any = args[0] || {};
       const game = Array.from(this.localGames.values())[0];
       if (game) {
-        const humanPlayer = game.players.find(p => !p.id.startsWith('bot_')) || game.players[0];
-        const playerId = payload?.playerId || humanPlayer?.id || game.getCurrentPlayer().id;
+        const activePlayer = game.players[0];
+        const playerId = payload?.playerId || activePlayer?.id || game.getCurrentPlayer().id;
         const result = game.drawCard(playerId);
         if (ackCallback) ackCallback(result);
-        if (result.success && humanPlayer) {
-          const state = game.getPrivateState(humanPlayer.id);
+        if (result.success && activePlayer) {
+          const state = game.getPrivateState(activePlayer.id);
           this.triggerLocalEvent('game:state', state);
-          this.checkAndExecuteLocalAIMove(game);
         }
       } else {
         supabaseRoomService.drawCloudCard(payload).then(res => {
@@ -297,11 +205,11 @@ class SocketService {
     if (eventName === 'game:callUno') {
       const game = Array.from(this.localGames.values())[0];
       if (game) {
-        const humanPlayer = game.players.find(p => !p.id.startsWith('bot_')) || game.players[0];
-        const result = game.callUno(humanPlayer?.id || game.players[0].id);
+        const activePlayer = game.players[0];
+        const result = game.callUno(activePlayer?.id || game.players[0].id);
         if (ackCallback) ackCallback(result);
-        if (result.success && humanPlayer) {
-          const state = game.getPrivateState(humanPlayer.id);
+        if (result.success && activePlayer) {
+          const state = game.getPrivateState(activePlayer.id);
           this.triggerLocalEvent('game:state', state);
         }
       } else {
@@ -316,12 +224,12 @@ class SocketService {
       const payload: any = args[0] || {};
       const localGame = Array.from(this.localGames.values())[0];
       if (localGame) {
-        const humanPlayer = localGame.players.find(p => !p.id.startsWith('bot_')) || localGame.players[0];
-        const challengerId = payload?.playerId || humanPlayer?.id || localGame.players[0].id;
+        const activePlayer = localGame.players[0];
+        const challengerId = payload?.playerId || activePlayer?.id || localGame.players[0].id;
         const result = localGame.challengeUno(challengerId, payload?.targetPlayerId);
         if (ackCallback) ackCallback(result);
-        if (result.success && humanPlayer) {
-          const state = localGame.getPrivateState(humanPlayer.id);
+        if (result.success && activePlayer) {
+          const state = localGame.getPrivateState(activePlayer.id);
           this.triggerLocalEvent('game:state', state);
         }
       } else {
@@ -336,11 +244,11 @@ class SocketService {
       const { emote } = args[0] || {};
       const localGame = Array.from(this.localGames.values())[0];
       if (localGame && emote) {
-        const humanPlayer = localGame.players.find(p => !p.id.startsWith('bot_')) || localGame.players[0];
-        const senderId = humanPlayer?.id || localGame.players[0].id;
+        const activePlayer = localGame.players[0];
+        const senderId = activePlayer?.id || localGame.players[0].id;
         localGame.sendEmote(senderId, emote);
-        if (humanPlayer) {
-          this.triggerLocalEvent('game:state', localGame.getPrivateState(humanPlayer.id));
+        if (activePlayer) {
+          this.triggerLocalEvent('game:state', localGame.getPrivateState(activePlayer.id));
         }
       } else if (emote) {
         supabaseRoomService.sendCloudEmote(emote);
@@ -365,9 +273,9 @@ class SocketService {
           localGame.chatMessages.push(msg);
         }
         this.triggerLocalEvent('chat:message', msg);
-        const humanPlayer = localGame.players.find(p => !p.id.startsWith('bot_')) || localGame.players[0];
-        if (humanPlayer) {
-          this.triggerLocalEvent('game:state', localGame.getPrivateState(humanPlayer.id));
+        const activePlayer = localGame.players[0];
+        if (activePlayer) {
+          this.triggerLocalEvent('game:state', localGame.getPrivateState(activePlayer.id));
         }
       } else if (text) {
         supabaseRoomService.sendCloudChat(text, roomCode, playerId, id);
@@ -380,15 +288,14 @@ class SocketService {
       const targetId = payload?.targetSwapPlayerId || payload?.targetPlayerId;
       const localGame = Array.from(this.localGames.values())[0];
       if (localGame && targetId) {
-        const humanPlayer = localGame.players.find(p => !p.id.startsWith('bot_')) || localGame.players[0];
-        const sourceId = payload?.playerId || humanPlayer?.id || localGame.pendingHandSwapPlayerId;
+        const activePlayer = localGame.players[0];
+        const sourceId = payload?.playerId || activePlayer?.id || localGame.pendingHandSwapPlayerId;
         if (sourceId) {
           const result = localGame.swapHands(sourceId, targetId, payload?.chosenColor);
           if (ackCallback) ackCallback(result);
-          if (result.success && humanPlayer) {
-            const state = localGame.getPrivateState(humanPlayer.id);
+          if (result.success && activePlayer) {
+            const state = localGame.getPrivateState(activePlayer.id);
             this.triggerLocalEvent('game:state', state);
-            this.checkAndExecuteLocalAIMove(localGame);
           }
         }
       } else {
@@ -403,14 +310,13 @@ class SocketService {
       const payload: any = args[0] || {};
       const localGame = Array.from(this.localGames.values())[0];
       if (localGame) {
-        const humanPlayer = localGame.players.find(p => !p.id.startsWith('bot_')) || localGame.players[0];
-        const playerId = payload?.playerId || humanPlayer?.id || localGame.getCurrentPlayer().id;
+        const activePlayer = localGame.players[0];
+        const playerId = payload?.playerId || activePlayer?.id || localGame.getCurrentPlayer().id;
         const result = localGame.passTurn(playerId);
         if (ackCallback) ackCallback(result);
-        if (result.success && humanPlayer) {
-          const state = localGame.getPrivateState(humanPlayer.id);
+        if (result.success && activePlayer) {
+          const state = localGame.getPrivateState(activePlayer.id);
           this.triggerLocalEvent('game:state', state);
-          this.checkAndExecuteLocalAIMove(localGame);
         }
       } else {
         supabaseRoomService.passCloudTurn(payload).then(res => {
@@ -425,12 +331,11 @@ class SocketService {
       if (game) {
         game.startGame();
         if (ackCallback) ackCallback({ success: true });
-        const humanPlayer = game.players.find(p => !p.id.startsWith('bot_')) || game.players[0];
-        if (humanPlayer) {
-          const state = game.getPrivateState(humanPlayer.id);
+        const activePlayer = game.players[0];
+        if (activePlayer) {
+          const state = game.getPrivateState(activePlayer.id);
           this.triggerLocalEvent('game:state', state);
         }
-        this.checkAndExecuteLocalAIMove(game);
       } else {
         supabaseRoomService.rematchCloudRoom().then(res => {
           if (ackCallback) ackCallback(res);

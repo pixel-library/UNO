@@ -3,7 +3,6 @@ import http from 'http';
 import { Server } from 'socket.io';
 import path from 'path';
 import { UnoGame } from './engine/UnoGame';
-import { AIPlayer } from './engine/AIPlayer';
 import { validatePlayerName, validateRoomCode } from '../shared/validation/roomValidator';
 import { GameSettings, MovePayload, ChatMessage, CardColor } from '../shared/types/game';
 
@@ -42,7 +41,6 @@ function broadcastGameState(game: UnoGame) {
 
   // Send masked private state to each connected human player
   game.players.forEach((player) => {
-    if (player.id.startsWith('bot_')) return;
 
     let pSockets = Array.from(socketPlayerMap.entries())
       .filter(([_, data]) => data.roomCode === game.roomCode && data.playerId === player.id)
@@ -74,60 +72,7 @@ function broadcastGameState(game: UnoGame) {
   io.to(roomName).emit('game:publicState', publicState);
 }
 
-// Helper: Trigger AI move if current player is an AI bot
-function checkAndExecuteAIMove(game: UnoGame) {
-  if (game.status !== 'PLAYING') return;
 
-  const currentPlayer = game.getCurrentPlayer();
-  if (currentPlayer && currentPlayer.id.startsWith('bot_')) {
-    setTimeout(() => {
-      // Check if AI bot played a 7 and needs to complete 7-hand swap
-      if (game.pendingHandSwapPlayerId === currentPlayer.id) {
-        const opponents = game.players.filter(p => !p.isSpectator && p.id !== currentPlayer.id);
-        if (opponents.length > 0) {
-          opponents.sort((a, b) => a.cardCount - b.cardCount);
-          const botHand = game.playerHands.get(currentPlayer.id) || [];
-          const colorCounts: Record<string, number> = { RED: 0, YELLOW: 0, GREEN: 0, BLUE: 0 };
-          botHand.forEach(c => { if (c.color !== 'WILD') colorCounts[c.color] = (colorCounts[c.color] || 0) + 1; });
-          let botColor: any = 'RED';
-          let maxC = -1;
-          ['RED', 'YELLOW', 'GREEN', 'BLUE'].forEach(c => {
-            if (colorCounts[c] > maxC) { maxC = colorCounts[c]; botColor = c; }
-          });
-          game.swapHands(currentPlayer.id, opponents[0].id, botColor);
-        } else {
-          game.pendingHandSwapPlayerId = null;
-        }
-        broadcastGameState(game);
-        if (game.status === 'PLAYING' && game.getCurrentPlayer().id.startsWith('bot_')) {
-          checkAndExecuteAIMove(game);
-        }
-        return;
-      }
-
-      const hand = game.playerHands.get(currentPlayer.id) || [];
-      const move = AIPlayer.selectMove(hand, game.getPublicState(), 'MEDIUM');
-
-      if (move && move.cardId) {
-        game.playCard(currentPlayer.id, move.cardId, move.chosenColor);
-      } else {
-        game.drawCard(currentPlayer.id);
-      }
-
-      // Check if AI bot should call UNO! (85% chance if holding 1 card)
-      const botHand = game.playerHands.get(currentPlayer.id) || [];
-      if (botHand.length === 1 && Math.random() < 0.85) {
-        game.callUno(currentPlayer.id);
-      }
-
-      broadcastGameState(game);
-
-      if (game.status === 'PLAYING' && game.getCurrentPlayer().id.startsWith('bot_')) {
-        checkAndExecuteAIMove(game);
-      }
-    }, 1200);
-  }
-}
 
 // -----------------------------------------------------------------
 // SERVER-SIDE AFK TURN TIMER LOOP
@@ -141,7 +86,6 @@ setInterval(() => {
         console.log(`[AFK TIMER] Player ${curr.name} in room ${game.roomCode} timed out (${elapsedSeconds.toFixed(1)}s). Auto-drawing card.`);
         game.drawCard(curr.id);
         broadcastGameState(game);
-        checkAndExecuteAIMove(game);
       }
     }
   });
@@ -228,56 +172,7 @@ io.on('connection', (socket) => {
     broadcastGameState(game);
   });
 
-  // 1b. Create Room VS AI
-  socket.on('room:createVsAI', ({ playerName }: { playerName: string }, callback) => {
-    const valName = validatePlayerName(playerName);
-    if (!valName.valid) {
-      if (callback) callback({ success: false, error: valName.error });
-      return;
-    }
 
-    const roomCode = generateRoomCode();
-    const gameId = `game_ai_${Date.now()}`;
-    const game = new UnoGame(gameId, roomCode, { maxPlayers: 4 });
-
-    const humanId = `player_${Math.random().toString(36).substring(2, 9)}`;
-    const sessionId = `sess_${Math.random().toString(36).substring(2, 9)}`;
-
-    game.addPlayer(humanId, sessionId, valName.sanitizedName!, true);
-
-    const bots = [
-      { id: 'bot_alex', name: 'Bot Alex (AI)', avatar: '🤖' },
-      { id: 'bot_sam', name: 'Bot Sam (AI)', avatar: '👾' },
-      { id: 'bot_morgan', name: 'Bot Morgan (AI)', avatar: '🧠' }
-    ];
-
-    bots.forEach(b => {
-      game.addPlayer(b.id, `sess_${b.id}`, b.name, false);
-    });
-
-    activeGames.set(roomCode, game);
-
-    socket.join(`room_${roomCode}`);
-    socket.data.playerId = humanId;
-    socket.data.roomCode = roomCode;
-    socketPlayerMap.set(socket.id, { roomCode, playerId: humanId, sessionId });
-
-    game.startGame();
-
-    if (callback) {
-      callback({
-        success: true,
-        roomCode,
-        gameId,
-        playerId: humanId,
-        sessionId,
-        state: game.getPrivateState(humanId)
-      });
-    }
-
-    broadcastGameState(game);
-    checkAndExecuteAIMove(game);
-  });
 
   // 2. Join Room
   socket.on('room:join', ({ roomCode, playerName }: { roomCode: string; playerName: string }, callback) => {
@@ -382,35 +277,7 @@ io.on('connection', (socket) => {
     if (success) broadcastGameState(game);
   });
 
-  // 2b. Add AI Bot to Room
-  socket.on('room:addBot', (_, callback) => {
-    const playerInfo = socketPlayerMap.get(socket.id);
-    if (!playerInfo) {
-      if (callback) callback({ success: false, error: 'Player not found' });
-      return;
-    }
 
-    const game = activeGames.get(playerInfo.roomCode);
-    if (!game) {
-      if (callback) callback({ success: false, error: 'Room not found' });
-      return;
-    }
-
-    const host = game.players.find(p => p.id === playerInfo.playerId);
-    if (!host || !host.isHost) {
-      if (callback) callback({ success: false, error: 'Only the room host can add AI bots.' });
-      return;
-    }
-
-    const bot = game.addBot();
-    if (!bot) {
-      if (callback) callback({ success: false, error: 'Room is full.' });
-      return;
-    }
-
-    if (callback) callback({ success: true, bot });
-    broadcastGameState(game);
-  });
 
   // 3. Start Game
   socket.on('game:start', (payload: any, callback: any) => {
@@ -458,7 +325,6 @@ io.on('connection', (socket) => {
       });
     }
     broadcastGameState(game);
-    checkAndExecuteAIMove(game);
   });
 
   // 4. Play Card
@@ -491,7 +357,6 @@ io.on('connection', (socket) => {
 
     if (result.success) {
       broadcastGameState(game);
-      checkAndExecuteAIMove(game);
     }
   });
 
@@ -516,7 +381,6 @@ io.on('connection', (socket) => {
 
     if (result.success) {
       broadcastGameState(game);
-      checkAndExecuteAIMove(game);
     }
   });
 
@@ -542,7 +406,6 @@ io.on('connection', (socket) => {
 
     if (result.success) {
       broadcastGameState(game);
-      checkAndExecuteAIMove(game);
     }
   };
 
@@ -587,7 +450,6 @@ io.on('connection', (socket) => {
 
     if (result.success) {
       broadcastGameState(game);
-      checkAndExecuteAIMove(game);
     }
   });
 
@@ -624,7 +486,6 @@ io.on('connection', (socket) => {
 
     if (result.success) {
       broadcastGameState(game);
-      checkAndExecuteAIMove(game);
     }
   });
 
@@ -748,7 +609,6 @@ io.on('connection', (socket) => {
     if (callback) callback({ success: true });
 
     broadcastGameState(game);
-    checkAndExecuteAIMove(game);
   });
 
   // 7. Chat Message
@@ -774,7 +634,7 @@ io.on('connection', (socket) => {
       sender = game.players.find(p => p.id === playerInfo.playerId);
     }
     if (!sender) {
-      sender = game.players.find(p => !p.id.startsWith('bot_'));
+      sender = game.players[0];
     }
     if (!sender) return;
 

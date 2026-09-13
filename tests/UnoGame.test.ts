@@ -1,7 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { UnoGame } from '../server/engine/UnoGame';
 import { Deck } from '../server/engine/Deck';
-import { AIPlayer } from '../server/engine/AIPlayer';
 
 describe('Deck Unit Tests', () => {
   it('should initialize standard 108 cards deck', () => {
@@ -49,15 +48,6 @@ describe('UnoGame Engine Unit Tests', () => {
     expect(game.isPlayable(matchingNumber)).toBe(true);
     expect(game.isPlayable(wildCard)).toBe(true);
     expect(game.isPlayable(unmatchingCard)).toBe(false);
-  });
-
-  it('should handle AI decisions correctly', () => {
-    game.startGame();
-    const hand = game.playerHands.get('p1') || [];
-    const move = AIPlayer.selectMove(hand, game.getPublicState(), 'HARD');
-    if (move) {
-      expect(move.cardId).toBeDefined();
-    }
   });
 
   it('should correctly handle joining players and enforce max player limit', () => {
