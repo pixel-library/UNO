@@ -408,6 +408,22 @@ export const GameScreen: React.FC = () => {
     gameState.currentColor === 'BLUE' ? 'ring-4 ring-sky-500 shadow-[0_0_25px_rgba(0,130,202,0.8)]' :
     'ring-4 ring-emerald-500 shadow-[0_0_25px_rgba(45,150,63,0.8)]';
 
+  const checkCardPlayable = (card: Card): boolean => {
+    if (!isMyTurn || !card) return false;
+    const cardColor = String(card.color || '').trim().toUpperCase();
+    const cardVal = String(card.value || '').trim().toUpperCase();
+
+    if ((gameState?.activeStackCount || 0) > 0 && gameState?.settings?.houseRules?.stacking) {
+      return cardVal === 'DRAW_TWO' || cardVal === 'WILD_DRAW_FOUR';
+    }
+
+    if (cardColor === 'WILD') return true;
+    if (cardColor === String(gameState?.currentColor || '').trim().toUpperCase()) return true;
+    if (topDiscard && cardVal === String(topDiscard.value || '').trim().toUpperCase()) return true;
+
+    return false;
+  };
+
   return (
     <div className="w-full h-screen max-h-screen bg-[#081F3E] text-white flex flex-col justify-between overflow-hidden relative selection:bg-none font-sans">
       
@@ -599,6 +615,17 @@ export const GameScreen: React.FC = () => {
           {/* --------------------------------------------------------- */}
           <div className="relative px-1 sm:px-6 py-1 sm:py-4 flex flex-col items-center justify-center">
             
+            {/* ACTIVE STACK PENALTY BANNER */}
+            {(gameState.activeStackCount || 0) > 0 && (
+              <div className="mb-2 bg-gradient-to-r from-red-600 via-amber-500 to-red-600 border-2 border-yellow-300 px-3 py-1 sm:px-5 sm:py-1.5 rounded-full text-white font-black text-[11px] sm:text-sm shadow-[0_0_20px_rgba(239,68,68,0.8)] animate-pulse flex items-center gap-2 z-20">
+                <span className="text-base sm:text-lg">⚡</span>
+                <span>+{gameState.activeStackCount} CARDS STACKED!</span>
+                <span className="text-[9px] sm:text-xs font-bold opacity-90 hidden sm:inline">
+                  (Stack +2/+4 or draw {gameState.activeStackCount})
+                </span>
+              </div>
+            )}
+
             {/* Piles Container: DRAW PILE on Left, DISCARD PILE on Right */}
             <div className="flex items-center gap-3 sm:gap-8 lg:gap-14 z-10">
               
@@ -801,11 +828,7 @@ export const GameScreen: React.FC = () => {
                           const isSelected = selectedCardId === card.id;
                           const totalInRow = rowCards.length;
                           const overlapMargin = totalInRow <= 4 ? '-ml-1' : totalInRow <= 6 ? '-ml-2.5' : '-ml-4';
-                          const isPlayable = isMyTurn && (
-                            card.color === 'WILD' ||
-                            card.color === gameState.currentColor ||
-                            card.value === topDiscard.value
-                          );
+                          const isPlayable = checkCardPlayable(card);
 
                           return (
                             <div
@@ -848,11 +871,7 @@ export const GameScreen: React.FC = () => {
                         ? (total <= 4 ? '-ml-2' : '-ml-4')
                         : (total <= 4 ? '-ml-2 sm:-ml-3' : total <= 7 ? '-ml-4 sm:-ml-7' : total <= 11 ? '-ml-7 sm:-ml-12' : '-ml-10 sm:-ml-16');
 
-                      const isPlayable = isMyTurn && (
-                        card.color === 'WILD' ||
-                        card.color === gameState.currentColor ||
-                        card.value === topDiscard.value
-                      );
+                      const isPlayable = checkCardPlayable(card);
 
                       const cardSize = isMobile ? 'sm' : 'md';
 

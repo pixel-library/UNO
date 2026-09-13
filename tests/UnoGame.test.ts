@@ -77,4 +77,49 @@ describe('UnoGame Engine Unit Tests', () => {
     expect(p3).toBeNull();
     expect(customGame.players.length).toBe(2);
   });
+
+  it('should stack +2 cards and force player without +2 to draw total accumulated cards', () => {
+    const stackGame = new UnoGame('g_stack', 'STACK1', {
+      houseRules: { stacking: true, sevenZero: false, jumpIn: false, forcedDraw: true }
+    });
+    stackGame.addPlayer('p1', 's1', 'Player 1', true);
+    stackGame.addPlayer('p2', 's2', 'Player 2', false);
+    stackGame.addPlayer('p3', 's3', 'Player 3', false);
+    stackGame.startGame();
+
+    // Give specific hands with extra cards so hands do not empty early
+    const cardPlusTwo1 = { id: 'dt_1', color: 'RED' as const, value: 'DRAW_TWO' as const, score: 20 };
+    const cardPlusTwo2 = { id: 'dt_2', color: 'BLUE' as const, value: 'DRAW_TWO' as const, score: 20 };
+    const cardNormal1 = { id: 'norm_1', color: 'RED' as const, value: '5' as const, score: 5 };
+    const cardNormal2 = { id: 'norm_2', color: 'GREEN' as const, value: '7' as const, score: 7 };
+
+    stackGame.playerHands.set('p1', [cardPlusTwo1, cardNormal1]);
+    stackGame.playerHands.set('p2', [cardPlusTwo2, cardNormal2]);
+    stackGame.playerHands.set('p3', [cardNormal1]);
+    stackGame.currentColor = 'RED';
+
+    // Player 1 plays +2
+    const res1 = stackGame.playCard('p1', 'dt_1');
+    expect(res1.success).toBe(true);
+    expect(stackGame.activeStackCount).toBe(2);
+    expect(stackGame.getCurrentPlayer().id).toBe('p2');
+
+    // Player 2 stacks another +2
+    const res2 = stackGame.playCard('p2', 'dt_2');
+    expect(res2.success).toBe(true);
+    expect(stackGame.activeStackCount).toBe(4);
+    expect(stackGame.getCurrentPlayer().id).toBe('p3');
+
+    // Player 3 tries to play a non-+2 card -> should fail
+    const illegalRes = stackGame.playCard('p3', 'norm_1');
+    expect(illegalRes.success).toBe(false);
+    expect(illegalRes.error).toContain('+4 Stack active');
+
+    // Player 3 draws cards / passes turn -> gets 4 penalty cards and activeStackCount resets to 0
+    const handBefore = stackGame.playerHands.get('p3')?.length || 0;
+    const drawRes = stackGame.drawCard('p3');
+    expect(drawRes.success).toBe(true);
+    expect(stackGame.activeStackCount).toBe(0);
+    expect(stackGame.playerHands.get('p3')?.length).toBe(handBefore + 4);
+  });
 });

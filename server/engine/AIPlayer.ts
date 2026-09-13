@@ -8,11 +8,22 @@ export class AIPlayer {
   ): { cardId?: string; chosenColor?: CardColor } | null {
     if (hand.length === 0) return null;
 
+    const isStackActive = (gameState.activeStackCount || 0) > 0 && gameState.settings?.houseRules?.stacking;
+
     // Filter all legal cards in hand
     const playableCards = hand.filter(card => {
-      if (card.color === 'WILD') return true;
-      if (card.color === gameState.currentColor) return true;
-      if (gameState.topDiscardCard && card.value === gameState.topDiscardCard.value) return true;
+      const cardVal = String(card.value || '').trim().toUpperCase();
+      const cardColor = String(card.color || '').trim().toUpperCase();
+      const activeColor = String(gameState.currentColor || '').trim().toUpperCase();
+      const topVal = String(gameState.topDiscardCard?.value || '').trim().toUpperCase();
+
+      if (isStackActive) {
+        return cardVal === 'DRAW_TWO' || cardVal === 'WILD_DRAW_FOUR';
+      }
+
+      if (cardColor === 'WILD') return true;
+      if (cardColor === activeColor) return true;
+      if (topVal && cardVal === topVal) return true;
       return false;
     });
 

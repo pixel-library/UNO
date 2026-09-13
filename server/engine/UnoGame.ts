@@ -178,8 +178,7 @@ export class UnoGame {
 
     // Stacking rule validation: when active stack is active, only draw cards can stack
     if (this.activeStackCount > 0 && this.settings.houseRules.stacking) {
-      if (topVal === 'DRAW_TWO' && cardVal === 'DRAW_TWO') return true;
-      if (topVal === 'WILD_DRAW_FOUR' && (cardVal === 'WILD_DRAW_FOUR' || cardVal === 'DRAW_TWO')) return true;
+      if (cardVal === 'DRAW_TWO' || cardVal === 'WILD_DRAW_FOUR') return true;
       return false;
     }
 
@@ -217,6 +216,9 @@ export class UnoGame {
     const card = hand[cardIndex];
 
     if (!this.isPlayable(card)) {
+      if (this.activeStackCount > 0 && this.settings.houseRules.stacking) {
+        return { success: false, error: `+${this.activeStackCount} Stack active! You must play a matching +2/+4 or draw ${this.activeStackCount} penalty cards.` };
+      }
       return { success: false, error: 'Illegal move. Card does not match active color or value.' };
     }
 
@@ -451,6 +453,25 @@ export class UnoGame {
     const currentPlayer = this.getCurrentPlayer();
     if (currentPlayer.id !== playerId) {
       return { success: false, error: 'Not your turn' };
+    }
+
+    if (this.activeStackCount > 0 && this.settings.houseRules.stacking) {
+      const penaltyCards = this.deck.drawMultiple(this.activeStackCount, this.discardPile);
+      const hand = this.playerHands.get(playerId) || [];
+      hand.push(...penaltyCards);
+      this.playerHands.set(playerId, hand);
+      currentPlayer.cardCount = hand.length;
+
+      this.lastActionEvent = {
+        type: 'STACK',
+        title: `+${this.activeStackCount} PENALTY! 💥`,
+        playerName: currentPlayer.name,
+        timestamp: Date.now()
+      };
+      this.lastActionMessage = `💥 ${currentPlayer.name} passed turn and took ${this.activeStackCount} penalty stack cards!`;
+      this.activeStackCount = 0;
+      this.advanceTurn();
+      return { success: true };
     }
 
     this.lastActionMessage = `${currentPlayer.name} passed turn`;
