@@ -78,7 +78,7 @@ describe('UnoGame Engine Unit Tests', () => {
     expect(customGame.players.length).toBe(2);
   });
 
-  it('should stack +2 cards and automatically skip turn when targeted player draws penalty cards', () => {
+  it('should stack +2 cards and pass active stack to next player until penalty is drawn', () => {
     const stackGame = new UnoGame('g_stack', 'STACK1', {
       houseRules: { stacking: true, sevenZero: false, jumpIn: false, counterDeflect: false }
     });
@@ -103,13 +103,19 @@ describe('UnoGame Engine Unit Tests', () => {
     expect(stackGame.activeStackCount).toBe(2);
     expect(stackGame.getCurrentPlayer().id).toBe('p2');
 
-    // Player 2 stacks another +2 (BLUE) -> Player 3 has no +2/+4, so +4 stack is automatically absorbed by Player 3 and Player 3 is skipped!
-    const handBeforeP3 = stackGame.playerHands.get('p3')?.length || 2;
+    // Player 2 stacks another +2 (BLUE) -> Active stack becomes 4, turn passes to p3
     const res2 = stackGame.playCard('p2', 'dt_2');
     expect(res2.success).toBe(true);
+    expect(stackGame.activeStackCount).toBe(4);
+    expect(stackGame.getCurrentPlayer().id).toBe('p3');
+
+    // Player 3 has no +2/+4, so Player 3 draws the 4 penalty cards
+    const handBeforeP3 = stackGame.playerHands.get('p3')?.length || 2;
+    const resDraw = stackGame.drawCard('p3');
+    expect(resDraw.success).toBe(true);
     expect(stackGame.activeStackCount).toBe(0);
     expect(stackGame.playerHands.get('p3')?.length).toBe(handBeforeP3 + 4);
-    // Turn automatically skipped p3 and advanced to p1!
+    // Turn passes to p1 after p3 draws penalty cards
     expect(stackGame.getCurrentPlayer().id).toBe('p1');
   });
 
