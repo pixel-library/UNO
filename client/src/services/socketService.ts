@@ -304,6 +304,51 @@ class SocketService {
       return;
     }
 
+    if (eventName === 'game:swapHand' || eventName === 'game:swapHands') {
+      const payload: any = args[0] || {};
+      const targetId = payload?.targetSwapPlayerId || payload?.targetPlayerId;
+      const localGame = Array.from(this.localGames.values())[0];
+      if (localGame && targetId) {
+        const humanPlayer = localGame.players.find(p => !p.id.startsWith('bot_')) || localGame.players[0];
+        const sourceId = payload?.playerId || humanPlayer?.id || localGame.pendingHandSwapPlayerId;
+        if (sourceId) {
+          const result = localGame.swapHands(sourceId, targetId);
+          if (ackCallback) ackCallback(result);
+          if (result.success && humanPlayer) {
+            const state = localGame.getPrivateState(humanPlayer.id);
+            this.triggerLocalEvent('game:state', state);
+            this.checkAndExecuteLocalAIMove(localGame);
+          }
+        }
+      } else {
+        supabaseRoomService.swapCloudHands(payload).then(res => {
+          if (ackCallback) ackCallback(res);
+        });
+      }
+      return;
+    }
+
+    if (eventName === 'game:passTurn') {
+      const payload: any = args[0] || {};
+      const localGame = Array.from(this.localGames.values())[0];
+      if (localGame) {
+        const humanPlayer = localGame.players.find(p => !p.id.startsWith('bot_')) || localGame.players[0];
+        const playerId = payload?.playerId || humanPlayer?.id || localGame.getCurrentPlayer().id;
+        const result = localGame.passTurn(playerId);
+        if (ackCallback) ackCallback(result);
+        if (result.success && humanPlayer) {
+          const state = localGame.getPrivateState(humanPlayer.id);
+          this.triggerLocalEvent('game:state', state);
+          this.checkAndExecuteLocalAIMove(localGame);
+        }
+      } else {
+        supabaseRoomService.passCloudTurn(payload).then(res => {
+          if (ackCallback) ackCallback(res);
+        });
+      }
+      return;
+    }
+
     if (eventName === 'game:rematch') {
       const game = Array.from(this.localGames.values())[0];
       if (game) {

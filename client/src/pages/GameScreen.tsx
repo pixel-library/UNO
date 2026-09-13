@@ -314,10 +314,26 @@ export const GameScreen: React.FC = () => {
 
   // Hand Swap Target Selection Handler (7-Zero / Wild Swap)
   const handleSwapHands = (targetPlayerId: string) => {
+    if (isActionPending) return;
+    setIsActionPending(true);
     audioService.playButtonClick();
+
+    const pendingTimer = setTimeout(() => setIsActionPending(false), 1200);
+
     const socket = socketService.getSocket();
-    socket.emit('game:swapHand', { targetSwapPlayerId: targetPlayerId, targetPlayerId });
-    socket.emit('game:swapHands', { targetSwapPlayerId: targetPlayerId, targetPlayerId });
+    const myId = localStorage.getItem('uno_player_id') || gameState?.targetPlayerId;
+    socket.emit('game:swapHand', { 
+      targetSwapPlayerId: targetPlayerId, 
+      targetPlayerId,
+      playerId: myId,
+      roomCode: gameState?.roomCode 
+    }, (res: any) => {
+      clearTimeout(pendingTimer);
+      setIsActionPending(false);
+      if (!res?.success && res?.error) {
+        alert(res.error);
+      }
+    });
   };
 
   // Loading / Retry Screen if game state not ready
@@ -368,7 +384,8 @@ export const GameScreen: React.FC = () => {
     );
   }
 
-  const myId = localStorage.getItem('uno_player_id') || '';
+  const storedPlayerId = localStorage.getItem('uno_player_id') || '';
+  const myId = gameState?.targetPlayerId || (gameState?.players.find(p => p.id === storedPlayerId)?.id) || storedPlayerId || (gameState?.players[0]?.id || '');
   const activePlayers = (gameState?.players || []).filter(p => p && !p.isSpectator);
 
   // Compute relative seating order starting from local player
@@ -1028,7 +1045,7 @@ export const GameScreen: React.FC = () => {
             </div>
 
             <div className="space-y-3">
-              {activePlayers.filter(p => p.id !== myId).map((target) => (
+              {activePlayers.filter(p => p.id !== myId && p.id !== gameState.pendingHandSwapPlayerId).map((target) => (
                 <button
                   key={target.id}
                   onClick={() => handleSwapHands(target.id)}

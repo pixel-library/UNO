@@ -691,5 +691,40 @@ export const supabaseRoomService = {
       this.broadcastState(game.roomCode);
     }
     return { success };
+  },
+
+  /**
+   * Swap hands in cloud match (7-Zero / Wild Swap)
+   */
+  async swapCloudHands(payload: any): Promise<{ success: boolean; error?: string }> {
+    const game = getGameFromCache(payload?.roomCode);
+    if (game) {
+      const myId = payload?.playerId || localStorage.getItem('uno_player_id') || game.pendingHandSwapPlayerId;
+      const targetId = payload?.targetSwapPlayerId || payload?.targetPlayerId;
+      if (myId && targetId) {
+        const result = game.swapHands(myId, targetId);
+        if (result.success && game.roomCode) {
+          this.broadcastState(game.roomCode);
+        }
+        return result;
+      }
+    }
+    return { success: false, error: 'Game or swap targets invalid' };
+  },
+
+  /**
+   * Pass turn in cloud match
+   */
+  async passCloudTurn(payload?: any): Promise<{ success: boolean; error?: string }> {
+    const game = getGameFromCache(payload?.roomCode);
+    if (game) {
+      const myId = payload?.playerId || localStorage.getItem('uno_player_id') || game.getCurrentPlayer().id;
+      const result = game.passTurn(myId);
+      if (result.success && game.roomCode) {
+        this.broadcastState(game.roomCode);
+      }
+      return result;
+    }
+    return { success: false, error: 'Game not found' };
   }
 };

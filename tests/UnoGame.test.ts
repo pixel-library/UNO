@@ -78,7 +78,7 @@ describe('UnoGame Engine Unit Tests', () => {
     expect(customGame.players.length).toBe(2);
   });
 
-  it('should stack +2 cards and automatically absorb accumulated penalty cards when playing matching color card', () => {
+  it('should stack +2 cards and automatically skip turn when targeted player draws penalty cards', () => {
     const stackGame = new UnoGame('g_stack', 'STACK1', {
       houseRules: { stacking: true, sevenZero: false, jumpIn: false, counterDeflect: false }
     });
@@ -109,13 +109,17 @@ describe('UnoGame Engine Unit Tests', () => {
     expect(stackGame.activeStackCount).toBe(4);
     expect(stackGame.getCurrentPlayer().id).toBe('p3');
 
-    // Player 3 has BLUE 3 (no +2/+4). Player 3 plays BLUE 3 -> automatically absorbs +4 penalty & plays BLUE 3!
-    const handBeforeP3 = stackGame.playerHands.get('p3')?.length || 1;
-    const res3 = stackGame.playCard('p3', 'b_matching');
-    expect(res3.success).toBe(true);
+    // Player 3 has BLUE 3 (non-stacking). Trying to play BLUE 3 should be rejected while activeStackCount > 0!
+    const resPlay = stackGame.playCard('p3', 'b_matching');
+    expect(resPlay.success).toBe(false);
+
+    // Player 3 draws the +4 penalty cards -> absorbs +4 penalty & turn is skipped to Player 1!
+    const handBeforeP3 = stackGame.playerHands.get('p3')?.length || 2;
+    const resDraw = stackGame.drawCard('p3');
+    expect(resDraw.success).toBe(true);
     expect(stackGame.activeStackCount).toBe(0);
-    // Player 3 started with 1 card, absorbed +4 penalty cards, and played 1 card -> net cards: 1 + 4 - 1 = 4 cards
-    expect(stackGame.playerHands.get('p3')?.length).toBe(handBeforeP3 + 4 - 1);
+    expect(stackGame.playerHands.get('p3')?.length).toBe(handBeforeP3 + 4);
+    // Turn skipped p3 and advanced to p1!
     expect(stackGame.getCurrentPlayer().id).toBe('p1');
   });
 
@@ -182,5 +186,50 @@ describe('UnoGame Engine Unit Tests', () => {
     const totalAfter = (game.playerHands.get('p1')?.length || 0) + (game.playerHands.get('p2')?.length || 0);
     // Total remaining cards across hands should equal totalBefore minus the 1 played card
     expect(totalAfter).toBe(totalBefore - 1);
+  });
+
+  it('should handle WILD_SWAP card by setting pendingHandSwapPlayerId and swapping hands correctly', () => {
+    game.startGame();
+    const wildSwapCard = { id: 'ws_card', color: 'WILD' as const, value: 'WILD_SWAP' as const, score: 50 };
+    const p1OtherCard = { id: 'p1_c1', color: 'RED' as const, value: '1' as const, score: 1 };
+    const p2Card1 = { id: 'p2_c1', color: 'BLUE' as const, value: '5' as const, score: 5 };
+    const p2Card2 = { id: 'p2_c2', color: 'BLUE' as const, value: '6' as const, score: 6 };
+
+    game.playerHands.set('p1', [wildSwapCard, p1OtherCard]);
+    game.playerHands.set('p2', [p2Card1, p2Card2]);
+
+    const resPlay = game.playCard('p1', 'ws_card', 'RED');
+    expect(resPlay.success).toBe(true);
+    expect(game.pendingHandSwapPlayerId).toBe('p1');
+    expect(game.status).toBe('PLAYING');
+
+    // Perform hand swap with p2
+    const resSwap = game.swapHands('p1', 'p2');
+    expect(resSwap.success).toBe(true);
+    expect(game.pendingHandSwapPlayerId).toBeNull();
+    // p1 now has p2's 2 cards, p2 now has p1's remaining 1 card
+    expect(game.playerHands.get('p1')?.length).toBe(2);
+    expect(game.playerHands.get('p2')?.length).toBe(1);
+  });
+
+  it('should correctly award victory to target player if source player plays WILD_SWAP as their last card', () => {
+    game.startGame();
+    const wildSwapCard = { id: 'ws_last', color: 'WILD' as const, value: 'WILD_SWAP' as const, score: 50 };
+    const p2Card1 = { id: 'p2_c1', color: 'GREEN' as const, value: '7' as const, score: 7 };
+
+    game.playerHands.set('p1', [wildSwapCard]);
+    game.playerHands.set('p2', [p2Card1]);
+
+    // p1 plays WILD_SWAP as their last card
+    const resPlay = game.playCard('p1', 'ws_last', 'GREEN');
+    expect(resPlay.success).toBe(true);
+    expect(game.pendingHandSwapPlayerId).toBe('p1');
+    expect(game.status).toBe('PLAYING');
+
+    // p1 swaps with p2. p2 receives p1's empty hand (0 cards) -> p2 wins!
+    const resSwap = game.swapHands('p1', 'p2');
+    expect(resSwap.success).toBe(true);
+    expect(game.status).toBe('FINISHED');
+    expect(game.winner?.id).toBe('p2');
   });
 });

@@ -238,22 +238,12 @@ export class UnoGame {
     const isStackingCard = cardVal === 'DRAW_TWO' || cardVal === 'WILD_DRAW_FOUR' ||
       (this.settings.houseRules.counterDeflect && (cardVal === 'SKIP' || cardVal === 'REVERSE' || cardVal === 'SKIP_WILD'));
 
-    // If active stack is active and player plays a non-stacking matching card, absorb the stack penalty first!
+    // If targeted by +2/+4 stack penalty, player MUST play a stacking card or draw the stack penalty!
     if (this.activeStackCount > 0 && !isStackingCard) {
-      const penaltyCount = this.activeStackCount;
-      const penaltyCards = this.deck.drawMultiple(penaltyCount, this.discardPile);
-      hand.push(...penaltyCards);
-      this.activeStackCount = 0;
-      this.lastActionEvent = {
-        type: 'STACK',
-        title: `+${penaltyCount} CARDS TAKEN! 📥`,
-        playerName: currentPlayer.name,
-        timestamp: Date.now()
+      return {
+        success: false,
+        error: `Targeted by +${this.activeStackCount} stack penalty! You must play a +2/+4 card to stack or draw the penalty cards.`
       };
-      cardIndex = hand.findIndex(c => c.id === card.id);
-      if (cardIndex === -1) {
-        cardIndex = hand.indexOf(card);
-      }
     }
 
     // Remove from hand and add to discard pile
@@ -282,19 +272,19 @@ export class UnoGame {
 
     this.lastActionMessage = `${currentPlayer.name} played ${card.color} ${card.value}`;
 
+    // Apply special card action
+    this.applyCardAction(card, playerId);
+
+    // If pending 7-swap or wild swap, do not advance turn or declare victory until target is selected
+    if (this.pendingHandSwapPlayerId === playerId) {
+      return { success: true };
+    }
+
     // Check victory
     if (hand.length === 0) {
       this.status = 'FINISHED';
       this.winner = currentPlayer;
       this.calculateScores();
-      return { success: true };
-    }
-
-    // Apply special card action
-    this.applyCardAction(card, playerId);
-
-    // If pending 7-swap, do not advance turn until target is selected
-    if (this.pendingHandSwapPlayerId === playerId) {
       return { success: true };
     }
 
@@ -395,6 +385,20 @@ export class UnoGame {
     };
     this.lastActionMessage = `🔄 ${sourcePlayer.name} swapped hands with ${targetPlayer.name}!`;
 
+    // Check victory post-swap
+    if (sourcePlayer.cardCount === 0) {
+      this.status = 'FINISHED';
+      this.winner = sourcePlayer;
+      this.calculateScores();
+      return { success: true };
+    }
+    if (targetPlayer.cardCount === 0) {
+      this.status = 'FINISHED';
+      this.winner = targetPlayer;
+      this.calculateScores();
+      return { success: true };
+    }
+
     this.advanceTurn();
     return { success: true };
   }
@@ -405,7 +409,7 @@ export class UnoGame {
       return { success: false, error: 'Not your turn' };
     }
 
-    // If active stack penalties exist, draw the accumulated stack!
+    // If active stack penalties exist, draw the accumulated stack and lose turn!
     if (this.activeStackCount > 0) {
       const count = this.activeStackCount;
       const penaltyCards = this.deck.drawMultiple(count, this.discardPile);
@@ -423,7 +427,10 @@ export class UnoGame {
         playerName: currentPlayer.name,
         timestamp: Date.now()
       };
-      this.lastActionMessage = `📥 ${currentPlayer.name} drew ${count} penalty cards and can play a ${this.currentColor} card!`;
+      this.lastActionMessage = `📥 ${currentPlayer.name} drew ${count} penalty cards and lost turn!`;
+
+      // Skip receiving player's turn
+      this.advanceTurn();
 
       return { success: true, drawnCard: penaltyCards[0] };
     }
@@ -605,15 +612,39 @@ export class UnoGame {
         break;
 
       case 'DRAW_TWO':
-        this.activeStackCount += 2;
-        this.lastActionEvent = { type: 'STACK', title: `+${this.activeStackCount} STACK! ⚡`, playerName, timestamp: Date.now() };
-        this.lastActionMessage += ` — +2 stacked! (Total stack: +${this.activeStackCount})`;
+        if (this.settings.houseRules.stacking) {
+          this.activeStackCount += 2;
+          this.lastActionEvent = { type: 'STACK', title: `+${this.activeStackCount} STACK! ⚡`, playerName, timestamp: Date.now() };
+          this.lastActionMessage += ` — +2 stacked! (Total stack: +${this.activeStackCount})`;
+        } else {
+          const nextPlayer = this.getNextPlayer();
+          const nextHand = this.playerHands.get(nextPlayer.id) || [];
+          const penaltyCards = this.deck.drawMultiple(2, this.discardPile);
+          nextHand.push(...penaltyCards);
+          this.playerHands.set(nextPlayer.id, nextHand);
+          nextPlayer.cardCount = nextHand.length;
+          this.advanceTurnIndex();
+          this.lastActionEvent = { type: 'STACK', title: '+2 CARDS & SKIPPED! ⚡', playerName, timestamp: Date.now() };
+          this.lastActionMessage += ` — ${nextPlayer.name} drew 2 cards and was skipped!`;
+        }
         break;
 
       case 'WILD_DRAW_FOUR':
-        this.activeStackCount += 4;
-        this.lastActionEvent = { type: 'STACK', title: `+${this.activeStackCount} STACK! ⚡`, playerName, timestamp: Date.now() };
-        this.lastActionMessage += ` — +4 stacked! (Total stack: +${this.activeStackCount})`;
+        if (this.settings.houseRules.stacking) {
+          this.activeStackCount += 4;
+          this.lastActionEvent = { type: 'STACK', title: `+${this.activeStackCount} STACK! ⚡`, playerName, timestamp: Date.now() };
+          this.lastActionMessage += ` — +4 stacked! (Total stack: +${this.activeStackCount})`;
+        } else {
+          const nextPlayer = this.getNextPlayer();
+          const nextHand = this.playerHands.get(nextPlayer.id) || [];
+          const penaltyCards = this.deck.drawMultiple(4, this.discardPile);
+          nextHand.push(...penaltyCards);
+          this.playerHands.set(nextPlayer.id, nextHand);
+          nextPlayer.cardCount = nextHand.length;
+          this.advanceTurnIndex();
+          this.lastActionEvent = { type: 'STACK', title: '+4 CARDS & SKIPPED! ⚡', playerName, timestamp: Date.now() };
+          this.lastActionMessage += ` — ${nextPlayer.name} drew 4 cards and was skipped!`;
+        }
         break;
 
       case '7':

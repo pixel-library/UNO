@@ -56,3 +56,17 @@
   - [x] Hidden chat panel in VS AI mode while keeping online multiplayer chat intact
   - [x] Verified zero scrolling on `GameScreen` (`h-screen overflow-hidden`)
   - [x] Verified 100% Vitest test suite pass rate and zero build errors in `npm run build`
+- [x] Phase 13: Wild Swap Card Logic & Post-Swap Victory Evaluation Fix
+  - [x] Corrected `playCard()` execution order in `UnoGame.ts` so special card actions and `pendingHandSwapPlayerId` are evaluated before zero-hand victory check.
+  - [x] Added post-swap victory check in `swapHands()` in `UnoGame.ts` to award victory to whichever player ends up with 0 cards after hand swap.
+  - [x] Built interactive Hand Swap Target Selection Modal UI in `client/src/pages/GameScreen.tsx`.
+  - [x] Updated socket event handlers in `server/index.ts` to handle `game:swapHand` and `game:swapHands`.
+  - [x] Added comprehensive unit tests in `tests/UnoGame.test.ts` (12/12 passing).
+  - [x] Updated Rules page (`client/src/pages/Rules.tsx`) to document Discard All 🎨, Deflect Shield 🛡️, Wild Shuffle 🌀, and Wild Swap 🎯.
+- [x] Phase 14: Hand Swap Supabase Realtime Handler & +2/+4 Penalty Turn Skip Fix
+  - [x] Added `swapCloudHands` and `passCloudTurn` to `supabaseRoomService.ts` for online/Vercel/Supabase matches.
+  - [x] Added `game:swapHand`, `game:swapHands`, and `game:passTurn` to `socketService.ts` local fallback emitter.
+  - [x] Fixed `myId` resolution and excluded self / `pendingHandSwapPlayerId` in Hand Swap Target Selection Modal in `GameScreen.tsx`.
+  - [x] Fixed +2 / +4 penalty execution: rejected non-stacking card plays while targeted by active stack penalty, and called `advanceTurn()` when drawing penalty cards to skip the receiving player's turn.
+  - [x] Handled non-stacking `DRAW_TWO` and `WILD_DRAW_FOUR` house rules in `applyCardAction()`.
+  - [x] Verified all 12 Vitest unit tests pass and client build completes with zero errors.

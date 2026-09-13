@@ -95,6 +95,7 @@ export interface GamePublicState {
 
 export interface PlayerPrivateState extends GamePublicState {
   hand: Card[];
+  targetPlayerId?: string;
 }
 
 export interface ChatMessage {

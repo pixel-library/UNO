@@ -37,9 +37,12 @@ We have successfully built a complete, production-ready, real-time online UNO ga
 
 ## 🧪 Verification Results
 
-- **Unit Tests**: 6/6 Vitest unit tests passed (`npx vitest run`).
+- **Unit Tests**: 12/12 Vitest unit tests passed (`npx vitest run`).
 - **Frontend Build**: Vite production bundle compiled cleanly (`npm run build:client`).
 - **Server Compilation**: TypeScript server build succeeded with 0 errors (`npm run build:server`).
+- **Hand Swap Cloud & Socket Event Synchronization**: Added `swapCloudHands` and `passCloudTurn` to `supabaseRoomService.ts` and `socketService.ts`. Target selection modal properly filters out the local player so only valid opponents appear. Clicking "SWAP" now emits state updates across Supabase Realtime / Socket.IO and closes modal seamlessly.
+- **+2 / +4 Penalty Execution & Turn Skipping**: In `UnoGame.ts`, playing regular non-stacking cards while targeted by `activeStackCount > 0` is rejected. Drawing +2/+4 penalty stack now automatically calls `advanceTurn()` to skip the receiving player's turn as per official UNO rules. Non-stacking mode (`stacking: false`) automatically deals penalty cards and skips the target player's turn.
+- **Wild Swap Execution & Post-Swap Victory**: `playCard()` evaluates special card actions and `pendingHandSwapPlayerId` before checking zero-hand victory. When `WILD_SWAP` or `7` is played, target selection modal appears. Once swapped via `swapHands()`, victory is evaluated post-swap, awarding victory to whichever player ends up with 0 cards.
 - **Playable Drawn Card Retention**: When a player draws a card on their turn and that card matches top discard, turn is kept on current player so they can immediately play it.
 - **Mobile Multi-Row Hand Layout**: When hand size exceeds 7 cards on mobile view (<640px), cards automatically split into 2 spacious, easily-tappable rows with size="sm" cards.
 - **Mobile Board Opponent Visibility**: Enhanced Top, Left, and Right opponent status badges to display complete player names, avatars, card counts, and turn glow rings without cutoffs or truncation.
