@@ -15,6 +15,10 @@ export const Play: React.FC = () => {
   const [sevenZero, setSevenZero] = useState<boolean>(false);
   const [forcePlay, setForcePlay] = useState<boolean>(false);
   const [drawUntilPlayable, setDrawUntilPlayable] = useState<boolean>(false);
+  const [discardAll, setDiscardAll] = useState<boolean>(false);
+  const [counterDeflect, setCounterDeflect] = useState<boolean>(true);
+  const [shuffleHands, setShuffleHands] = useState<boolean>(false);
+  const [wildSwap, setWildSwap] = useState<boolean>(false);
   const [isCreating, setIsCreating] = useState(false);
 
   // Join Game State
@@ -105,7 +109,11 @@ export const Play: React.FC = () => {
               forcePlay,
               drawUntilPlayable,
               multipleCardPlay: false,
-              customCards: gameMode === 'Custom'
+              customCards: gameMode === 'Custom',
+              discardAll,
+              counterDeflect,
+              shuffleHands,
+              wildSwap
             }
           }
         },
@@ -411,6 +419,94 @@ export const Play: React.FC = () => {
                           drawUntilPlayable ? 'translate-x-6' : 'translate-x-0'
                         }`}
                       />
+                    </button>
+                  </div>
+
+                  {/* Discard All Color Switch */}
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium text-neutral-700">Discard All Color 🎨</span>
+                    <button
+                      type="button"
+                      onClick={() => setDiscardAll(!discardAll)}
+                      className={`w-12 h-6 flex items-center rounded-full p-0.5 transition-colors ${
+                        discardAll ? 'bg-sky-500' : 'bg-neutral-300'
+                      }`}
+                    >
+                      <div
+                        className={`bg-white w-5 h-5 rounded-full shadow-md transform transition-transform flex items-center justify-center ${
+                          discardAll ? 'translate-x-6' : 'translate-x-0'
+                        }`}
+                      >
+                        <span className="text-[8px] font-black text-sky-600">
+                          {discardAll ? 'ON' : ''}
+                        </span>
+                      </div>
+                    </button>
+                  </div>
+
+                  {/* Deflect Shield Switch */}
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium text-neutral-700">Deflect Shield 🛡️</span>
+                    <button
+                      type="button"
+                      onClick={() => setCounterDeflect(!counterDeflect)}
+                      className={`w-12 h-6 flex items-center rounded-full p-0.5 transition-colors ${
+                        counterDeflect ? 'bg-sky-500' : 'bg-neutral-300'
+                      }`}
+                    >
+                      <div
+                        className={`bg-white w-5 h-5 rounded-full shadow-md transform transition-transform flex items-center justify-center ${
+                          counterDeflect ? 'translate-x-6' : 'translate-x-0'
+                        }`}
+                      >
+                        <span className="text-[8px] font-black text-sky-600">
+                          {counterDeflect ? 'ON' : ''}
+                        </span>
+                      </div>
+                    </button>
+                  </div>
+
+                  {/* Wild Shuffle Hands Switch */}
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium text-neutral-700">Wild Shuffle 🌀</span>
+                    <button
+                      type="button"
+                      onClick={() => setShuffleHands(!shuffleHands)}
+                      className={`w-12 h-6 flex items-center rounded-full p-0.5 transition-colors ${
+                        shuffleHands ? 'bg-sky-500' : 'bg-neutral-300'
+                      }`}
+                    >
+                      <div
+                        className={`bg-white w-5 h-5 rounded-full shadow-md transform transition-transform flex items-center justify-center ${
+                          shuffleHands ? 'translate-x-6' : 'translate-x-0'
+                        }`}
+                      >
+                        <span className="text-[8px] font-black text-sky-600">
+                          {shuffleHands ? 'ON' : ''}
+                        </span>
+                      </div>
+                    </button>
+                  </div>
+
+                  {/* Wild Swap Card Switch */}
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium text-neutral-700">Wild Swap 🎯</span>
+                    <button
+                      type="button"
+                      onClick={() => setWildSwap(!wildSwap)}
+                      className={`w-12 h-6 flex items-center rounded-full p-0.5 transition-colors ${
+                        wildSwap ? 'bg-sky-500' : 'bg-neutral-300'
+                      }`}
+                    >
+                      <div
+                        className={`bg-white w-5 h-5 rounded-full shadow-md transform transition-transform flex items-center justify-center ${
+                          wildSwap ? 'translate-x-6' : 'translate-x-0'
+                        }`}
+                      >
+                        <span className="text-[8px] font-black text-sky-600">
+                          {wildSwap ? 'ON' : ''}
+                        </span>
+                      </div>
                     </button>
                   </div>
 
