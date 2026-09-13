@@ -180,8 +180,9 @@ export class UnoGame {
     // Wild cards are always playable
     if (card.color === 'WILD') return true;
 
-    // Matching active color
+    // Matching active color or top card color
     if (card.color === this.currentColor) return true;
+    if (top.color !== 'WILD' && card.color === top.color) return true;
 
     // Matching card value / symbol / number
     if (card.value === top.value) return true;
