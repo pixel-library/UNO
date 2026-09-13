@@ -212,8 +212,8 @@ export class UnoGame {
     if (this.activeStackCount > 0 && this.settings.houseRules.stacking) {
       const cardVal = String(card.value || '').trim().toUpperCase();
       const isStackingCard = cardVal === 'DRAW_TWO' || cardVal === 'WILD_DRAW_FOUR' ||
-        (this.settings.houseRules.counterDeflect && (cardVal === 'SKIP' || cardVal === 'REVERSE' || cardVal === 'SKIP_WILD'));
-      return isStackingCard;
+        Boolean(this.settings.houseRules.counterDeflect && (cardVal === 'SKIP' || cardVal === 'REVERSE' || cardVal === 'SKIP_WILD'));
+      return Boolean(isStackingCard);
     }
 
     return true;
