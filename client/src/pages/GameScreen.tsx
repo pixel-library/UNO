@@ -250,17 +250,20 @@ export const GameScreen: React.FC = () => {
 
   // Draw Card Handler
   const handleDrawCard = () => {
-    if (isActionPending) return;
+    if (!isMyTurn || isActionPending) return;
     setIsActionPending(true);
     audioService.playDrawSound();
 
     const pendingTimer = setTimeout(() => setIsActionPending(false), 1200);
 
     const socket = socketService.getSocket();
-    const myId = localStorage.getItem('uno_player_id');
-    socket.emit('game:drawCard', { roomCode: gameState?.roomCode, playerId: myId }, (res: any) => {
+    const resolvedId = myId || localStorage.getItem('uno_player_id');
+    socket.emit('game:drawCard', { roomCode: gameState?.roomCode, playerId: resolvedId }, (res: any) => {
       clearTimeout(pendingTimer);
       setIsActionPending(false);
+      if (!res?.success && res?.error) {
+        alert(res.error);
+      }
     });
   };
 

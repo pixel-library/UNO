@@ -550,10 +550,13 @@ io.on('connection', (socket) => {
   socket.on('game:swapHands', handleHandSwapEvent);
 
   // 5. Draw Card
-  socket.on('game:drawCard', (_, callback) => {
+  socket.on('game:drawCard', (payload: any, callback: any) => {
+    let cb = typeof payload === 'function' ? payload : callback;
+    let payloadData = typeof payload === 'object' ? payload : {};
+
     let playerInfo = socketPlayerMap.get(socket.id);
-    let playerId = playerInfo?.playerId || socket.data?.playerId;
-    let roomCode = playerInfo?.roomCode || socket.data?.roomCode;
+    let playerId = payloadData?.playerId || playerInfo?.playerId || socket.data?.playerId;
+    let roomCode = payloadData?.roomCode ? String(payloadData.roomCode).trim().toUpperCase() : (playerInfo?.roomCode || socket.data?.roomCode);
 
     let game = roomCode ? activeGames.get(roomCode) : undefined;
     if (!game && playerId) {
@@ -561,12 +564,17 @@ io.on('connection', (socket) => {
     }
 
     if (!game || !playerId) {
-      if (callback) callback({ success: false, error: 'Game not found' });
+      if (cb) cb({ success: false, error: 'Game not found' });
+      return;
+    }
+
+    if (game.getCurrentPlayer().id !== playerId) {
+      if (cb) cb({ success: false, error: 'Not your turn' });
       return;
     }
 
     const result = game.drawCard(playerId);
-    if (callback) callback(result);
+    if (cb) cb(result);
 
     if (result.success) {
       broadcastGameState(game);

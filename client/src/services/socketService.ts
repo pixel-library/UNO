@@ -274,10 +274,11 @@ class SocketService {
     }
 
     if (eventName === 'game:drawCard') {
+      const payload: any = args[0] || {};
       const game = Array.from(this.localGames.values())[0];
       if (game) {
         const humanPlayer = game.players.find(p => !p.id.startsWith('bot_')) || game.players[0];
-        const playerId = humanPlayer?.id || game.getCurrentPlayer().id;
+        const playerId = payload?.playerId || humanPlayer?.id || game.getCurrentPlayer().id;
         const result = game.drawCard(playerId);
         if (ackCallback) ackCallback(result);
         if (result.success && humanPlayer) {
