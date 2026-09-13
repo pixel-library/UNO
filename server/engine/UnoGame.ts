@@ -477,10 +477,35 @@ export class UnoGame {
       currentPlayer.hasCalledUno = false;
     }
 
-    this.lastActionMessage = `${currentPlayer.name} drew a card`;
+    // Check if drawn card is playable
+    const isDrawnPlayable = this.isPlayable(drawnCard);
 
-    // Always advance turn after drawing a card
-    this.advanceTurn();
+    // If drawUntilPlayable rule is active and drawn card is not playable, continue drawing until playable card found
+    if (this.settings.houseRules.drawUntilPlayable && !isDrawnPlayable && this.deck.count > 0) {
+      let currentDrawn = drawnCard;
+      while (!this.isPlayable(currentDrawn) && this.deck.count > 0) {
+        const nextCard = this.deck.draw();
+        if (nextCard) {
+          hand.push(nextCard);
+          currentDrawn = nextCard;
+        } else {
+          break;
+        }
+      }
+      currentPlayer.cardCount = hand.length;
+      if (!this.isPlayable(currentDrawn)) {
+        this.advanceTurn();
+      }
+      return { success: true, drawnCard: currentDrawn };
+    }
+
+    if (isDrawnPlayable) {
+      this.lastActionMessage = `${currentPlayer.name} drew a playable card (${drawnCard.color} ${drawnCard.value})!`;
+      this.turnStartedAt = Date.now();
+    } else {
+      this.lastActionMessage = `${currentPlayer.name} drew a card`;
+      this.advanceTurn();
+    }
 
     return { success: true, drawnCard };
   }
