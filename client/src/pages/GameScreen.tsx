@@ -466,7 +466,9 @@ export const GameScreen: React.FC = () => {
     const cardVal = String(card.value || '').trim().toUpperCase();
 
     if ((gameState?.activeStackCount || 0) > 0 && gameState?.settings?.houseRules?.stacking) {
-      return cardVal === 'DRAW_TWO' || cardVal === 'WILD_DRAW_FOUR';
+      const isDeflectSupported = Boolean(gameState?.settings?.houseRules?.counterDeflect);
+      return cardVal === 'DRAW_TWO' || cardVal === 'WILD_DRAW_FOUR' ||
+        (isDeflectSupported && (cardVal === 'SKIP' || cardVal === 'REVERSE' || cardVal === 'SKIP_WILD'));
     }
 
     if (cardColor === 'WILD') return true;
@@ -1017,43 +1019,57 @@ export const GameScreen: React.FC = () => {
       {/* ------------------------------------------------------------- */}
       {/* WILD COLOR PICKER MODAL                                       */}
       {/* ------------------------------------------------------------- */}
-      {showColorPicker && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-md z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl p-8 max-w-sm w-full text-center space-y-6 border border-neutral-200 shadow-2xl">
-            <h3 className="text-2xl font-black text-uno-navy tracking-tight">CHOOSE COLOR</h3>
-            <p className="text-xs font-semibold text-neutral-500">
-              Select the active color for the next turns:
-            </p>
+      {showColorPicker && (() => {
+        const pendingWildCard = gameState?.hand?.find(c => c.id === pendingWildCardId);
+        const isWildShuffle = pendingWildCard?.value === 'WILD_SHUFFLE';
+        const isWildDrawFour = pendingWildCard?.value === 'WILD_DRAW_FOUR';
+        const modalTitle = isWildShuffle ? '🌀 WILD SHUFFLE' : isWildDrawFour ? '⚡ WILD DRAW FOUR' : '🎨 CHOOSE COLOR';
+        const modalDesc = isWildShuffle 
+          ? 'Gathering & redistributing all player hands! Choose active color for next turns:' 
+          : isWildDrawFour 
+          ? 'Next player faces +4 penalty stack! Choose active color for next turns:' 
+          : 'Select the active color for the next turns:';
 
-            <div className="grid grid-cols-2 gap-4">
-              <button
-                onClick={() => handleSelectColor('RED')}
-                className="h-20 rounded-2xl bg-[#E52521] hover:scale-105 transition-transform text-white font-extrabold text-lg shadow-md"
-              >
-                RED
-              </button>
-              <button
-                onClick={() => handleSelectColor('YELLOW')}
-                className="h-20 rounded-2xl bg-[#FCD116] hover:scale-105 transition-transform text-uno-navy font-extrabold text-lg shadow-md"
-              >
-                YELLOW
-              </button>
-              <button
-                onClick={() => handleSelectColor('GREEN')}
-                className="h-20 rounded-2xl bg-[#2D963F] hover:scale-105 transition-transform text-white font-extrabold text-lg shadow-md"
-              >
-                GREEN
-              </button>
-              <button
-                onClick={() => handleSelectColor('BLUE')}
-                className="h-20 rounded-2xl bg-[#0082CA] hover:scale-105 transition-transform text-white font-extrabold text-lg shadow-md"
-              >
-                BLUE
-              </button>
+        return (
+          <div className="fixed inset-0 bg-black/70 backdrop-blur-md z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-3xl p-8 max-w-sm w-full text-center space-y-6 border border-neutral-200 shadow-2xl">
+              <div>
+                <h3 className="text-2xl font-black text-uno-navy tracking-tight">{modalTitle}</h3>
+                <p className="text-xs font-semibold text-neutral-500 mt-1">
+                  {modalDesc}
+                </p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <button
+                  onClick={() => handleSelectColor('RED')}
+                  className="h-20 rounded-2xl bg-[#E52521] hover:scale-105 transition-transform text-white font-extrabold text-lg shadow-md cursor-pointer"
+                >
+                  RED
+                </button>
+                <button
+                  onClick={() => handleSelectColor('YELLOW')}
+                  className="h-20 rounded-2xl bg-[#FCD116] hover:scale-105 transition-transform text-uno-navy font-extrabold text-lg shadow-md cursor-pointer"
+                >
+                  YELLOW
+                </button>
+                <button
+                  onClick={() => handleSelectColor('GREEN')}
+                  className="h-20 rounded-2xl bg-[#2D963F] hover:scale-105 transition-transform text-white font-extrabold text-lg shadow-md cursor-pointer"
+                >
+                  GREEN
+                </button>
+                <button
+                  onClick={() => handleSelectColor('BLUE')}
+                  className="h-20 rounded-2xl bg-[#0082CA] hover:scale-105 transition-transform text-white font-extrabold text-lg shadow-md cursor-pointer"
+                >
+                  BLUE
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* ------------------------------------------------------------- */}
       {/* HAND SWAP SELECTION MODAL (7-Zero / Wild Swap)               */}

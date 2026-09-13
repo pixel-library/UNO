@@ -178,6 +178,23 @@ describe('UnoGame Engine Unit Tests', () => {
     expect(totalAfter).toBe(totalBefore - 1);
   });
 
+  it('should not award premature victory on WILD_SHUFFLE if player hand receives redistributed cards', () => {
+    game.startGame();
+    game.playerHands.set('p1', [
+      { id: 'ws_only', color: 'WILD' as const, value: 'WILD_SHUFFLE' as const, score: 50 }
+    ]);
+    game.playerHands.set('p2', [
+      { id: 'c1', color: 'BLUE' as const, value: '5' as const, score: 5 },
+      { id: 'c2', color: 'BLUE' as const, value: '6' as const, score: 6 },
+      { id: 'c3', color: 'BLUE' as const, value: '7' as const, score: 7 }
+    ]);
+
+    const res = game.playCard('p1', 'ws_only', 'BLUE');
+    expect(res.success).toBe(true);
+    expect(game.status).toBe('PLAYING');
+    expect(game.winner).toBeNull();
+  });
+
   it('should handle WILD_SWAP card by setting pendingHandSwapPlayerId and swapping hands correctly', () => {
     game.startGame();
     const wildSwapCard = { id: 'ws_card', color: 'WILD' as const, value: 'WILD_SWAP' as const, score: 50 };

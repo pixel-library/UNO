@@ -289,8 +289,9 @@ export class UnoGame {
       return { success: true };
     }
 
-    // Check victory
-    if (hand.length === 0) {
+    // Check victory post-action
+    const currentHand = this.playerHands.get(playerId) || [];
+    if (currentHand.length === 0) {
       this.status = 'FINISHED';
       this.winner = currentPlayer;
       this.calculateScores();
