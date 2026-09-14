@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { socketService } from '@/services/socketService';
+import { supabaseRoomService } from '@/services/supabaseRoomService';
 import { validateRoomCode } from '@shared/validation/roomValidator';
 import { UnoCard } from '@/components/card/UnoCard';
 
@@ -46,25 +47,53 @@ export const Play: React.FC = () => {
   const [publicRooms, setPublicRooms] = useState<any[]>([]);
   const [isLoadingRooms, setIsLoadingRooms] = useState<boolean>(false);
 
+  const mergePublicRooms = (apiRooms: any[], cloudRooms: any[]) => {
+    const map = new Map<string, any>();
+    (apiRooms || []).forEach(r => { if (r && r.code) map.set(r.code, r); });
+    (cloudRooms || []).forEach(r => { if (r && r.code && !map.has(r.code)) map.set(r.code, r); });
+    return Array.from(map.values()).filter(r => r && r.settings ? !r.settings.isPrivate : true);
+  };
+
   const fetchPublicRooms = async () => {
     setIsLoadingRooms(true);
+    let serverRooms: any[] = [];
     try {
       const res = await fetch('/api/rooms/public');
       const data = await res.json();
       if (data.success && Array.isArray(data.rooms)) {
-        setPublicRooms(data.rooms);
+        serverRooms = data.rooms;
       }
     } catch (err) {
-      console.error('Failed to fetch public rooms', err);
+      // Ignore static host fetch error
     } finally {
+      const cloudRooms = supabaseRoomService.getPublicRooms();
+      setPublicRooms(mergePublicRooms(serverRooms, cloudRooms));
       setIsLoadingRooms(false);
     }
   };
 
   useEffect(() => {
     fetchPublicRooms();
-    const interval = setInterval(fetchPublicRooms, 5000);
-    return () => clearInterval(interval);
+    const interval = setInterval(fetchPublicRooms, 3000);
+
+    const socket = socketService.getSocket();
+    const handleLobbyUpdate = (rooms?: any[]) => {
+      const cloudRooms = supabaseRoomService.getPublicRooms();
+      const serverRooms = Array.isArray(rooms) ? rooms : [];
+      setPublicRooms(mergePublicRooms(serverRooms, cloudRooms));
+    };
+
+    socket.on('lobby:update', handleLobbyUpdate);
+    socket.emit('lobby:getRooms', (res: any) => {
+      if (res?.success && Array.isArray(res.rooms)) {
+        handleLobbyUpdate(res.rooms);
+      }
+    });
+
+    return () => {
+      clearInterval(interval);
+      socket.off('lobby:update', handleLobbyUpdate);
+    };
   }, []);
 
   const handleJoinPublicRoom = (code: string) => {

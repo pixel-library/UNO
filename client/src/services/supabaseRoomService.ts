@@ -34,16 +34,20 @@ function getGlobalLobbyChannel() {
 
     globalLobbyChannel.on('broadcast', { event: 'room:announce' }, (data: any) => {
       const payload = data?.payload;
-      if (payload?.roomCode && payload?.gameId && !cloudGameCache.has(payload.roomCode)) {
+      if (payload?.roomCode && payload?.gameId) {
         console.log(`[GLOBAL LOBBY] Received room announcement for ${payload.roomCode}`);
-        const game = new UnoGame(payload.gameId, payload.roomCode, payload.settings);
-        if (Array.isArray(payload.players)) {
-          payload.players.forEach((p: any) => {
-            game.addPlayer(p.id, p.sessionId || `sess_${p.id}`, p.name, p.isHost, p.isSpectator);
-          });
+        let game = cloudGameCache.get(payload.roomCode);
+        if (!game) {
+          game = new UnoGame(payload.gameId, payload.roomCode, payload.settings);
+          cloudGameCache.set(payload.roomCode, game);
+          cloudGameCache.set(payload.gameId, game);
+        } else if (payload.settings) {
+          game.settings = { ...game.settings, ...payload.settings };
         }
-        cloudGameCache.set(payload.roomCode, game);
-        cloudGameCache.set(payload.gameId, game);
+        if (Array.isArray(payload.players)) {
+          game.players = payload.players;
+        }
+        socketService.triggerLocalEvent('lobby:update', supabaseRoomService.getPublicRooms());
       }
     });
 
@@ -129,6 +133,28 @@ function getGlobalLobbyChannel() {
 getGlobalLobbyChannel();
 
 export const supabaseRoomService = {
+  /**
+   * Get active public rooms cached locally or from Realtime lobby
+   */
+  getPublicRooms(): any[] {
+    const publicRooms: any[] = [];
+    const processedCodes = new Set<string>();
+    cloudGameCache.forEach((game) => {
+      if (game.status === 'WAITING' && !game.settings.isPrivate && !processedCodes.has(game.roomCode)) {
+        processedCodes.add(game.roomCode);
+        publicRooms.push({
+          code: game.roomCode,
+          gameId: game.id,
+          hostName: game.players.find(p => p.isHost)?.name || 'Host',
+          playerCount: game.players.length,
+          maxPlayers: game.settings.maxPlayers,
+          settings: game.settings
+        });
+      }
+    });
+    return publicRooms;
+  },
+
   /**
    * Create a new online game room in Supabase DB & Realtime channel
    */

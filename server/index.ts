@@ -98,7 +98,7 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', activeGames: activeGames.size });
 });
 
-app.get('/api/rooms/public', (req, res) => {
+function getPublicRoomsList(): any[] {
   const publicRooms: any[] = [];
   activeGames.forEach((game) => {
     if (game.status === 'WAITING' && !game.settings.isPrivate) {
@@ -112,7 +112,15 @@ app.get('/api/rooms/public', (req, res) => {
       });
     }
   });
-  res.json({ success: true, rooms: publicRooms });
+  return publicRooms;
+}
+
+function broadcastLobbyUpdate() {
+  io.emit('lobby:update', getPublicRoomsList());
+}
+
+app.get('/api/rooms/public', (req, res) => {
+  res.json({ success: true, rooms: getPublicRoomsList() });
 });
 
 app.get('/api/rooms/:code', (req, res) => {
@@ -134,6 +142,11 @@ app.get('/api/rooms/:code', (req, res) => {
 // SOCKET.IO EVENT HANDLERS
 // -----------------------------------------------------------------
 io.on('connection', (socket) => {
+
+  // Get Lobby Public Rooms
+  socket.on('lobby:getRooms', (callback) => {
+    if (callback) callback({ success: true, rooms: getPublicRoomsList() });
+  });
 
   // 1. Create Room
   socket.on('room:create', ({ playerName, settings }: { playerName: string; settings?: Partial<GameSettings> }, callback) => {
@@ -170,6 +183,7 @@ io.on('connection', (socket) => {
     }
 
     broadcastGameState(game);
+    broadcastLobbyUpdate();
   });
 
 
@@ -250,7 +264,10 @@ io.on('connection', (socket) => {
 
     const success = game.kickPlayer(playerInfo.playerId, targetPlayerId);
     if (callback) callback({ success });
-    if (success) broadcastGameState(game);
+    if (success) {
+      broadcastGameState(game);
+      broadcastLobbyUpdate();
+    }
   });
 
   socket.on('room:transferHost', ({ newHostId }: { newHostId: string }, callback) => {
@@ -274,7 +291,10 @@ io.on('connection', (socket) => {
 
     const success = game.updateSettings(playerInfo.playerId, settings);
     if (callback) callback({ success });
-    if (success) broadcastGameState(game);
+    if (success) {
+      broadcastGameState(game);
+      broadcastLobbyUpdate();
+    }
   });
 
 
@@ -325,6 +345,7 @@ io.on('connection', (socket) => {
       });
     }
     broadcastGameState(game);
+    broadcastLobbyUpdate();
   });
 
   // 4. Play Card
