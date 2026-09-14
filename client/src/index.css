@@ -55,3 +55,40 @@
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(0, 0, 0, 0.35);
 }
+
+/* Floating Emoji Reaction Animations */
+@keyframes floatUpEmote {
+  0% {
+    opacity: 0;
+    transform: translateY(10px) scale(0.4) rotate(-10deg);
+  }
+  20% {
+    opacity: 1;
+    transform: translateY(-15px) scale(1.4) rotate(6deg);
+  }
+  40% {
+    transform: translateY(-35px) scale(1.15) rotate(-6deg);
+  }
+  75% {
+    opacity: 0.9;
+    transform: translateY(-65px) scale(1) rotate(2deg);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-90px) scale(0.7);
+  }
+}
+
+.animate-float-emote {
+  animation: floatUpEmote 2.2s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@keyframes popScale {
+  0% { transform: scale(0); opacity: 0; }
+  70% { transform: scale(1.15); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.animate-pop-scale {
+  animation: popScale 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { Copy, Volume2, VolumeX, Settings, MessageSquare, Send, Check, Play, Zap, ArrowRight, Music, X } from 'lucide-react';
+import { Copy, Volume2, VolumeX, Settings, MessageSquare, Send, Check, Play, Zap, ArrowRight, Music, X, Smile } from 'lucide-react';
 import { UnoCard } from '@/components/card/UnoCard';
 import { CardColor, PlayerPrivateState, Card, ChatMessage } from '@shared/types/game';
 import { audioService } from '@/services/audioService';
@@ -25,6 +25,10 @@ export const GameScreen: React.FC = () => {
   const [pendingWildCardId, setPendingWildCardId] = useState<string | null>(null);
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
+
+  // Animated Emoji Reaction State
+  const [showEmotePicker, setShowEmotePicker] = useState(false);
+  const [floatingEmotes, setFloatingEmotes] = useState<{ id: string; senderId: string; emote: string }[]>([]);
 
   // Responsive screen detection for mobile card sizing
   const [isMobile, setIsMobile] = useState(
@@ -82,6 +86,17 @@ export const GameScreen: React.FC = () => {
           newState.chatMessages!.forEach(m => map.set(m.id, m));
           return Array.from(map.values()).sort((a, b) => a.timestamp - b.timestamp);
         });
+      }
+      if (newState.activeEmote && newState.activeEmote.timestamp) {
+        const emoteId = `${newState.activeEmote.senderId}_${newState.activeEmote.timestamp}_${newState.activeEmote.emote}`;
+        setFloatingEmotes((prev) => {
+          if (prev.some(e => e.id === emoteId)) return prev;
+          return [...prev, { id: emoteId, senderId: newState.activeEmote!.senderId, emote: newState.activeEmote!.emote }];
+        });
+        audioService.playEmoteSound();
+        setTimeout(() => {
+          setFloatingEmotes((prev) => prev.filter(e => e.id !== emoteId));
+        }, 2200);
       }
       setIsActionPending(false);
       setSyncError(null);
@@ -297,6 +312,14 @@ export const GameScreen: React.FC = () => {
     socket.emit('game:challengeUno', { roomCode: gameState?.roomCode, playerId: myId });
   };
 
+  // Send Animated Emoji Reaction Handler
+  const handleSendEmote = (emote: string) => {
+    audioService.playEmoteSound();
+    const socket = socketService.getSocket();
+    socket.emit('game:sendEmote', { emote });
+    setShowEmotePicker(false);
+  };
+
   // Send Chat Message
   const handleSendChat = (e: React.FormEvent) => {
     e.preventDefault();
@@ -510,7 +533,7 @@ export const GameScreen: React.FC = () => {
         </div>
 
         {/* Top Center: Top Opponent Status Pill */}
-        <div className="flex flex-col items-center z-20 shrink">
+        <div className="flex flex-col items-center z-20 shrink relative">
           {topOpponent ? (
             <div className={`bg-white/10 backdrop-blur-md px-2 py-1 sm:px-4 sm:py-1.5 rounded-2xl border transition-all flex items-center gap-1.5 sm:gap-3 shadow-lg ${
               currentTurnPlayerId === topOpponent.id
@@ -531,6 +554,13 @@ export const GameScreen: React.FC = () => {
           ) : (
             <div className="text-[10px] sm:text-xs font-extrabold tracking-widest text-sky-300/60 uppercase">UNO ARENA</div>
           )}
+
+          {/* Floating Emotes Overlay for Top Opponent */}
+          {topOpponent && floatingEmotes.filter(e => e.senderId === topOpponent!.id).map((e) => (
+            <div key={e.id} className="absolute top-10 left-1/2 -translate-x-1/2 pointer-events-none z-50 animate-float-emote text-4xl sm:text-5xl select-none filter drop-shadow-[0_10px_10px_rgba(0,0,0,0.5)]">
+              {e.emote}
+            </div>
+          ))}
         </div>
 
         {/* Top Right: Controls */}
@@ -643,7 +673,7 @@ export const GameScreen: React.FC = () => {
                 )}
 
                 {/* Left Status Badge */}
-                <div className="flex flex-col items-start space-y-0.5">
+                <div className="flex flex-col items-start space-y-0.5 relative">
                   <div className={`bg-white/10 backdrop-blur-md px-1.5 py-1 sm:px-3 sm:py-1.5 rounded-xl sm:rounded-2xl border transition-all text-xs font-bold flex items-center gap-1.5 ${
                     currentTurnPlayerId === leftOpponent.id
                       ? 'border-emerald-400 ring-2 ring-emerald-400/60 bg-emerald-500/20 shadow-[0_0_15px_rgba(52,211,153,0.5)]'
@@ -657,6 +687,13 @@ export const GameScreen: React.FC = () => {
                       <div className="text-[8px] sm:text-[9px] text-white/70">{leftOpponent.cardCount} cards</div>
                     </div>
                   </div>
+
+                  {/* Floating Emotes Overlay for Left Opponent */}
+                  {floatingEmotes.filter(e => e.senderId === leftOpponent!.id).map((e) => (
+                    <div key={e.id} className="absolute -top-12 left-1/2 -translate-x-1/2 pointer-events-none z-50 animate-float-emote text-4xl sm:text-5xl select-none filter drop-shadow-[0_10px_10px_rgba(0,0,0,0.5)]">
+                      {e.emote}
+                    </div>
+                  ))}
                 </div>
               </div>
             ) : (
@@ -730,7 +767,7 @@ export const GameScreen: React.FC = () => {
             {rightOpponent ? (
               <div className="flex flex-col sm:flex-row items-center gap-1 sm:gap-3 shrink-0">
                 {/* Right Status Badge */}
-                <div className="flex flex-col items-end space-y-0.5">
+                <div className="flex flex-col items-end space-y-0.5 relative">
                   <div className={`bg-white/10 backdrop-blur-md px-1.5 py-1 sm:px-3 sm:py-1.5 rounded-xl sm:rounded-2xl border transition-all text-xs font-bold flex items-center gap-1.5 ${
                     currentTurnPlayerId === rightOpponent.id
                       ? 'border-emerald-400 ring-2 ring-emerald-400/60 bg-emerald-500/20 shadow-[0_0_15px_rgba(52,211,153,0.5)]'
@@ -744,6 +781,13 @@ export const GameScreen: React.FC = () => {
                       {rightOpponent.avatar || '👤'}
                     </div>
                   </div>
+
+                  {/* Floating Emotes Overlay for Right Opponent */}
+                  {floatingEmotes.filter(e => e.senderId === rightOpponent!.id).map((e) => (
+                    <div key={e.id} className="absolute -top-12 right-1/2 translate-x-1/2 pointer-events-none z-50 animate-float-emote text-4xl sm:text-5xl select-none filter drop-shadow-[0_10px_10px_rgba(0,0,0,0.5)]">
+                      {e.emote}
+                    </div>
+                  ))}
                 </div>
 
                 {/* Right Player Angled Card Fan (Desktop / Tablet only) */}
@@ -780,7 +824,7 @@ export const GameScreen: React.FC = () => {
         {/* ----------------------------------------------------------- */}
         <div className="w-full flex flex-col items-center z-20 pb-2 shrink-0 relative px-1 sm:px-4">
           
-          {/* PROMINENT CENTERED ACTION TOOLBAR: DRAW CARD, END TURN, CALL UNO & CATCH UNO */}
+          {/* PROMINENT CENTERED ACTION TOOLBAR: DRAW CARD, END TURN, REACTION, CALL UNO & CATCH UNO */}
           <div className="flex items-center gap-2 sm:gap-3 z-30 mb-1 flex-wrap justify-center">
             <button
               onClick={handleDrawCard}
@@ -800,6 +844,45 @@ export const GameScreen: React.FC = () => {
                 <span>➔</span> END TURN
               </button>
             )}
+
+            {/* EMOJI REACTION PICKER BUTTON & POPOVER */}
+            <div className="relative">
+              <button
+                onClick={() => setShowEmotePicker(!showEmotePicker)}
+                className="bg-purple-600/90 hover:bg-purple-500 border border-purple-300/40 text-white font-extrabold px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-full text-xs sm:text-sm shadow-[0_0_12px_rgba(168,85,247,0.4)] transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer"
+                title="Send Animated Emoji Reaction"
+              >
+                <Smile className="w-4 h-4 text-yellow-300" />
+                <span>REACTION</span>
+              </button>
+
+              {showEmotePicker && (
+                <div className="absolute bottom-full mb-3 left-1/2 -translate-x-1/2 bg-[#092248]/95 backdrop-blur-xl border border-sky-400/40 rounded-2xl p-3 shadow-2xl z-50 w-64 sm:w-72 animate-pop-scale">
+                  <div className="flex items-center justify-between border-b border-white/10 pb-1.5 mb-2">
+                    <span className="text-xs font-bold text-sky-200 flex items-center gap-1.5">
+                      <Smile className="w-3.5 h-3.5 text-yellow-400" /> Express Yourself
+                    </span>
+                    <button
+                      onClick={() => setShowEmotePicker(false)}
+                      className="text-white/60 hover:text-white text-xs p-0.5 rounded cursor-pointer"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-4 gap-2 text-2xl text-center">
+                    {['🔥', '😂', '😎', '😡', '😭', '😱', '👍', '🎉', '💀', '💩', '❤️', '⚡', '💣', '🥳', '🤡', '👑'].map((emote) => (
+                      <button
+                        key={emote}
+                        onClick={() => handleSendEmote(emote)}
+                        className="p-2 rounded-xl bg-white/5 hover:bg-white/20 hover:scale-125 active:scale-95 transition-all cursor-pointer flex items-center justify-center"
+                      >
+                        {emote}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
 
             {/* CALL UNO button: Only visible when holding 1 or 2 cards */}
             {displayHand.length <= 2 && (
@@ -949,13 +1032,20 @@ export const GameScreen: React.FC = () => {
               </div>
 
               {/* Player Pill below hand */}
-              <div className="bg-white/10 backdrop-blur-md px-3 py-0.5 sm:px-4 sm:py-1 rounded-full border border-white/20 flex items-center gap-2 text-[10px] sm:text-xs font-bold z-10 my-0.5">
+              <div className="bg-white/10 backdrop-blur-md px-3 py-0.5 sm:px-4 sm:py-1 rounded-full border border-white/20 flex items-center gap-2 text-[10px] sm:text-xs font-bold z-10 my-0.5 relative">
                 <div className="w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-sky-500 text-white flex items-center justify-center text-[9px] sm:text-[10px]">👤</div>
                 <span>You</span>
                 <span className="text-white/60">{displayHand.length} Cards</span>
                 <span className="hidden sm:flex items-center gap-1 text-emerald-400 text-[10px]">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" /> Online
                 </span>
+
+                {/* Floating Emotes Overlay for Me */}
+                {floatingEmotes.filter(e => e.senderId === myId).map((e) => (
+                  <div key={e.id} className="absolute -top-16 left-1/2 -translate-x-1/2 pointer-events-none z-50 animate-float-emote text-4xl sm:text-5xl select-none filter drop-shadow-[0_10px_10px_rgba(0,0,0,0.5)]">
+                    {e.emote}
+                  </div>
+                ))}
               </div>
 
             </div>
