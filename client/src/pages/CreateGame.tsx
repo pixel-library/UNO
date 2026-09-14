@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Settings2, Users, Timer, Sparkles, Check, ArrowRight, Layers, RotateCcw, Zap, Eye, MessageSquare, Layers3 } from 'lucide-react';
+import { Settings2, Users, Timer, Sparkles, Check, ArrowRight, Layers, RotateCcw, Zap, Eye, MessageSquare, Layers3, Lock } from 'lucide-react';
 import { socketService } from '@/services/socketService';
 
 export const CreateGame: React.FC = () => {
@@ -83,6 +83,8 @@ export const CreateGame: React.FC = () => {
       }
     }, 4000);
 
+    const isCustomNeeded = preset !== 'CLASSIC' || customCards || discardAll || shuffleHands || wildSwap || jumpIn || sevenZero;
+
     try {
       const socket = socketService.getSocket();
       socket.emit(
@@ -96,6 +98,7 @@ export const CreateGame: React.FC = () => {
             allowSpectators,
             enableChat,
             isPrivate,
+            mode: isCustomNeeded ? 'CUSTOM' : 'CLASSIC',
             houseRules: {
               stacking,
               jumpIn,
@@ -103,7 +106,7 @@ export const CreateGame: React.FC = () => {
               forcePlay,
               drawUntilPlayable: false,
               multipleCardPlay: false,
-              customCards,
+              customCards: isCustomNeeded,
               discardAll,
               counterDeflect,
               shuffleHands,
@@ -416,6 +419,24 @@ export const CreateGame: React.FC = () => {
             <span className="text-xs font-bold text-neutral-700 uppercase tracking-wider block">ROOM PREFERENCES</span>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <label className="flex items-center justify-between p-3.5 rounded-2xl border border-neutral-200 cursor-pointer hover:bg-neutral-50 transition-colors">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-xl bg-amber-100 text-amber-600">
+                    <Lock className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <div className="font-bold text-sm text-uno-navy">Private Room 🔒</div>
+                    <div className="text-xs text-neutral-500">Only players with code/link can join.</div>
+                  </div>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={isPrivate}
+                  onChange={(e) => setIsPrivate(e.target.checked)}
+                  className="w-5 h-5 accent-uno-blue rounded cursor-pointer"
+                />
+              </label>
+
               <label className="flex items-center justify-between p-3.5 rounded-2xl border border-neutral-200 cursor-pointer hover:bg-neutral-50 transition-colors">
                 <div className="flex items-center gap-3">
                   <div className="p-2 rounded-xl bg-indigo-100 text-indigo-600">

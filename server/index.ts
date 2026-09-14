@@ -126,7 +126,7 @@ app.get('/api/rooms/:code', (req, res) => {
     status: game.status,
     playerCount: game.players.length,
     maxPlayers: game.settings.maxPlayers,
-    mode: 'CLASSIC'
+    mode: game.settings.mode || 'CLASSIC'
   });
 });
 

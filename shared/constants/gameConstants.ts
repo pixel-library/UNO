@@ -39,6 +39,8 @@ export const DEFAULT_GAME_SETTINGS: GameSettings = {
   turnTimerSeconds: 30,
   allowSpectators: true,
   enableChat: true,
+  isPrivate: false,
+  mode: 'CLASSIC',
   houseRules: {
     stacking: true,
     jumpIn: false,

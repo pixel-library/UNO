@@ -40,6 +40,7 @@ export interface GameSettings {
   allowSpectators: boolean;
   enableChat: boolean;
   isPrivate?: boolean;          // Room privacy: true (Code only), false (Public in lobby)
+  mode?: GameMode;              // Game mode: 'CLASSIC' | 'CUSTOM' | etc.
 }
 
 export interface PlayerPublic {

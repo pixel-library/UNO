@@ -10,6 +10,7 @@ export const Play: React.FC = () => {
   // Create Game State
   const [maxPlayers, setMaxPlayers] = useState<number>(4);
   const [gameMode, setGameMode] = useState<'Classic' | 'Custom'>('Classic');
+  const [isPrivate, setIsPrivate] = useState<boolean>(false);
   const [stacking, setStacking] = useState<boolean>(true);
   const [jumpIn, setJumpIn] = useState<boolean>(false);
   const [sevenZero, setSevenZero] = useState<boolean>(false);
@@ -20,6 +21,21 @@ export const Play: React.FC = () => {
   const [shuffleHands, setShuffleHands] = useState<boolean>(false);
   const [wildSwap, setWildSwap] = useState<boolean>(false);
   const [isCreating, setIsCreating] = useState(false);
+
+  const handleModeChange = (mode: 'Classic' | 'Custom') => {
+    setGameMode(mode);
+    if (mode === 'Classic') {
+      setStacking(true);
+      setJumpIn(false);
+      setSevenZero(false);
+      setForcePlay(false);
+      setDrawUntilPlayable(false);
+      setDiscardAll(false);
+      setCounterDeflect(true);
+      setShuffleHands(false);
+      setWildSwap(false);
+    }
+  };
 
   // Join Game State
   const [roomCode, setRoomCode] = useState('');
@@ -90,6 +106,8 @@ export const Play: React.FC = () => {
       }
     }, 4000);
 
+    const isCustomNeeded = gameMode === 'Custom' || discardAll || shuffleHands || wildSwap || jumpIn || sevenZero;
+
     try {
       const socket = socketService.getSocket();
       socket.emit(
@@ -102,6 +120,8 @@ export const Play: React.FC = () => {
             turnTimerSeconds: 30,
             allowSpectators: true,
             enableChat: true,
+            isPrivate,
+            mode: isCustomNeeded ? 'CUSTOM' : 'CLASSIC',
             houseRules: {
               stacking,
               jumpIn,
@@ -109,7 +129,7 @@ export const Play: React.FC = () => {
               forcePlay,
               drawUntilPlayable,
               multipleCardPlay: false,
-              customCards: gameMode === 'Custom',
+              customCards: isCustomNeeded,
               discardAll,
               counterDeflect,
               shuffleHands,
@@ -268,17 +288,46 @@ export const Play: React.FC = () => {
         </div>
 
         {/* ----------------------------------------------------------- */}
-        {/* LEFT CARD: CREATE PRIVATE GAME                              */}
+        {/* LEFT CARD: CREATE GAME                                      */}
         {/* ----------------------------------------------------------- */}
         <div className="w-full md:w-[380px] bg-white rounded-3xl p-5 sm:p-7 border border-neutral-200/90 shadow-lg hover:shadow-xl transition-shadow flex flex-col justify-between z-10 space-y-6">
           
           <div>
             <h2 className="text-lg font-bold text-[#111827] tracking-wide uppercase text-left mb-6">
-              CREATE PRIVATE GAME
+              CREATE A GAME
             </h2>
 
             <div className="space-y-5">
               
+              {/* Room Privacy Row */}
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-semibold text-neutral-700">Room Privacy:</span>
+                <div className="bg-neutral-100 p-1 rounded-xl flex gap-1 border border-neutral-200">
+                  <button
+                    type="button"
+                    onClick={() => setIsPrivate(false)}
+                    className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
+                      !isPrivate
+                        ? 'bg-emerald-500 text-white shadow-sm'
+                        : 'text-neutral-500 hover:text-neutral-700'
+                    }`}
+                  >
+                    🌐 Public
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsPrivate(true)}
+                    className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
+                      isPrivate
+                        ? 'bg-amber-500 text-white shadow-sm'
+                        : 'text-neutral-500 hover:text-neutral-700'
+                    }`}
+                  >
+                    🔒 Private
+                  </button>
+                </div>
+              </div>
+
               {/* Players Row */}
               <div className="flex items-center justify-between">
                 <span className="text-sm font-semibold text-neutral-700">Players:</span>
@@ -308,7 +357,7 @@ export const Play: React.FC = () => {
                     <button
                       key={mode}
                       type="button"
-                      onClick={() => setGameMode(mode)}
+                      onClick={() => handleModeChange(mode)}
                       className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
                         gameMode === mode
                           ? 'bg-white text-neutral-800 shadow-sm'
@@ -355,7 +404,7 @@ export const Play: React.FC = () => {
                     <span className="text-sm font-medium text-neutral-700">Jump-In</span>
                     <button
                       type="button"
-                      onClick={() => setJumpIn(!jumpIn)}
+                      onClick={() => { const next = !jumpIn; setJumpIn(next); if (next) setGameMode('Custom'); }}
                       className={`w-12 h-6 flex items-center rounded-full p-0.5 transition-colors ${
                         jumpIn ? 'bg-sky-500' : 'bg-neutral-300'
                       }`}
@@ -373,7 +422,7 @@ export const Play: React.FC = () => {
                     <span className="text-sm font-medium text-neutral-700">Seven-O</span>
                     <button
                       type="button"
-                      onClick={() => setSevenZero(!sevenZero)}
+                      onClick={() => { const next = !sevenZero; setSevenZero(next); if (next) setGameMode('Custom'); }}
                       className={`w-12 h-6 flex items-center rounded-full p-0.5 transition-colors ${
                         sevenZero ? 'bg-sky-500' : 'bg-neutral-300'
                       }`}
@@ -409,7 +458,7 @@ export const Play: React.FC = () => {
                     <span className="text-sm font-medium text-neutral-700">Draw Until Playable</span>
                     <button
                       type="button"
-                      onClick={() => setDrawUntilPlayable(!drawUntilPlayable)}
+                      onClick={() => { const next = !drawUntilPlayable; setDrawUntilPlayable(next); if (next) setGameMode('Custom'); }}
                       className={`w-12 h-6 flex items-center rounded-full p-0.5 transition-colors ${
                         drawUntilPlayable ? 'bg-sky-500' : 'bg-neutral-300'
                       }`}
@@ -427,7 +476,7 @@ export const Play: React.FC = () => {
                     <span className="text-sm font-medium text-neutral-700">Discard All Color 🎨</span>
                     <button
                       type="button"
-                      onClick={() => setDiscardAll(!discardAll)}
+                      onClick={() => { const next = !discardAll; setDiscardAll(next); if (next) setGameMode('Custom'); }}
                       className={`w-12 h-6 flex items-center rounded-full p-0.5 transition-colors ${
                         discardAll ? 'bg-sky-500' : 'bg-neutral-300'
                       }`}
@@ -471,7 +520,7 @@ export const Play: React.FC = () => {
                     <span className="text-sm font-medium text-neutral-700">Wild Shuffle 🌀</span>
                     <button
                       type="button"
-                      onClick={() => setShuffleHands(!shuffleHands)}
+                      onClick={() => { const next = !shuffleHands; setShuffleHands(next); if (next) setGameMode('Custom'); }}
                       className={`w-12 h-6 flex items-center rounded-full p-0.5 transition-colors ${
                         shuffleHands ? 'bg-sky-500' : 'bg-neutral-300'
                       }`}
@@ -493,7 +542,7 @@ export const Play: React.FC = () => {
                     <span className="text-sm font-medium text-neutral-700">Wild Swap 🎯</span>
                     <button
                       type="button"
-                      onClick={() => setWildSwap(!wildSwap)}
+                      onClick={() => { const next = !wildSwap; setWildSwap(next); if (next) setGameMode('Custom'); }}
                       className={`w-12 h-6 flex items-center rounded-full p-0.5 transition-colors ${
                         wildSwap ? 'bg-sky-500' : 'bg-neutral-300'
                       }`}

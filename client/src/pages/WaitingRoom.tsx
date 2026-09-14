@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Copy, Check, Play, Users, Crown, Shield, UserX, Settings, Zap, RotateCcw, Layers } from 'lucide-react';
+import { Copy, Check, Play, Users, Crown, Shield, UserX, Settings, Zap, RotateCcw, Layers, Lock, Globe } from 'lucide-react';
 import { socketService } from '@/services/socketService';
 import { GamePublicState, PlayerPublic, GameSettings } from '@shared/types/game';
 import { DEFAULT_GAME_SETTINGS } from '@shared/constants/gameConstants';
@@ -216,6 +216,16 @@ export const WaitingRoom: React.FC = () => {
     socket.emit('room:transferHost', { newHostId });
   };
 
+  const handleTogglePrivacy = () => {
+    const currentMyId = localStorage.getItem('uno_player_id');
+    const isHost = gameState?.players.find(p => p.isHost)?.id === currentMyId;
+    if (!isHost) return;
+    const socket = socketService.getSocket();
+    socket.emit('room:updateSettings', {
+      settings: { isPrivate: !gameState?.settings.isPrivate }
+    });
+  };
+
   if (error) {
     return (
       <div className="w-full min-h-[calc(100vh-80px)] bg-neutral-50 flex items-center justify-center px-4 py-12">
@@ -291,11 +301,30 @@ export const WaitingRoom: React.FC = () => {
 
         {/* Active Match Rules Summary Badge Panel (Configured Pre-Game) */}
         <div className="bg-white rounded-3xl p-5 border border-neutral-200 shadow-md space-y-3">
-          <div className="flex items-center gap-2 border-b border-neutral-100 pb-2">
-            <Settings className="w-4 h-4 text-uno-blue" />
-            <h3 className="font-extrabold text-xs text-uno-navy uppercase tracking-wider">CONFIGURED MATCH RULES</h3>
+          <div className="flex items-center justify-between border-b border-neutral-100 pb-2">
+            <div className="flex items-center gap-2">
+              <Settings className="w-4 h-4 text-uno-blue" />
+              <h3 className="font-extrabold text-xs text-uno-navy uppercase tracking-wider">CONFIGURED MATCH RULES</h3>
+            </div>
+            <button
+              onClick={handleTogglePrivacy}
+              disabled={!isHost}
+              className={`text-[11px] font-extrabold px-3 py-1 rounded-full border transition-all flex items-center gap-1.5 ${
+                gameState?.settings.isPrivate
+                  ? 'bg-amber-50 border-amber-300 text-amber-900 hover:bg-amber-100'
+                  : 'bg-emerald-50 border-emerald-300 text-emerald-900 hover:bg-emerald-100'
+              } ${!isHost ? 'cursor-default' : 'cursor-pointer'}`}
+              title={isHost ? 'Click to toggle Public / Private room' : 'Room Privacy'}
+            >
+              {gameState?.settings.isPrivate ? <Lock className="w-3 h-3" /> : <Globe className="w-3 h-3" />}
+              {gameState?.settings.isPrivate ? 'PRIVATE ROOM (Code Only)' : 'PUBLIC ROOM (In Lobby)'}
+              {isHost && <span className="text-[9px] opacity-65">(Click to change)</span>}
+            </button>
           </div>
           <div className="flex flex-wrap gap-2 text-xs font-bold">
+            <span className="bg-purple-100 border border-purple-300 text-purple-900 px-3 py-1.5 rounded-xl flex items-center gap-1">
+              🎮 Mode: {gameState?.settings.mode || (houseRules.customCards ? 'CUSTOM' : 'CLASSIC')}
+            </span>
             <span className="bg-blue-50 border border-blue-200 text-blue-900 px-3 py-1.5 rounded-xl flex items-center gap-1">
               👥 {maxPlayers} Players Max
             </span>
