@@ -790,25 +790,32 @@ export const GameScreen: React.FC = () => {
               <span>📥</span> DRAW CARD
             </button>
 
-            <button
-              onClick={handlePassTurn}
-              disabled={!isMyTurn || isActionPending}
-              className="bg-sky-950/80 hover:bg-sky-900 border border-sky-400/40 text-sky-200 disabled:opacity-40 font-extrabold px-4 py-1.5 sm:px-5 sm:py-2 rounded-full text-xs sm:text-sm transition-all shadow-md active:scale-95 flex items-center gap-1.5 cursor-pointer"
-            >
-              <span>➔</span> END TURN
-            </button>
+            {/* END TURN button: Hidden if Force Play rule is active */}
+            {!gameState?.settings?.houseRules?.forcePlay && (
+              <button
+                onClick={handlePassTurn}
+                disabled={!isMyTurn || isActionPending}
+                className="bg-sky-950/80 hover:bg-sky-900 border border-sky-400/40 text-sky-200 disabled:opacity-40 font-extrabold px-4 py-1.5 sm:px-5 sm:py-2 rounded-full text-xs sm:text-sm transition-all shadow-md active:scale-95 flex items-center gap-1.5 cursor-pointer"
+              >
+                <span>➔</span> END TURN
+              </button>
+            )}
 
-            <button
-              onClick={handleCallUno}
-              className="bg-gradient-to-r from-red-600 to-amber-500 hover:from-red-500 hover:to-amber-400 border-2 border-yellow-300 text-white font-black px-4 py-1.5 sm:px-5 sm:py-2 rounded-full text-xs sm:text-sm shadow-[0_0_15px_rgba(239,68,68,0.6)] transition-all active:scale-95 flex items-center gap-1 cursor-pointer"
-            >
-              <span>🔥</span> CALL UNO!
-            </button>
+            {/* CALL UNO button: Only visible when holding 1 or 2 cards */}
+            {displayHand.length <= 2 && (
+              <button
+                onClick={handleCallUno}
+                className="bg-gradient-to-r from-red-600 to-amber-500 hover:from-red-500 hover:to-amber-400 border-2 border-yellow-300 text-white font-black px-4 py-1.5 sm:px-5 sm:py-2 rounded-full text-xs sm:text-sm shadow-[0_0_15px_rgba(239,68,68,0.6)] transition-all active:scale-95 flex items-center gap-1 cursor-pointer animate-pulse"
+              >
+                <span>🔥</span> CALL UNO!
+              </button>
+            )}
 
-            {activePlayers.some(p => p.id !== myId && p.cardCount === 1) && (
+            {/* CATCH UNO button: Only visible when an opponent holds 1 card AND forgot to call UNO */}
+            {activePlayers.some(p => p.id !== myId && p.cardCount === 1 && !p.hasCalledUno) && (
               <button
                 onClick={handleChallengeUno}
-                className="bg-red-700 hover:bg-red-600 border-2 border-yellow-300 text-white font-extrabold px-3 py-1.5 sm:px-4 sm:py-2 rounded-full text-xs sm:text-sm shadow-[0_0_15px_rgba(220,38,38,0.7)] transition-all active:scale-95 animate-pulse flex items-center gap-1 cursor-pointer"
+                className="bg-red-700 hover:bg-red-600 border-2 border-yellow-300 text-white font-extrabold px-3 py-1.5 sm:px-4 sm:py-2 rounded-full text-xs sm:text-sm shadow-[0_0_15px_rgba(220,38,38,0.7)] transition-all active:scale-95 animate-bounce flex items-center gap-1 cursor-pointer"
                 title="Challenge an opponent holding 1 card who forgot to call UNO!"
               >
                 <span>🚨</span> CATCH UNO!
@@ -855,18 +862,6 @@ export const GameScreen: React.FC = () => {
 
             {/* BOTTOM CENTER: Fanned Player Hand & Player Status Pill */}
             <div className="flex flex-col items-center w-full lg:max-w-[70vw] z-30 flex-1 px-1">
-              
-              {/* UNO Call Button when hand <= 2 */}
-              {isMyTurn && displayHand.length <= 2 && (
-                <div className="flex items-center justify-center gap-2 mb-1 z-40">
-                  <button
-                    onClick={handleCallUno}
-                    className="bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white font-black px-4 py-1.5 rounded-xl text-xs flex items-center gap-1.5 shadow-xl transition-transform hover:scale-110 active:scale-95 border border-yellow-400 animate-bounce"
-                  >
-                    🔥 UNO!
-                  </button>
-                </div>
-              )}
 
               {/* Player Hand Container */}
               <div className="w-full flex items-center justify-center overflow-x-auto overflow-y-visible pt-2 sm:pt-8 pb-1 px-1 scrollbar-none touch-pan-x">
