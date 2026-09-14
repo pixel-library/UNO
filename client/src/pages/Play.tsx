@@ -66,7 +66,7 @@ export const Play: React.FC = () => {
     } catch (err) {
       // Ignore static host fetch error
     } finally {
-      const cloudRooms = supabaseRoomService.getPublicRooms();
+      const cloudRooms = await supabaseRoomService.fetchPublicCloudRooms();
       setPublicRooms(mergePublicRooms(serverRooms, cloudRooms));
       setIsLoadingRooms(false);
     }

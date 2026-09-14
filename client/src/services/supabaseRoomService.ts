@@ -51,6 +51,27 @@ function getGlobalLobbyChannel() {
       }
     });
 
+    globalLobbyChannel.on('broadcast', { event: 'room:request_all' }, () => {
+      const myId = localStorage.getItem('uno_player_id');
+      const announced = new Set<string>();
+      cloudGameCache.forEach((game) => {
+        if (game.status === 'WAITING' && !game.settings.isPrivate && !announced.has(game.roomCode)) {
+          announced.add(game.roomCode);
+          globalLobbyChannel.send({
+            type: 'broadcast',
+            event: 'room:announce',
+            payload: {
+              roomCode: game.roomCode,
+              gameId: game.id,
+              hostName: game.players.find(p => p.isHost)?.name || 'Host',
+              players: game.players,
+              settings: game.settings
+            }
+          });
+        }
+      });
+    });
+
     globalLobbyChannel.on('broadcast', { event: 'room:request' }, (data: any) => {
       const payload = data?.payload;
       if (payload?.roomCode) {
@@ -153,6 +174,42 @@ export const supabaseRoomService = {
       }
     });
     return publicRooms;
+  },
+
+  /**
+   * Fetch active public cloud rooms across all devices via Supabase Realtime & DB
+   */
+  async fetchPublicCloudRooms(): Promise<any[]> {
+    if (globalLobbyChannel) {
+      try {
+        globalLobbyChannel.send({
+          type: 'broadcast',
+          event: 'room:request_all',
+          payload: { timestamp: Date.now() }
+        });
+      } catch (err) {
+        // Silently ignore send notice
+      }
+    }
+    try {
+      const { data: games } = await supabase
+        .from('Game')
+        .select('id, roomCode, status, mode')
+        .eq('status', 'WAITING');
+
+      if (Array.isArray(games)) {
+        games.forEach((dbGame) => {
+          if (dbGame.roomCode && !cloudGameCache.has(dbGame.roomCode)) {
+            const game = new UnoGame(dbGame.id, dbGame.roomCode, { isPrivate: false });
+            cloudGameCache.set(dbGame.roomCode, game);
+          }
+        });
+      }
+    } catch (dbErr) {
+      // Silently ignore DB query notice
+    }
+
+    return this.getPublicRooms();
   },
 
   /**

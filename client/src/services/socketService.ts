@@ -11,9 +11,10 @@ class SocketService {
 
   public getSocket(): Socket {
     if (!this.socket) {
+      const isDevPort = typeof window !== 'undefined' && (window.location.port === '3000' || window.location.port === '5173');
       const isLocalhost =
         typeof window !== 'undefined' &&
-        (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+        (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || isDevPort);
 
       const socketUrl =
         import.meta.env.VITE_SOCKET_URL ||
