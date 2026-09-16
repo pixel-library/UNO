@@ -36,40 +36,35 @@ function generateRoomCode(): string {
 }
 
 function broadcastGameState(game: UnoGame) {
-  const publicState = game.getPublicState();
   const roomName = `room_${game.roomCode}`;
+  const roomSockets = io.sockets.adapter.rooms.get(roomName);
 
-  // Send masked private state to each connected human player
-  game.players.forEach((player) => {
+  if (roomSockets) {
+    for (const sId of roomSockets) {
+      const clientSocket = io.sockets.sockets.get(sId);
+      const playerInfo = socketPlayerMap.get(sId);
+      const pId = clientSocket?.data?.playerId || playerInfo?.playerId;
 
-    let pSockets = Array.from(socketPlayerMap.entries())
-      .filter(([_, data]) => data.roomCode === game.roomCode && data.playerId === player.id)
-      .map(([sId]) => sId);
-
-    if (pSockets.length === 0) {
-      const roomSocketIds = io.sockets.adapter.rooms.get(roomName);
-      if (roomSocketIds) {
-        for (const sId of roomSocketIds) {
-          const clientSocket = io.sockets.sockets.get(sId);
-          if (clientSocket && clientSocket.data?.playerId === player.id) {
-            pSockets.push(sId);
-            socketPlayerMap.set(sId, { roomCode: game.roomCode, playerId: player.id, sessionId: player.sessionId });
-          }
+      if (pId) {
+        const privateState = game.getPrivateState(pId);
+        io.to(sId).emit('game:state', privateState);
+      } else {
+        // If socket lacks playerId, send public masked state for host/first player
+        const fallbackPlayer = game.players.find(p => p.isHost) || game.players[0];
+        if (fallbackPlayer) {
+          io.to(sId).emit('game:state', game.getPrivateState(fallbackPlayer.id));
         }
       }
     }
-
-    const privateState = game.getPrivateState(player.id);
-    if (pSockets.length > 0) {
-      pSockets.forEach((sId) => {
-        io.to(sId).emit('game:state', privateState);
-      });
-    } else {
+  } else {
+    // Fallback if room socket adapter not ready
+    game.players.forEach((player) => {
+      const privateState = game.getPrivateState(player.id);
       io.to(roomName).emit('game:state', privateState);
-    }
-  });
+    });
+  }
 
-  io.to(roomName).emit('game:publicState', publicState);
+  io.to(roomName).emit('game:publicState', game.getPublicState());
 }
 
 

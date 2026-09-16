@@ -639,30 +639,31 @@ export const GameScreen: React.FC = () => {
         {/* ----------------------------------------------------------- */}
         {/* MOBILE ALL OPPONENTS TOP BAR (< 640px)                       */}
         {/* ----------------------------------------------------------- */}
-        <div className="flex sm:hidden w-full items-center justify-center gap-2 px-1 pt-1 pb-1 z-20 flex-wrap">
+        <div className="flex sm:hidden w-full items-center justify-center gap-2 px-2 py-1.5 z-30 flex-wrap bg-slate-900/90 border-b border-slate-800 rounded-xl shadow-md">
           {relativeOpponents.map((opp) => {
             const isOppTurn = currentTurnPlayerId === opp.id;
             const isOneCardLeft = opp.cardCount === 1;
 
             return (
               <div key={opp.id} className="relative">
-                <div className={`bg-white/10 backdrop-blur-md px-2.5 py-1 rounded-xl border transition-all flex items-center gap-1.5 shadow-sm ${
+                <div className={`bg-slate-800/90 px-3 py-1.5 rounded-xl border transition-all flex items-center gap-2 shadow-sm ${
                   isOneCardLeft
-                    ? 'border-red-500 ring-2 ring-red-500/80 bg-red-500/30 animate-pulse'
+                    ? 'border-red-500 bg-red-950/60'
                     : isOppTurn
-                    ? 'border-emerald-400 ring-2 ring-emerald-400/60 bg-emerald-500/20'
-                    : 'border-white/20'
+                    ? 'border-emerald-400 bg-emerald-950/50'
+                    : 'border-slate-700'
                 }`}>
-                  <div className="w-5 h-5 rounded-full bg-sky-400/30 text-white flex items-center justify-center text-[10px] font-bold border border-sky-300/40">
+                  <div className="w-6 h-6 rounded-full bg-slate-700 text-white flex items-center justify-center text-xs font-bold border border-slate-600 shrink-0">
                     {opp.avatar || '👤'}
                   </div>
                   <div className="text-left leading-tight">
-                    <div className="font-extrabold text-[10px] text-white uppercase tracking-wider truncate max-w-[70px] flex items-center gap-1">
+                    <div className="font-extrabold text-[11px] text-white uppercase tracking-wider truncate max-w-[85px] flex items-center gap-1">
                       <span>{opp.name}</span>
-                      {isOneCardLeft && <span className="text-red-400 font-black text-[9px] animate-bounce">🚨 1!</span>}
+                      {isOneCardLeft && <span className="text-red-400 font-black text-[9px]">🚨 1!</span>}
                     </div>
-                    <div className="text-[9px] font-semibold text-white/70 flex items-center gap-1">
-                      <span>🂠 {opp.cardCount}</span>
+                    <div className="text-[10px] font-bold text-amber-400 flex items-center gap-1">
+                      <span>🂠 {opp.cardCount} CARDS</span>
+                      {isOppTurn && <span className="text-[8px] bg-emerald-500 text-slate-950 font-black px-1 rounded uppercase">TURN</span>}
                     </div>
                   </div>
                 </div>
@@ -758,22 +759,18 @@ export const GameScreen: React.FC = () => {
           </div>
 
           {/* --------------------------------------------------------- */}
-          {/* CENTER CARDS AREA (BOXLESS & BORDERLESS DIRECT ARENA)       */}
+          {/* CENTER CARDS AREA (CLEAN DIRECT ARENA - NO GLOW/SPIRALS)  */}
           {/* --------------------------------------------------------- */}
           <div className="relative py-2 sm:py-6 px-2 flex flex-col items-center justify-center text-white mx-auto">
             
-            {/* ROTATING GAME DIRECTION INDICATOR RING */}
-            <div className={`absolute w-[260px] h-[160px] sm:w-[340px] sm:h-[220px] rounded-full border border-dashed border-sky-300/30 pointer-events-none ${
-              isClockwise ? 'rotate-clockwise' : 'rotate-counter-clockwise'
-            }`}>
-              <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-2.5 bg-sky-950/80 text-sky-300 px-2.5 py-0.5 rounded-full text-[9px] font-black border border-sky-400/40 uppercase tracking-widest flex items-center gap-1 shadow-sm">
-                <span>{isClockwise ? '↻ CLOCKWISE' : '↺ COUNTER-CLOCKWISE'}</span>
-              </div>
+            {/* CLEAN GAME DIRECTION CHIP (STATIC - NO ROTATING SPIRAL) */}
+            <div className="mb-2 bg-slate-900/90 text-sky-300 px-3 py-1 rounded-full text-[10px] sm:text-xs font-black border border-slate-700 uppercase tracking-widest flex items-center gap-1.5 shadow-sm">
+              <span>{isClockwise ? '↻ CLOCKWISE' : '↺ COUNTER-CLOCKWISE'}</span>
             </div>
 
             {/* ACTIVE STACK PENALTY BANNER */}
             {(gameState.activeStackCount || 0) > 0 && (
-              <div className="mb-3 bg-gradient-to-r from-red-600 via-amber-500 to-red-600 border-2 border-yellow-300 px-4 py-1.5 rounded-full text-white font-black text-[11px] sm:text-xs shadow-lg animate-pulse flex items-center gap-2 z-20">
+              <div className="mb-3 bg-red-600 border-2 border-yellow-300 px-4 py-1 rounded-full text-white font-black text-[11px] sm:text-xs shadow-md flex items-center gap-2 z-20">
                 <span className="text-sm">⚡</span>
                 <span>+{gameState.activeStackCount} PENALTY STACK ACTIVE!</span>
               </div>
@@ -814,9 +811,9 @@ export const GameScreen: React.FC = () => {
 
             </div>
 
-            {/* YOUR TURN INDICATOR */}
-            <div className="mt-3 sm:mt-6 z-10 flex items-center gap-2 bg-white/15 backdrop-blur-md px-4 py-1.5 rounded-full border border-white/20 shadow-sm">
-              <span className={`w-2.5 h-2.5 rounded-full ${isMyTurn ? 'bg-emerald-400 animate-ping' : 'bg-white/40'}`} />
+            {/* YOUR TURN INDICATOR (CLEAN - NO HEAVY GLOW) */}
+            <div className="mt-3 sm:mt-6 z-10 flex items-center gap-2 bg-slate-900/80 px-4 py-1.5 rounded-full border border-slate-700 shadow-sm">
+              <span className={`w-2.5 h-2.5 rounded-full ${isMyTurn ? 'bg-emerald-400' : 'bg-slate-500'}`} />
               <span className="font-extrabold text-[10px] sm:text-xs tracking-widest text-white uppercase">
                 {isMyTurn ? 'YOUR TURN' : 'WAITING FOR OPPONENT'}
               </span>
