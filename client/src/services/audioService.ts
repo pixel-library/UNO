@@ -201,6 +201,29 @@ class SoundEngine {
     osc.stop(this.ctx.currentTime + 0.05);
   }
 
+  public playTurnChime() {
+    if (!this.soundEnabled) return;
+    this.initCtx();
+    if (!this.ctx) return;
+
+    const now = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(587.33, now);
+    osc.frequency.setValueAtTime(880.00, now + 0.08);
+
+    gain.gain.setValueAtTime(0.25, now);
+    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+
+    osc.start(now);
+    osc.stop(now + 0.3);
+  }
+
   public triggerVictoryConfetti() {
     if (typeof window === 'undefined') return;
     try {

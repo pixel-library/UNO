@@ -212,3 +212,34 @@
   background: radial-gradient(circle at 50% 50%, rgba(168, 85, 247, 0.3) 0%, rgba(11, 74, 139, 0) 70%);
 }
 
+/* -------------------------------------------------------------------------- */
+/* DIRECTION RING & TURN EDGE PULSE ANIMATIONS                               */
+/* -------------------------------------------------------------------------- */
+
+@keyframes spinClockwise {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes spinCounterClockwise {
+  from { transform: rotate(360deg); }
+  to { transform: rotate(0deg); }
+}
+
+.rotate-clockwise {
+  animation: spinClockwise 12s linear infinite;
+}
+
+.rotate-counter-clockwise {
+  animation: spinCounterClockwise 12s linear infinite;
+}
+
+@keyframes turnGlowPulse {
+  0%, 100% { box-shadow: inset 0 0 35px rgba(52, 211, 153, 0.4); }
+  50% { box-shadow: inset 0 0 70px rgba(52, 211, 153, 0.85); }
+}
+
+.animate-turn-pulse {
+  animation: turnGlowPulse 1.8s ease-in-out infinite;
+}
+

@@ -472,17 +472,30 @@ export const GameScreen: React.FC = () => {
   const currentIdx = typeof gameState?.currentPlayerIndex === 'number' ? gameState.currentPlayerIndex : 0;
   const currentTurnPlayerId = activePlayers[currentIdx]?.id;
   const isMyTurn = currentTurnPlayerId === myId;
+
+  // Play Turn Chime when turn changes to local player
+  const [lastTurnPlayerId, setLastTurnPlayerId] = useState<string | null>(null);
+  useEffect(() => {
+    if (currentTurnPlayerId && currentTurnPlayerId !== lastTurnPlayerId) {
+      setLastTurnPlayerId(currentTurnPlayerId);
+      if (currentTurnPlayerId === myId) {
+        audioService.playTurnChime();
+      }
+    }
+  }, [currentTurnPlayerId, myId, lastTurnPlayerId]);
+
   const displayHand: Card[] = (Array.isArray(gameState?.hand) ? gameState.hand : [])
     .filter(c => c && c.id && c.color && c.value);
   const topDiscard: Card = gameState?.topDiscardCard || { id: 'disc_1', color: 'GREEN', value: '2', score: 2 };
 
-  // Discard pile glow aura based on active game color
-  const discardGlowClass =
-    gameState.currentColor === 'RED' ? 'ring-4 ring-red-500/80 shadow-[0_0_30px_rgba(239,68,68,0.7)]' :
-    gameState.currentColor === 'YELLOW' ? 'ring-4 ring-amber-400/90 shadow-[0_0_30px_rgba(251,191,36,0.7)]' :
-    gameState.currentColor === 'GREEN' ? 'ring-4 ring-emerald-500/80 shadow-[0_0_30px_rgba(16,185,129,0.7)]' :
-    gameState.currentColor === 'BLUE' ? 'ring-4 ring-sky-500/80 shadow-[0_0_30px_rgba(14,165,233,0.7)]' :
-    'ring-4 ring-sky-500/80 shadow-[0_0_30px_rgba(14,165,233,0.7)]';
+  const arenaColorGlowClass =
+    gameState.currentColor === 'RED' ? 'arena-glow-red' :
+    gameState.currentColor === 'YELLOW' ? 'arena-glow-yellow' :
+    gameState.currentColor === 'GREEN' ? 'arena-glow-green' :
+    gameState.currentColor === 'BLUE' ? 'arena-glow-blue' :
+    'arena-glow-wild';
+
+  const isClockwise = gameState.direction === 1 || gameState.direction === undefined;
 
   const checkCardPlayable = (card: Card): boolean => {
     if (!isMyTurn || !card) return false;
@@ -502,15 +515,8 @@ export const GameScreen: React.FC = () => {
     return false;
   };
 
-  const arenaColorGlowClass =
-    gameState.currentColor === 'RED' ? 'arena-glow-red' :
-    gameState.currentColor === 'YELLOW' ? 'arena-glow-yellow' :
-    gameState.currentColor === 'GREEN' ? 'arena-glow-green' :
-    gameState.currentColor === 'BLUE' ? 'arena-glow-blue' :
-    'arena-glow-wild';
-
   return (
-    <div className="w-full h-screen max-h-screen bg-gradient-to-br from-[#0B4A8B] via-[#052D56] to-[#021832] text-white flex flex-col justify-between overflow-hidden relative selection:bg-none font-sans">
+    <div className={`w-full h-screen max-h-screen bg-gradient-to-br from-[#0B4A8B] via-[#052D56] to-[#021832] text-white flex flex-col justify-between overflow-hidden relative selection:bg-none font-sans ${isMyTurn ? 'animate-turn-pulse' : ''}`}>
       
       {/* Dynamic Active Color Ambient Aura Glow Overlay */}
       <div className={`absolute inset-0 pointer-events-none transition-all duration-700 z-0 ${arenaColorGlowClass}`} />
@@ -636,10 +642,14 @@ export const GameScreen: React.FC = () => {
         <div className="flex sm:hidden w-full items-center justify-center gap-2 px-1 pt-1 pb-1 z-20 flex-wrap">
           {relativeOpponents.map((opp) => {
             const isOppTurn = currentTurnPlayerId === opp.id;
+            const isOneCardLeft = opp.cardCount === 1;
+
             return (
               <div key={opp.id} className="relative">
                 <div className={`bg-white/10 backdrop-blur-md px-2.5 py-1 rounded-xl border transition-all flex items-center gap-1.5 shadow-sm ${
-                  isOppTurn
+                  isOneCardLeft
+                    ? 'border-red-500 ring-2 ring-red-500/80 bg-red-500/30 animate-pulse'
+                    : isOppTurn
                     ? 'border-emerald-400 ring-2 ring-emerald-400/60 bg-emerald-500/20'
                     : 'border-white/20'
                 }`}>
@@ -647,7 +657,10 @@ export const GameScreen: React.FC = () => {
                     {opp.avatar || '👤'}
                   </div>
                   <div className="text-left leading-tight">
-                    <div className="font-extrabold text-[10px] text-white uppercase tracking-wider truncate max-w-[70px]">{opp.name}</div>
+                    <div className="font-extrabold text-[10px] text-white uppercase tracking-wider truncate max-w-[70px] flex items-center gap-1">
+                      <span>{opp.name}</span>
+                      {isOneCardLeft && <span className="text-red-400 font-black text-[9px] animate-bounce">🚨 1!</span>}
+                    </div>
                     <div className="text-[9px] font-semibold text-white/70 flex items-center gap-1">
                       <span>🂠 {opp.cardCount}</span>
                     </div>
@@ -749,6 +762,15 @@ export const GameScreen: React.FC = () => {
           {/* --------------------------------------------------------- */}
           <div className="relative py-2 sm:py-6 px-2 flex flex-col items-center justify-center text-white mx-auto">
             
+            {/* ROTATING GAME DIRECTION INDICATOR RING */}
+            <div className={`absolute w-[260px] h-[160px] sm:w-[340px] sm:h-[220px] rounded-full border border-dashed border-sky-300/30 pointer-events-none ${
+              isClockwise ? 'rotate-clockwise' : 'rotate-counter-clockwise'
+            }`}>
+              <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-2.5 bg-sky-950/80 text-sky-300 px-2.5 py-0.5 rounded-full text-[9px] font-black border border-sky-400/40 uppercase tracking-widest flex items-center gap-1 shadow-sm">
+                <span>{isClockwise ? '↻ CLOCKWISE' : '↺ COUNTER-CLOCKWISE'}</span>
+              </div>
+            </div>
+
             {/* ACTIVE STACK PENALTY BANNER */}
             {(gameState.activeStackCount || 0) > 0 && (
               <div className="mb-3 bg-gradient-to-r from-red-600 via-amber-500 to-red-600 border-2 border-yellow-300 px-4 py-1.5 rounded-full text-white font-black text-[11px] sm:text-xs shadow-lg animate-pulse flex items-center gap-2 z-20">
