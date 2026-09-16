@@ -5,16 +5,61 @@
 @layer base {
   body {
     background-color: #F8FAFC;
-    color: #0C1B33;
+    color: #0F172A;
     font-family: 'Outfit', 'Inter', system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
 }
 
+/* -------------------------------------------------------------------------- */
+/* WHITE GLASSMORPHISM UTILITY CLASSES                                        */
+/* -------------------------------------------------------------------------- */
+
+.glass-white-panel {
+  background: rgba(255, 255, 255, 0.78);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.85);
+  box-shadow: 0 20px 40px -15px rgba(15, 23, 42, 0.12), 0 0 20px rgba(255, 255, 255, 0.8);
+}
+
+.glass-white-card {
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.95);
+  box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.08), 0 4px 6px -2px rgba(15, 23, 42, 0.04);
+}
+
+.glass-white-input {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.03);
+}
+
+.glass-white-input:focus {
+  background: rgba(255, 255, 255, 0.95);
+  border-color: #0284C7;
+  box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.2), inset 0 2px 4px rgba(0, 0, 0, 0.02);
+}
+
+/* Card Glossy Sheen Overlay */
+.card-gloss-sheen {
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.45) 0%,
+    rgba(255, 255, 255, 0.15) 35%,
+    rgba(255, 255, 255, 0) 50%,
+    rgba(255, 255, 255, 0.1) 100%
+  );
+}
+
 /* Custom 3D Card Fanning & Layering */
 .card-perspective {
-  perspective: 1000px;
+  perspective: 1200px;
 }
 
 .card-fan-1 {
@@ -37,23 +82,24 @@
   transform: rotate(16deg) translateY(12px) translateX(20px);
 }
 
-/* Custom Scrollbar */
+/* Custom Scrollbar for Light Theme */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: rgba(0, 0, 0, 0.05);
+  background: rgba(241, 245, 249, 0.6);
+  border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.2);
-  border-radius: 4px;
+  background: rgba(148, 163, 184, 0.4);
+  border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(0, 0, 0, 0.35);
+  background: rgba(100, 116, 139, 0.6);
 }
 
 /* Floating Emoji Reaction Animations */
@@ -84,11 +130,21 @@
 }
 
 @keyframes popScale {
-  0% { transform: scale(0); opacity: 0; }
-  70% { transform: scale(1.15); opacity: 1; }
+  0% { transform: scale(0.85); opacity: 0; }
+  70% { transform: scale(1.05); opacity: 1; }
   100% { transform: scale(1); opacity: 1; }
 }
 
 .animate-pop-scale {
   animation: popScale 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
 }
+
+@keyframes pulseRing {
+  0%, 100% { box-shadow: 0 0 15px rgba(56, 189, 248, 0.4); }
+  50% { box-shadow: 0 0 30px rgba(56, 189, 248, 0.9); }
+}
+
+.animate-pulse-ring {
+  animation: pulseRing 2s infinite ease-in-out;
+}
+

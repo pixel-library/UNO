@@ -267,15 +267,15 @@ export const WaitingRoom: React.FC = () => {
   const houseRules = gameState?.settings.houseRules || DEFAULT_GAME_SETTINGS.houseRules;
 
   return (
-    <div className="w-full min-h-[calc(100vh-80px)] bg-neutral-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="w-full min-h-[calc(100vh-80px)] bg-gradient-to-br from-slate-50 via-sky-50/40 to-slate-100 py-12 px-4 sm:px-6 lg:px-8 font-sans">
       <div className="max-w-3xl mx-auto space-y-8">
         
         {/* Header Card */}
-        <div className="bg-white rounded-3xl p-8 border border-neutral-200 shadow-lg flex flex-col sm:flex-row items-center justify-between gap-6">
+        <div className="glass-white-panel rounded-3xl p-8 border border-white shadow-lg flex flex-col sm:flex-row items-center justify-between gap-6">
           <div>
-            <span className="text-xs font-bold text-uno-blue uppercase tracking-widest">WAITING LOBBY</span>
-            <h1 className="text-3xl font-black text-uno-navy tracking-tight mt-1">ROOM {formattedRoomCode}</h1>
-            <p className="text-xs font-semibold text-neutral-500 mt-1">
+            <span className="text-xs font-black text-sky-600 uppercase tracking-widest">WAITING LOBBY</span>
+            <h1 className="text-3xl font-black text-slate-900 tracking-tight mt-1">ROOM {formattedRoomCode}</h1>
+            <p className="text-xs font-semibold text-slate-500 mt-1">
               Share code or invite link with friends to join match.
             </p>
           </div>

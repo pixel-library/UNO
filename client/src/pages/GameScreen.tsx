@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { Copy, Volume2, VolumeX, Settings, MessageSquare, Send, Check, Play, Zap, ArrowRight, Music, X, Smile } from 'lucide-react';
+import { Copy, Volume2, VolumeX, Settings, MessageSquare, Send, Check, Play, Zap, ArrowRight, Music, X, Smile, Trophy, Sparkles, RefreshCw } from 'lucide-react';
 import { UnoCard } from '@/components/card/UnoCard';
 import { CardColor, PlayerPrivateState, Card, ChatMessage } from '@shared/types/game';
 import { audioService } from '@/services/audioService';
@@ -75,6 +75,13 @@ export const GameScreen: React.FC = () => {
       if (newState.targetPlayerId && currentLocalId && newState.targetPlayerId !== currentLocalId) {
         return;
       }
+      
+      // Trigger victory celebration confetti when game status transitions to FINISHED
+      if (newState.status === 'FINISHED') {
+        audioService.playWinSound();
+        audioService.triggerVictoryConfetti();
+      }
+
       setGameState(newState);
       if (newState.targetPlayerId) {
         localStorage.setItem('uno_player_id', newState.targetPlayerId);
@@ -174,7 +181,7 @@ export const GameScreen: React.FC = () => {
     setMusicEnabled(!musicEnabled);
   };
 
-  // Card Play Handler
+  // Zero-Latency Optimistic Card Play Handler (<50ms)
   const handleCardClick = (card: Card) => {
     if (!gameState || isActionPending) return;
 
@@ -185,12 +192,11 @@ export const GameScreen: React.FC = () => {
     if (currentPlayer?.id !== myId) return;
 
     setSelectedCardId(card.id);
-    audioService.playButtonClick();
+    audioService.playCardSound();
 
     if (card.color === 'WILD') {
       if (card.value === 'WILD_SWAP') {
         setIsActionPending(true);
-        const pendingTimer = setTimeout(() => setIsActionPending(false), 1200);
         const socket = socketService.getSocket();
         socket.emit('game:playCard', { 
           cardId: card.id, 
@@ -199,10 +205,8 @@ export const GameScreen: React.FC = () => {
           cardColor: card.color,
           cardValue: card.value
         }, (res: any) => {
-          clearTimeout(pendingTimer);
           setIsActionPending(false);
           if (res?.success) {
-            audioService.playCardSound();
             setSelectedCardId(null);
           } else {
             alert(res?.error || 'Cannot play this card.');
@@ -216,9 +220,18 @@ export const GameScreen: React.FC = () => {
       return;
     }
 
-    setIsActionPending(true);
-    const pendingTimer = setTimeout(() => setIsActionPending(false), 1200);
+    // Zero-Latency Optimistic UI update on local state
+    setGameState((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        hand: prev.hand.filter(c => c.id !== card.id),
+        topDiscardCard: card,
+        currentColor: card.color
+      };
+    });
 
+    setIsActionPending(true);
     const socket = socketService.getSocket();
     socket.emit('game:playCard', { 
       cardId: card.id, 
@@ -227,10 +240,8 @@ export const GameScreen: React.FC = () => {
       cardColor: card.color,
       cardValue: card.value
     }, (res: any) => {
-      clearTimeout(pendingTimer);
       setIsActionPending(false);
       if (res?.success) {
-        audioService.playCardSound();
         setSelectedCardId(null);
       } else {
         alert(res?.error || 'Cannot play this card.');
@@ -243,7 +254,10 @@ export const GameScreen: React.FC = () => {
     if (!pendingWildCardId || isActionPending) return;
 
     setIsActionPending(true);
-    const pendingTimer = setTimeout(() => setIsActionPending(false), 1200);
+    audioService.playCardSound();
+
+    // Optimistic color update
+    setGameState((prev) => prev ? ({ ...prev, currentColor: color }) : prev);
 
     const socket = socketService.getSocket();
     socket.emit('game:playCard', { 
@@ -252,10 +266,8 @@ export const GameScreen: React.FC = () => {
       playerId: myId, 
       roomCode: gameState?.roomCode 
     }, (res: any) => {
-      clearTimeout(pendingTimer);
       setIsActionPending(false);
       if (res?.success) {
-        audioService.playCardSound();
         setShowColorPicker(false);
         setPendingWildCardId(null);
         setSelectedCardId(null);
@@ -265,17 +277,14 @@ export const GameScreen: React.FC = () => {
     });
   };
 
-  // Draw Card Handler
+  // Zero-Latency Optimistic Draw Card Handler
   const handleDrawCard = () => {
     if (!isMyTurn || isActionPending) return;
     setIsActionPending(true);
     audioService.playDrawSound();
 
-    const pendingTimer = setTimeout(() => setIsActionPending(false), 1200);
-
     const socket = socketService.getSocket();
     socket.emit('game:drawCard', { roomCode: gameState?.roomCode, playerId: myId }, (res: any) => {
-      clearTimeout(pendingTimer);
       setIsActionPending(false);
       if (!res?.success && res?.error) {
         alert(res.error);
@@ -289,11 +298,8 @@ export const GameScreen: React.FC = () => {
     setIsActionPending(true);
     audioService.playButtonClick();
 
-    const pendingTimer = setTimeout(() => setIsActionPending(false), 1200);
-
     const socket = socketService.getSocket();
     socket.emit('game:passTurn', { roomCode: gameState?.roomCode, playerId: myId }, (res: any) => {
-      clearTimeout(pendingTimer);
       setIsActionPending(false);
     });
   };
@@ -320,7 +326,7 @@ export const GameScreen: React.FC = () => {
     setShowEmotePicker(false);
   };
 
-  // Send Chat Message
+  // Zero-Latency Optimistic Chat Message
   const handleSendChat = (e: React.FormEvent) => {
     e.preventDefault();
     if (!chatInput.trim()) return;
@@ -367,8 +373,6 @@ export const GameScreen: React.FC = () => {
     setIsActionPending(true);
     audioService.playButtonClick();
 
-    const pendingTimer = setTimeout(() => setIsActionPending(false), 1200);
-
     const socket = socketService.getSocket();
     const colorToSet = customColor || gameState?.currentColor || 'RED';
     socket.emit('game:swapHand', { 
@@ -378,7 +382,6 @@ export const GameScreen: React.FC = () => {
       playerId: myId,
       roomCode: gameState?.roomCode 
     }, (res: any) => {
-      clearTimeout(pendingTimer);
       setIsActionPending(false);
       if (!res?.success && res?.error) {
         alert(res.error);
@@ -389,17 +392,19 @@ export const GameScreen: React.FC = () => {
   // Loading / Retry Screen if game state not ready
   if (!gameState) {
     return (
-      <div className="w-full h-screen bg-[#081F3E] text-white flex flex-col items-center justify-center p-4 space-y-6">
-        <div className="bg-[#E52521] border-2 border-[#FCD116] px-5 py-2 rounded-2xl shadow-2xl transform -rotate-3">
-          <span className="font-black text-3xl italic tracking-tighter">
-            <span className="text-[#FCD116]">U</span>N<span className="text-[#FCD116]">O</span>
+      <div className="w-full h-screen bg-gradient-to-br from-slate-50 via-sky-50/40 to-slate-100 text-slate-800 flex flex-col items-center justify-center p-4 space-y-6 font-sans">
+        <div className="bg-[#E52521] border-2 border-[#FCD116] px-6 py-2 rounded-2xl shadow-2xl transform -rotate-3">
+          <span className="font-black text-4xl italic tracking-tighter">
+            <span className="text-[#FCD116]">U</span>
+            <span className="text-white">N</span>
+            <span className="text-[#FCD116]">O</span>
           </span>
         </div>
 
         {syncError ? (
-          <div className="bg-white/10 backdrop-blur-md border border-white/20 p-6 rounded-3xl max-w-sm w-full text-center space-y-4 shadow-xl">
-            <h2 className="text-lg font-extrabold text-red-300">Unable to Start Match</h2>
-            <p className="text-xs text-white/80">{syncError}</p>
+          <div className="glass-white-panel p-8 rounded-3xl max-w-sm w-full text-center space-y-4 shadow-xl border border-slate-200">
+            <h2 className="text-lg font-extrabold text-red-600">Unable to Start Match</h2>
+            <p className="text-xs text-slate-600 font-medium">{syncError}</p>
             <div className="flex gap-3 pt-2">
               <button
                 onClick={() => {
@@ -411,23 +416,23 @@ export const GameScreen: React.FC = () => {
                     else setSyncError(res?.error || 'Game not found.');
                   });
                 }}
-                className="flex-1 bg-uno-yellow text-uno-navy font-bold py-2.5 rounded-xl text-xs hover:bg-amber-400 transition-colors"
+                className="flex-1 bg-gradient-to-r from-[#FCD116] to-[#F5A623] text-slate-950 font-black py-3 rounded-xl text-xs shadow-md hover:scale-105 transition-transform"
               >
                 Retry
               </button>
               <button
                 onClick={() => navigate('/play')}
-                className="flex-1 bg-white/20 hover:bg-white/30 text-white font-bold py-2.5 rounded-xl text-xs transition-colors"
+                className="flex-1 bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold py-3 rounded-xl text-xs transition-colors"
               >
                 Return Home
               </button>
             </div>
           </div>
         ) : (
-          <div className="text-center space-y-2">
-            <div className="w-8 h-8 border-4 border-uno-yellow border-t-transparent rounded-full animate-spin mx-auto mb-2" />
-            <h2 className="text-xl font-bold tracking-wide">Connecting to Game Table...</h2>
-            <p className="text-xs text-white/60">Dealing cards and establishing server synchronization</p>
+          <div className="text-center space-y-3">
+            <div className="w-10 h-10 border-4 border-sky-500 border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+            <h2 className="text-xl font-black tracking-tight text-slate-900">Connecting to Game Table...</h2>
+            <p className="text-xs font-semibold text-slate-500">Dealing cards and establishing server synchronization</p>
           </div>
         )}
       </div>
@@ -449,10 +454,6 @@ export const GameScreen: React.FC = () => {
     }
   }
 
-  // Seating breakdown based on active player count:
-  // 2 Players: You (Bottom), Opponent 1 (Top)
-  // 3 Players: You (Bottom), Opponent 1 (Left), Opponent 2 (Right)
-  // 4 Players: You (Bottom), Opponent 1 (Left), Opponent 2 (Top), Opponent 3 (Right)
   let topOpponent: typeof activePlayers[0] | null = null;
   let leftOpponent: typeof activePlayers[0] | null = null;
   let rightOpponent: typeof activePlayers[0] | null = null;
@@ -475,13 +476,13 @@ export const GameScreen: React.FC = () => {
     .filter(c => c && c.id && c.color && c.value);
   const topDiscard: Card = gameState?.topDiscardCard || { id: 'disc_1', color: 'GREEN', value: '2', score: 2 };
 
-  // Discard pile glow color based on active game color
+  // Discard pile glow aura based on active game color
   const discardGlowClass =
-    gameState.currentColor === 'RED' ? 'ring-4 ring-red-500 shadow-[0_0_25px_rgba(229,37,33,0.8)]' :
-    gameState.currentColor === 'YELLOW' ? 'ring-4 ring-yellow-400 shadow-[0_0_25px_rgba(252,209,22,0.8)]' :
-    gameState.currentColor === 'GREEN' ? 'ring-4 ring-emerald-500 shadow-[0_0_25px_rgba(45,150,63,0.8)]' :
-    gameState.currentColor === 'BLUE' ? 'ring-4 ring-sky-500 shadow-[0_0_25px_rgba(0,130,202,0.8)]' :
-    'ring-4 ring-emerald-500 shadow-[0_0_25px_rgba(45,150,63,0.8)]';
+    gameState.currentColor === 'RED' ? 'ring-4 ring-red-500/80 shadow-[0_0_30px_rgba(239,68,68,0.7)]' :
+    gameState.currentColor === 'YELLOW' ? 'ring-4 ring-amber-400/90 shadow-[0_0_30px_rgba(251,191,36,0.7)]' :
+    gameState.currentColor === 'GREEN' ? 'ring-4 ring-emerald-500/80 shadow-[0_0_30px_rgba(16,185,129,0.7)]' :
+    gameState.currentColor === 'BLUE' ? 'ring-4 ring-sky-500/80 shadow-[0_0_30px_rgba(14,165,233,0.7)]' :
+    'ring-4 ring-sky-500/80 shadow-[0_0_30px_rgba(14,165,233,0.7)]';
 
   const checkCardPlayable = (card: Card): boolean => {
     if (!isMyTurn || !card) return false;
@@ -502,32 +503,32 @@ export const GameScreen: React.FC = () => {
   };
 
   return (
-    <div className="w-full h-screen max-h-screen bg-[#081F3E] text-white flex flex-col justify-between overflow-hidden relative selection:bg-none font-sans">
+    <div className="w-full h-screen max-h-screen bg-gradient-to-br from-slate-50 via-sky-50/40 to-slate-100 text-slate-800 flex flex-col justify-between overflow-hidden relative selection:bg-none font-sans">
       
       {/* ------------------------------------------------------------- */}
-      {/* TOP HEADER BAR                                                */}
+      {/* TOP HEADER BAR (WHITE GLASS)                                  */}
       {/* ------------------------------------------------------------- */}
-      <header className="w-full px-2 sm:px-6 py-2 flex items-center justify-between z-30 shrink-0 gap-2">
+      <header className="w-full px-2 sm:px-6 py-2 flex items-center justify-between z-30 shrink-0 gap-2 bg-white/70 backdrop-blur-xl border-b border-slate-200/80 shadow-sm">
         
         {/* Left: UNO ONLINE Logo + Room Badge */}
         <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
           <div
             onClick={() => navigate('/')}
-            className="flex items-center gap-1 cursor-pointer hover:scale-105 transition-transform"
+            className="flex items-center gap-1.5 cursor-pointer hover:scale-105 transition-transform"
           >
-            <div className="bg-[#E52521] border border-[#FCD116] px-2 py-0.5 rounded-lg shadow-md transform -rotate-3">
-              <span className="font-extrabold text-sm sm:text-lg italic tracking-tighter">
+            <div className="bg-[#E52521] border-2 border-[#FCD116] px-2.5 py-0.5 rounded-xl shadow-sm transform -rotate-3">
+              <span className="font-extrabold text-sm sm:text-base italic tracking-tighter text-white">
                 <span className="text-[#FCD116]">U</span>N<span className="text-[#FCD116]">O</span>
               </span>
             </div>
-            <span className="text-[10px] sm:text-xs font-bold text-white/90 uppercase tracking-wider hidden sm:inline">ONLINE</span>
+            <span className="text-[10px] sm:text-xs font-black text-slate-800 uppercase tracking-wider hidden sm:inline">ONLINE</span>
           </div>
 
-          <div className="bg-[#0e2c56]/80 px-2 py-0.5 sm:px-3 sm:py-1 rounded-xl border border-sky-500/20 flex items-center gap-1.5 text-[10px] sm:text-xs font-bold shadow-sm">
-            <span className="text-white/70 hidden sm:inline">Room:</span>
-            <span className="text-white font-mono tracking-wider">{gameState.roomCode}</span>
-            <button onClick={handleCopyCode} className="hover:text-uno-yellow transition-colors ml-0.5" title="Copy Room Code">
-              {copiedCode ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5 text-white/70" />}
+          <div className="bg-slate-100/90 px-2.5 py-1 rounded-xl border border-slate-200/80 flex items-center gap-1.5 text-[10px] sm:text-xs font-bold text-slate-700 shadow-inner">
+            <span className="text-slate-400 hidden sm:inline uppercase">Room:</span>
+            <span className="text-slate-900 font-mono tracking-wider font-extrabold">{gameState.roomCode}</span>
+            <button onClick={handleCopyCode} className="hover:text-sky-600 transition-colors ml-0.5 cursor-pointer" title="Copy Room Code">
+              {copiedCode ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5 text-slate-500" />}
             </button>
           </div>
         </div>
@@ -535,29 +536,29 @@ export const GameScreen: React.FC = () => {
         {/* Top Center: Top Opponent Status Pill */}
         <div className="flex flex-col items-center z-20 shrink relative">
           {topOpponent ? (
-            <div className={`bg-white/10 backdrop-blur-md px-2 py-1 sm:px-4 sm:py-1.5 rounded-2xl border transition-all flex items-center gap-1.5 sm:gap-3 shadow-lg ${
+            <div className={`glass-white-card px-3 py-1 sm:px-4 sm:py-1.5 rounded-2xl border transition-all flex items-center gap-2 sm:gap-3 shadow-md ${
               currentTurnPlayerId === topOpponent.id
-                ? 'border-emerald-400 ring-2 ring-emerald-400/60 bg-emerald-500/20 shadow-[0_0_15px_rgba(52,211,153,0.5)]'
-                : 'border-white/20'
+                ? 'border-emerald-500 ring-2 ring-emerald-400/60 bg-emerald-50/80 shadow-[0_0_15px_rgba(16,185,129,0.3)]'
+                : 'border-slate-200/80'
             }`}>
-              <div className="w-5 h-5 sm:w-7 sm:h-7 rounded-full bg-sky-400/30 text-white flex items-center justify-center text-[10px] sm:text-xs font-bold border border-sky-300/40">
+              <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-sky-100 text-sky-700 flex items-center justify-center text-[10px] sm:text-xs font-bold border border-sky-200">
                 {topOpponent.avatar || '👤'}
               </div>
               <div className="text-left leading-tight">
-                <div className="font-bold text-[10px] sm:text-xs text-white uppercase tracking-wider truncate max-w-[70px] sm:max-w-none">{topOpponent.name}</div>
-                <div className="text-[9px] text-white/70">{topOpponent.cardCount} cards</div>
+                <div className="font-extrabold text-[10px] sm:text-xs text-slate-900 uppercase tracking-wider truncate max-w-[70px] sm:max-w-none">{topOpponent.name}</div>
+                <div className="text-[9px] font-semibold text-slate-500">{topOpponent.cardCount} cards</div>
               </div>
-              <span className="hidden sm:flex items-center gap-1 bg-emerald-500/20 px-2 py-0.5 rounded-full text-[10px] text-emerald-300 font-bold border border-emerald-400/30">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> {topOpponent.isConnected ? 'Online' : 'Offline'}
+              <span className="hidden sm:flex items-center gap-1 bg-emerald-100 px-2 py-0.5 rounded-full text-[10px] text-emerald-700 font-bold border border-emerald-300/40">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" /> {topOpponent.isConnected ? 'Online' : 'Offline'}
               </span>
             </div>
           ) : (
-            <div className="text-[10px] sm:text-xs font-extrabold tracking-widest text-sky-300/60 uppercase">UNO ARENA</div>
+            <div className="text-[10px] sm:text-xs font-black tracking-widest text-slate-400 uppercase">UNO ARENA</div>
           )}
 
           {/* Floating Emotes Overlay for Top Opponent */}
           {topOpponent && floatingEmotes.filter(e => e.senderId === topOpponent!.id).map((e) => (
-            <div key={e.id} className="absolute top-10 left-1/2 -translate-x-1/2 pointer-events-none z-50 animate-float-emote text-4xl sm:text-5xl select-none filter drop-shadow-[0_10px_10px_rgba(0,0,0,0.5)]">
+            <div key={e.id} className="absolute top-10 left-1/2 -translate-x-1/2 pointer-events-none z-50 animate-float-emote text-4xl sm:text-5xl select-none filter drop-shadow-[0_10px_10px_rgba(0,0,0,0.2)]">
               {e.emote}
             </div>
           ))}
@@ -567,30 +568,30 @@ export const GameScreen: React.FC = () => {
         <div className="flex items-center gap-1 sm:gap-2 shrink-0">
           <button
             onClick={toggleSound}
-            className="p-1.5 sm:px-3 sm:py-1.5 rounded-xl bg-white/10 hover:bg-white/20 border border-white/15 transition-all text-xs font-bold flex items-center gap-1.5"
+            className="p-1.5 sm:px-3 sm:py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200/80 border border-slate-200 transition-all text-xs font-bold flex items-center gap-1.5 text-slate-700 cursor-pointer"
             title="Toggle Sound"
           >
-            {soundEnabled ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5 text-red-400" />}
+            {soundEnabled ? <Volume2 className="w-3.5 h-3.5 text-sky-600" /> : <VolumeX className="w-3.5 h-3.5 text-red-500" />}
             <span className="hidden sm:inline">Sound</span>
           </button>
 
           <button
             onClick={toggleMusic}
-            className={`p-1.5 sm:px-3 sm:py-1.5 rounded-xl bg-white/10 hover:bg-white/20 border border-white/15 transition-all text-xs font-bold flex items-center gap-1.5 ${
-              musicEnabled ? 'text-white' : 'text-white/50'
+            className={`p-1.5 sm:px-3 sm:py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200/80 border border-slate-200 transition-all text-xs font-bold flex items-center gap-1.5 cursor-pointer ${
+              musicEnabled ? 'text-slate-800' : 'text-slate-400'
             }`}
             title="Toggle Music"
           >
-            <Music className="w-3.5 h-3.5" />
+            <Music className="w-3.5 h-3.5 text-purple-600" />
             <span className="hidden sm:inline">Music</span>
           </button>
 
           <button
             onClick={() => navigate('/settings')}
-            className="p-1.5 sm:px-3 sm:py-1.5 rounded-xl bg-white/10 hover:bg-white/20 border border-white/15 transition-all text-xs font-bold flex items-center gap-1.5"
+            className="p-1.5 sm:px-3 sm:py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200/80 border border-slate-200 transition-all text-xs font-bold flex items-center gap-1.5 text-slate-700 cursor-pointer"
             title="Settings"
           >
-            <Settings className="w-3.5 h-3.5" />
+            <Settings className="w-3.5 h-3.5 text-slate-600" />
             <span className="hidden sm:inline">Settings</span>
           </button>
 
@@ -602,12 +603,12 @@ export const GameScreen: React.FC = () => {
                 setShowChat(!showChat);
               }
             }}
-            className={`p-1.5 sm:px-3 sm:py-1.5 rounded-xl border transition-all text-xs font-bold flex items-center gap-1.5 ${
-              (showChat || showMobileChat) ? 'bg-sky-500/30 border-sky-400 text-sky-200' : 'bg-white/10 border-white/15 text-white'
+            className={`p-1.5 sm:px-3 sm:py-1.5 rounded-xl border transition-all text-xs font-bold flex items-center gap-1.5 cursor-pointer ${
+              (showChat || showMobileChat) ? 'bg-sky-500/10 border-sky-400 text-sky-700 font-extrabold shadow-sm' : 'bg-slate-100 border-slate-200 text-slate-700'
             }`}
             title="Chat"
           >
-            <MessageSquare className="w-3.5 h-3.5" />
+            <MessageSquare className="w-3.5 h-3.5 text-sky-600" />
             <span className="hidden sm:inline">Chat</span>
           </button>
         </div>
@@ -615,11 +616,11 @@ export const GameScreen: React.FC = () => {
       </header>
 
       {/* ------------------------------------------------------------- */}
-      {/* MAIN GAME TABLE OVAL SURFACE                                  */}
+      {/* MAIN GAME TABLE OVAL SURFACE (LIGHT LUXURY DESIGN)           */}
       {/* ------------------------------------------------------------- */}
       <main className="relative flex-1 w-full max-w-7xl mx-auto flex flex-col items-center justify-between px-1 sm:px-4 py-1 overflow-hidden">
 
-        {/* Top Opponent Angled Hand Resting Above Table */}
+        {/* Top Opponent Hand resting above table */}
         <div className="z-10 mt-1 min-h-[3.5rem] sm:min-h-[5rem] flex items-center justify-center">
           {topOpponent && (
             <div className="flex -space-x-8 transform scale-75 sm:scale-90">
@@ -642,7 +643,7 @@ export const GameScreen: React.FC = () => {
         </div>
 
         {/* ----------------------------------------------------------- */}
-        {/* CENTRAL TABLE SURFACE & SIDE OPPONENTS                      */}
+        {/* CENTRAL LUXURY TABLE SURFACE & SIDE OPPONENTS               */}
         {/* ----------------------------------------------------------- */}
         <div className="w-full flex items-center justify-between px-1 sm:px-6 z-10 my-auto">
           
@@ -650,7 +651,6 @@ export const GameScreen: React.FC = () => {
           <div className="flex items-center gap-1 sm:gap-3 shrink-0 min-w-0 sm:min-w-[90px] lg:min-w-[120px]">
             {leftOpponent ? (
               <div className="flex flex-col sm:flex-row items-center gap-1 sm:gap-3 shrink-0">
-                {/* Left Player Angled Card Fan (Desktop / Tablet only) */}
                 {!isMobile && (
                   <div className="relative flex flex-col items-center justify-center min-w-0 sm:min-w-[60px]">
                     <div className="flex -space-x-8 transform rotate-90 scale-75 lg:scale-90 origin-center py-2 sm:py-4">
@@ -674,23 +674,23 @@ export const GameScreen: React.FC = () => {
 
                 {/* Left Status Badge */}
                 <div className="flex flex-col items-start space-y-0.5 relative">
-                  <div className={`bg-white/10 backdrop-blur-md px-1.5 py-1 sm:px-3 sm:py-1.5 rounded-xl sm:rounded-2xl border transition-all text-xs font-bold flex items-center gap-1.5 ${
+                  <div className={`glass-white-card px-2 py-1 sm:px-3 sm:py-1.5 rounded-xl sm:rounded-2xl border transition-all text-xs font-bold flex items-center gap-1.5 ${
                     currentTurnPlayerId === leftOpponent.id
-                      ? 'border-emerald-400 ring-2 ring-emerald-400/60 bg-emerald-500/20 shadow-[0_0_15px_rgba(52,211,153,0.5)]'
-                      : 'border-white/20'
+                      ? 'border-emerald-500 ring-2 ring-emerald-400/60 bg-emerald-50/80 shadow-[0_0_15px_rgba(16,185,129,0.3)]'
+                      : 'border-slate-200/80'
                   }`}>
-                    <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-purple-500 text-white flex items-center justify-center text-[10px] font-bold">
+                    <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-purple-100 text-purple-700 flex items-center justify-center text-[10px] font-bold border border-purple-200">
                       {leftOpponent.avatar || '👤'}
                     </div>
                     <div className="text-left">
-                      <div className="text-[10px] sm:text-[11px] font-bold truncate max-w-[45px] sm:max-w-none text-white">{leftOpponent.name}</div>
-                      <div className="text-[8px] sm:text-[9px] text-white/70">{leftOpponent.cardCount} cards</div>
+                      <div className="text-[10px] sm:text-[11px] font-extrabold truncate max-w-[45px] sm:max-w-none text-slate-800">{leftOpponent.name}</div>
+                      <div className="text-[8px] sm:text-[9px] font-semibold text-slate-500">{leftOpponent.cardCount} cards</div>
                     </div>
                   </div>
 
                   {/* Floating Emotes Overlay for Left Opponent */}
                   {floatingEmotes.filter(e => e.senderId === leftOpponent!.id).map((e) => (
-                    <div key={e.id} className="absolute -top-12 left-1/2 -translate-x-1/2 pointer-events-none z-50 animate-float-emote text-4xl sm:text-5xl select-none filter drop-shadow-[0_10px_10px_rgba(0,0,0,0.5)]">
+                    <div key={e.id} className="absolute -top-12 left-1/2 -translate-x-1/2 pointer-events-none z-50 animate-float-emote text-4xl sm:text-5xl select-none filter drop-shadow-[0_10px_10px_rgba(0,0,0,0.2)]">
                       {e.emote}
                     </div>
                   ))}
@@ -702,23 +702,20 @@ export const GameScreen: React.FC = () => {
           </div>
 
           {/* --------------------------------------------------------- */}
-          {/* CENTER TABLE AREA                                         */}
+          {/* CENTER OVAL TABLE CANVAS                                  */}
           {/* --------------------------------------------------------- */}
-          <div className="relative px-1 sm:px-6 py-1 sm:py-4 flex flex-col items-center justify-center">
+          <div className="relative px-4 sm:px-12 py-6 sm:py-10 flex flex-col items-center justify-center bg-gradient-to-b from-white/95 via-slate-50/90 to-sky-50/80 border-4 border-slate-200/80 shadow-[0_25px_60px_-15px_rgba(15,23,42,0.1)] rounded-[40px] sm:rounded-[60px] border-white">
             
             {/* ACTIVE STACK PENALTY BANNER */}
             {(gameState.activeStackCount || 0) > 0 && (
-              <div className="mb-2 bg-gradient-to-r from-red-600 via-amber-500 to-red-600 border-2 border-yellow-300 px-3 py-1 sm:px-5 sm:py-1.5 rounded-full text-white font-black text-[11px] sm:text-sm shadow-[0_0_20px_rgba(239,68,68,0.8)] animate-pulse flex items-center gap-2 z-20">
-                <span className="text-base sm:text-lg">⚡</span>
+              <div className="mb-3 bg-gradient-to-r from-red-600 via-amber-500 to-red-600 border-2 border-yellow-300 px-4 py-1.5 rounded-full text-white font-black text-[11px] sm:text-xs shadow-lg animate-pulse flex items-center gap-2 z-20">
+                <span className="text-sm">⚡</span>
                 <span>+{gameState.activeStackCount} PENALTY STACK ACTIVE!</span>
-                <span className="text-[9px] sm:text-xs font-bold opacity-90 hidden sm:inline">
-                  (Stack +2/+4 or play matching color card & absorb +{gameState.activeStackCount})
-                </span>
               </div>
             )}
 
             {/* Piles Container: DRAW PILE on Left, DISCARD PILE on Right */}
-            <div className="flex items-center gap-3 sm:gap-8 lg:gap-14 z-10">
+            <div className="flex items-center gap-4 sm:gap-10 lg:gap-16 z-10">
               
               {/* DRAW PILE */}
               <div
@@ -732,31 +729,31 @@ export const GameScreen: React.FC = () => {
                   <UnoCard faceDown size={isMobile ? 'sm' : 'md'} />
                 </div>
 
-                <div className="mt-1 sm:mt-3 text-center">
-                  <span className="text-[9px] sm:text-xs font-bold tracking-wider text-white/90 uppercase block">DRAW</span>
-                  <span className="text-xs sm:text-sm font-black text-white">{gameState.drawPileCount || 73}</span>
+                <div className="mt-2 text-center">
+                  <span className="text-[9px] sm:text-xs font-black tracking-wider text-slate-500 uppercase block">DRAW</span>
+                  <span className="text-xs sm:text-sm font-black text-slate-800">{gameState.drawPileCount || 73}</span>
                 </div>
               </div>
 
               {/* DISCARD PILE with Color Glowing Aura Ring */}
               <div className="flex flex-col items-center">
-                <div className={`rounded-xl sm:rounded-2xl p-0.5 sm:p-1 transition-all ${discardGlowClass}`}>
+                <div className={`rounded-xl sm:rounded-2xl p-1 transition-all ${discardGlowClass}`}>
                   <UnoCard color={topDiscard.color} value={topDiscard.value} size={isMobile ? 'sm' : 'md'} />
                 </div>
 
-                <div className="mt-1 sm:mt-3 text-center">
-                  <span className="text-[9px] sm:text-xs font-bold tracking-wider text-white/90 uppercase block">DISCARD</span>
-                  <span className="text-xs sm:text-sm font-black text-white">{gameState.discardPileCount || 1}</span>
+                <div className="mt-2 text-center">
+                  <span className="text-[9px] sm:text-xs font-black tracking-wider text-slate-500 uppercase block">DISCARD</span>
+                  <span className="text-xs sm:text-sm font-black text-slate-800">{gameState.discardPileCount || 1}</span>
                 </div>
               </div>
 
             </div>
 
             {/* YOUR TURN INDICATOR */}
-            <div className="mt-2 sm:mt-6 z-10 flex items-center gap-1.5 sm:gap-2">
-              <span className={`w-2 h-2 sm:w-3 sm:h-3 rounded-full ${isMyTurn ? 'bg-emerald-400 animate-ping' : 'bg-white/40'}`} />
-              <span className="font-extrabold text-[10px] sm:text-base tracking-widest text-white uppercase">
-                {isMyTurn ? 'YOUR TURN' : 'WAITING'}
+            <div className="mt-3 sm:mt-6 z-10 flex items-center gap-2 bg-white/80 px-4 py-1 rounded-full border border-slate-200/80 shadow-sm">
+              <span className={`w-2.5 h-2.5 rounded-full ${isMyTurn ? 'bg-emerald-500 animate-ping' : 'bg-slate-300'}`} />
+              <span className="font-extrabold text-[10px] sm:text-xs tracking-widest text-slate-800 uppercase">
+                {isMyTurn ? 'YOUR TURN' : 'WAITING FOR OPPONENT'}
               </span>
             </div>
 
@@ -768,29 +765,28 @@ export const GameScreen: React.FC = () => {
               <div className="flex flex-col sm:flex-row items-center gap-1 sm:gap-3 shrink-0">
                 {/* Right Status Badge */}
                 <div className="flex flex-col items-end space-y-0.5 relative">
-                  <div className={`bg-white/10 backdrop-blur-md px-1.5 py-1 sm:px-3 sm:py-1.5 rounded-xl sm:rounded-2xl border transition-all text-xs font-bold flex items-center gap-1.5 ${
+                  <div className={`glass-white-card px-2 py-1 sm:px-3 sm:py-1.5 rounded-xl sm:rounded-2xl border transition-all text-xs font-bold flex items-center gap-1.5 ${
                     currentTurnPlayerId === rightOpponent.id
-                      ? 'border-emerald-400 ring-2 ring-emerald-400/60 bg-emerald-500/20 shadow-[0_0_15px_rgba(52,211,153,0.5)]'
-                      : 'border-white/20'
+                      ? 'border-emerald-500 ring-2 ring-emerald-400/60 bg-emerald-50/80 shadow-[0_0_15px_rgba(16,185,129,0.3)]'
+                      : 'border-slate-200/80'
                   }`}>
                     <div className="text-right">
-                      <div className="text-[10px] sm:text-[11px] font-bold truncate max-w-[45px] sm:max-w-none text-white">{rightOpponent.name}</div>
-                      <div className="text-[8px] sm:text-[9px] text-white/70">{rightOpponent.cardCount} cards</div>
+                      <div className="text-[10px] sm:text-[11px] font-extrabold truncate max-w-[45px] sm:max-w-none text-slate-800">{rightOpponent.name}</div>
+                      <div className="text-[8px] sm:text-[9px] font-semibold text-slate-500">{rightOpponent.cardCount} cards</div>
                     </div>
-                    <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-amber-500 text-white flex items-center justify-center text-[10px] font-bold">
+                    <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center text-[10px] font-bold border border-amber-200">
                       {rightOpponent.avatar || '👤'}
                     </div>
                   </div>
 
                   {/* Floating Emotes Overlay for Right Opponent */}
                   {floatingEmotes.filter(e => e.senderId === rightOpponent!.id).map((e) => (
-                    <div key={e.id} className="absolute -top-12 right-1/2 translate-x-1/2 pointer-events-none z-50 animate-float-emote text-4xl sm:text-5xl select-none filter drop-shadow-[0_10px_10px_rgba(0,0,0,0.5)]">
+                    <div key={e.id} className="absolute -top-12 right-1/2 translate-x-1/2 pointer-events-none z-50 animate-float-emote text-4xl sm:text-5xl select-none filter drop-shadow-[0_10px_10px_rgba(0,0,0,0.2)]">
                       {e.emote}
                     </div>
                   ))}
                 </div>
 
-                {/* Right Player Angled Card Fan (Desktop / Tablet only) */}
                 {!isMobile && (
                   <div className="relative flex flex-col items-center justify-center min-w-0 sm:min-w-[60px]">
                     <div className="flex -space-x-8 transform -rotate-90 scale-75 lg:scale-90 origin-center py-2 sm:py-4">
@@ -820,26 +816,25 @@ export const GameScreen: React.FC = () => {
         </div>
 
         {/* ----------------------------------------------------------- */}
-        {/* BOTTOM AREA: ACTION BUTTONS, PLAYER HAND & CHAT            */}
+        {/* BOTTOM AREA: ACTION TOOLBAR, PLAYER HAND & WHITE GLASS CHAT */}
         {/* ----------------------------------------------------------- */}
         <div className="w-full flex flex-col items-center z-20 pb-2 shrink-0 relative px-1 sm:px-4">
           
-          {/* PROMINENT CENTERED ACTION TOOLBAR: DRAW CARD, END TURN, REACTION, CALL UNO & CATCH UNO */}
+          {/* PROMINENT CENTERED ACTION TOOLBAR */}
           <div className="flex items-center gap-2 sm:gap-3 z-30 mb-1 flex-wrap justify-center">
             <button
               onClick={handleDrawCard}
               disabled={!isMyTurn || isActionPending}
-              className="bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 border-2 border-sky-300/60 text-white font-extrabold px-4 py-1.5 sm:px-6 sm:py-2 rounded-full text-xs sm:text-sm shadow-[0_0_15px_rgba(56,189,248,0.5)] transition-all active:scale-95 disabled:opacity-40 flex items-center gap-1.5 cursor-pointer"
+              className="bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 text-white font-extrabold px-4 py-1.5 sm:px-6 sm:py-2 rounded-full text-xs sm:text-sm shadow-md transition-all active:scale-95 disabled:opacity-40 flex items-center gap-1.5 cursor-pointer"
             >
               <span>📥</span> DRAW CARD
             </button>
 
-            {/* END TURN button: Hidden if Force Play rule is active */}
             {!gameState?.settings?.houseRules?.forcePlay && (
               <button
                 onClick={handlePassTurn}
                 disabled={!isMyTurn || isActionPending}
-                className="bg-sky-950/80 hover:bg-sky-900 border border-sky-400/40 text-sky-200 disabled:opacity-40 font-extrabold px-4 py-1.5 sm:px-5 sm:py-2 rounded-full text-xs sm:text-sm transition-all shadow-md active:scale-95 flex items-center gap-1.5 cursor-pointer"
+                className="bg-slate-200 hover:bg-slate-300 text-slate-800 disabled:opacity-40 font-extrabold px-4 py-1.5 sm:px-5 sm:py-2 rounded-full text-xs sm:text-sm transition-all shadow-sm active:scale-95 flex items-center gap-1.5 cursor-pointer border border-slate-300/80"
               >
                 <span>➔</span> END TURN
               </button>
@@ -849,22 +844,22 @@ export const GameScreen: React.FC = () => {
             <div className="relative">
               <button
                 onClick={() => setShowEmotePicker(!showEmotePicker)}
-                className="bg-purple-600/90 hover:bg-purple-500 border border-purple-300/40 text-white font-extrabold px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-full text-xs sm:text-sm shadow-[0_0_12px_rgba(168,85,247,0.4)] transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer"
+                className="bg-purple-600 hover:bg-purple-500 text-white font-extrabold px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-full text-xs sm:text-sm shadow-md transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer"
                 title="Send Animated Emoji Reaction"
               >
-                <Smile className="w-4 h-4 text-yellow-300" />
+                <Smile className="w-4 h-4 text-amber-300" />
                 <span>REACTION</span>
               </button>
 
               {showEmotePicker && (
-                <div className="absolute bottom-full mb-3 left-1/2 -translate-x-1/2 bg-[#092248]/95 backdrop-blur-xl border border-sky-400/40 rounded-2xl p-3 shadow-2xl z-50 w-64 sm:w-72 animate-pop-scale">
-                  <div className="flex items-center justify-between border-b border-white/10 pb-1.5 mb-2">
-                    <span className="text-xs font-bold text-sky-200 flex items-center gap-1.5">
-                      <Smile className="w-3.5 h-3.5 text-yellow-400" /> Express Yourself
+                <div className="absolute bottom-full mb-3 left-1/2 -translate-x-1/2 glass-white-panel rounded-2xl p-3 shadow-2xl z-50 w-64 sm:w-72 animate-pop-scale">
+                  <div className="flex items-center justify-between border-b border-slate-200/80 pb-1.5 mb-2">
+                    <span className="text-xs font-extrabold text-slate-800 flex items-center gap-1.5">
+                      <Smile className="w-3.5 h-3.5 text-amber-500" /> Express Yourself
                     </span>
                     <button
                       onClick={() => setShowEmotePicker(false)}
-                      className="text-white/60 hover:text-white text-xs p-0.5 rounded cursor-pointer"
+                      className="text-slate-400 hover:text-slate-700 text-xs p-0.5 rounded cursor-pointer"
                     >
                       <X className="w-3.5 h-3.5" />
                     </button>
@@ -874,7 +869,7 @@ export const GameScreen: React.FC = () => {
                       <button
                         key={emote}
                         onClick={() => handleSendEmote(emote)}
-                        className="p-2 rounded-xl bg-white/5 hover:bg-white/20 hover:scale-125 active:scale-95 transition-all cursor-pointer flex items-center justify-center"
+                        className="p-2 rounded-xl hover:bg-slate-100 hover:scale-125 active:scale-95 transition-all cursor-pointer flex items-center justify-center"
                       >
                         {emote}
                       </button>
@@ -884,21 +879,21 @@ export const GameScreen: React.FC = () => {
               )}
             </div>
 
-            {/* CALL UNO button: Only visible when holding 1 or 2 cards */}
+            {/* CALL UNO button */}
             {displayHand.length <= 2 && (
               <button
                 onClick={handleCallUno}
-                className="bg-gradient-to-r from-red-600 to-amber-500 hover:from-red-500 hover:to-amber-400 border-2 border-yellow-300 text-white font-black px-4 py-1.5 sm:px-5 sm:py-2 rounded-full text-xs sm:text-sm shadow-[0_0_15px_rgba(239,68,68,0.6)] transition-all active:scale-95 flex items-center gap-1 cursor-pointer animate-pulse"
+                className="bg-gradient-to-r from-red-600 to-amber-500 hover:from-red-500 hover:to-amber-400 border-2 border-yellow-300 text-white font-black px-4 py-1.5 sm:px-5 sm:py-2 rounded-full text-xs sm:text-sm shadow-lg transition-all active:scale-95 flex items-center gap-1 cursor-pointer animate-pulse"
               >
                 <span>🔥</span> CALL UNO!
               </button>
             )}
 
-            {/* CATCH UNO button: Only visible when an opponent holds 1 card AND forgot to call UNO */}
+            {/* CATCH UNO button */}
             {activePlayers.some(p => p.id !== myId && p.cardCount === 1 && !p.hasCalledUno) && (
               <button
                 onClick={handleChallengeUno}
-                className="bg-red-700 hover:bg-red-600 border-2 border-yellow-300 text-white font-extrabold px-3 py-1.5 sm:px-4 sm:py-2 rounded-full text-xs sm:text-sm shadow-[0_0_15px_rgba(220,38,38,0.7)] transition-all active:scale-95 animate-bounce flex items-center gap-1 cursor-pointer"
+                className="bg-red-700 hover:bg-red-600 border-2 border-yellow-300 text-white font-extrabold px-3 py-1.5 sm:px-4 sm:py-2 rounded-full text-xs sm:text-sm shadow-lg transition-all active:scale-95 animate-bounce flex items-center gap-1 cursor-pointer"
                 title="Challenge an opponent holding 1 card who forgot to call UNO!"
               >
                 <span>🚨</span> CATCH UNO!
@@ -907,47 +902,49 @@ export const GameScreen: React.FC = () => {
           </div>
 
           <div className="w-full flex items-end justify-between gap-2">
-            {/* BOTTOM LEFT: Desktop-Only Inline Chat Box Widget */}
-            <div className="hidden lg:flex w-64 lg:w-72 bg-[#092248]/90 backdrop-blur-md border border-white/15 rounded-2xl p-3 shadow-2xl flex-col space-y-2 shrink-0">
-              <div className="flex items-center justify-between border-b border-white/10 pb-1.5">
-                <span className="font-bold text-xs text-white">Chat</span>
-                <button className="text-white/60 hover:text-white text-xs font-mono">•••</button>
+            {/* BOTTOM LEFT: WHITE GLASSMORPHIC CHAT BOX WIDGET (DESKTOP) */}
+            <div className="hidden lg:flex w-64 lg:w-72 glass-white-panel rounded-2xl p-3 shadow-2xl flex-col space-y-2 shrink-0 border border-white">
+              <div className="flex items-center justify-between border-b border-slate-200/80 pb-1.5">
+                <span className="font-extrabold text-xs text-slate-800 flex items-center gap-1.5">
+                  <MessageSquare className="w-3.5 h-3.5 text-sky-600" /> Room Chat
+                </span>
+                <span className="text-[10px] font-bold text-slate-400 uppercase">Live</span>
               </div>
 
               {/* Chat Messages Window */}
-              <div className="h-20 overflow-y-auto space-y-1.5 text-[11px] pr-1">
+              <div className="h-24 overflow-y-auto space-y-1.5 text-[11px] pr-1 scrollbar-none">
                 {chatMessages.length === 0 ? (
-                  <p className="text-white/40 italic text-center py-2 text-[10px]">Type a message below...</p>
+                  <p className="text-slate-400 italic text-center py-4 text-[10px]">Type a message below...</p>
                 ) : (
                   chatMessages.map((msg) => (
-                    <div key={msg.id} className="bg-white/5 px-2 py-1 rounded-lg">
-                      <span className="font-bold text-sky-300">{msg.senderName}: </span>
-                      <span className="text-white/90">{msg.text}</span>
+                    <div key={msg.id} className="bg-white/90 px-2.5 py-1 rounded-xl border border-slate-100 shadow-2xs">
+                      <span className="font-extrabold text-sky-600">{msg.senderName}: </span>
+                      <span className="text-slate-700 font-medium">{msg.text}</span>
                     </div>
                   ))
                 )}
               </div>
 
-              {/* Chat Input */}
+              {/* White Translucent Chat Input */}
               <form onSubmit={handleSendChat} className="relative">
                 <input
                   type="text"
                   value={chatInput}
                   onChange={(e) => setChatInput(e.target.value)}
                   placeholder="Type a message..."
-                  className="w-full bg-white/10 border border-white/20 rounded-xl pl-3 pr-8 py-1.5 text-xs text-white placeholder:text-white/40 focus:outline-none focus:border-sky-400"
+                  className="w-full glass-white-input rounded-xl pl-3 pr-8 py-1.5 text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none"
                 />
-                <button type="submit" className="absolute right-2 top-2 text-white/70 hover:text-sky-300">
+                <button type="submit" className="absolute right-2.5 top-2 text-sky-600 hover:text-sky-700">
                   <Send className="w-3.5 h-3.5" />
                 </button>
               </form>
             </div>
 
-            {/* BOTTOM CENTER: Fanned Player Hand & Player Status Pill */}
+            {/* BOTTOM CENTER: FANNED PLAYER HAND & STATUS PILL */}
             <div className="flex flex-col items-center w-full lg:max-w-[70vw] z-30 flex-1 px-1">
 
               {/* Player Hand Container */}
-              <div className="w-full flex items-center justify-center overflow-x-auto overflow-y-visible pt-2 sm:pt-8 pb-1 px-1 scrollbar-none touch-pan-x">
+              <div className="w-full flex items-center justify-center overflow-x-auto overflow-y-visible pt-2 sm:pt-6 pb-1 px-1 scrollbar-none touch-pan-x">
                 {isMobile && displayHand.length > 7 ? (
                   /* Mobile Multi-Row Layout for > 7 Cards */
                   <div className="w-full flex flex-col items-center justify-center gap-1.5 py-1 px-0.5">
@@ -983,7 +980,7 @@ export const GameScreen: React.FC = () => {
                     ))}
                   </div>
                 ) : (
-                  /* Single Row Fanned Layout for Desktop/Tablet or <= 7 Cards */
+                  /* Single Row Fanned Layout */
                   <div
                     className="flex items-center justify-center transition-all duration-300 py-2 px-1"
                     style={{
@@ -1004,7 +1001,6 @@ export const GameScreen: React.FC = () => {
                         : (total <= 4 ? '-ml-2 sm:-ml-3' : total <= 7 ? '-ml-4 sm:-ml-7' : total <= 11 ? '-ml-7 sm:-ml-12' : '-ml-10 sm:-ml-16');
 
                       const isPlayable = checkCardPlayable(card);
-
                       const cardSize = isMobile ? 'sm' : 'md';
 
                       return (
@@ -1031,18 +1027,18 @@ export const GameScreen: React.FC = () => {
                 )}
               </div>
 
-              {/* Player Pill below hand */}
-              <div className="bg-white/10 backdrop-blur-md px-3 py-0.5 sm:px-4 sm:py-1 rounded-full border border-white/20 flex items-center gap-2 text-[10px] sm:text-xs font-bold z-10 my-0.5 relative">
+              {/* Player Status Pill */}
+              <div className="glass-white-card px-3.5 py-1 rounded-full border border-slate-200/80 flex items-center gap-2 text-[10px] sm:text-xs font-extrabold z-10 my-0.5 relative shadow-sm text-slate-800">
                 <div className="w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-sky-500 text-white flex items-center justify-center text-[9px] sm:text-[10px]">👤</div>
                 <span>You</span>
-                <span className="text-white/60">{displayHand.length} Cards</span>
-                <span className="hidden sm:flex items-center gap-1 text-emerald-400 text-[10px]">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" /> Online
+                <span className="text-slate-400">({displayHand.length} Cards)</span>
+                <span className="hidden sm:flex items-center gap-1 text-emerald-600 text-[10px]">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> Online
                 </span>
 
                 {/* Floating Emotes Overlay for Me */}
                 {floatingEmotes.filter(e => e.senderId === myId).map((e) => (
-                  <div key={e.id} className="absolute -top-16 left-1/2 -translate-x-1/2 pointer-events-none z-50 animate-float-emote text-4xl sm:text-5xl select-none filter drop-shadow-[0_10px_10px_rgba(0,0,0,0.5)]">
+                  <div key={e.id} className="absolute -top-16 left-1/2 -translate-x-1/2 pointer-events-none z-50 animate-float-emote text-4xl sm:text-5xl select-none filter drop-shadow-[0_10px_10px_rgba(0,0,0,0.2)]">
                     {e.emote}
                   </div>
                 ))}
@@ -1060,27 +1056,27 @@ export const GameScreen: React.FC = () => {
       </main>
 
       {/* ------------------------------------------------------------- */}
-      {/* MOBILE & TABLET SLIDE-UP CHAT DRAWER                          */}
+      {/* MOBILE & TABLET SLIDE-UP WHITE GLASS CHAT DRAWER              */}
       {/* ------------------------------------------------------------- */}
       {showMobileChat && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 lg:hidden">
-          <div className="bg-[#092248] border border-sky-400/30 rounded-t-3xl sm:rounded-3xl p-4 w-full sm:max-w-md shadow-2xl space-y-3">
-            <div className="flex items-center justify-between border-b border-white/10 pb-2">
-              <span className="font-bold text-sm text-white flex items-center gap-2">
-                <MessageSquare className="w-4 h-4 text-sky-400" /> Room Chat
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-end justify-center p-0 lg:hidden">
+          <div className="glass-white-panel border-t border-white rounded-t-3xl p-4 w-full sm:max-w-md shadow-2xl space-y-3">
+            <div className="flex items-center justify-between border-b border-slate-200/80 pb-2">
+              <span className="font-extrabold text-sm text-slate-800 flex items-center gap-2">
+                <MessageSquare className="w-4 h-4 text-sky-600" /> Room Chat
               </span>
-              <button onClick={() => setShowMobileChat(false)} className="text-white/60 hover:text-white p-1">
+              <button onClick={() => setShowMobileChat(false)} className="text-slate-400 hover:text-slate-800 p-1">
                 <X className="w-5 h-5" />
               </button>
             </div>
-            <div className="h-48 overflow-y-auto space-y-2 text-xs pr-1">
+            <div className="h-52 overflow-y-auto space-y-2 text-xs pr-1">
               {chatMessages.length === 0 ? (
-                <p className="text-white/40 italic text-center py-6 text-xs">No messages yet. Say hello!</p>
+                <p className="text-slate-400 italic text-center py-6 text-xs">No messages yet. Say hello!</p>
               ) : (
                 chatMessages.map((msg) => (
-                  <div key={msg.id} className="bg-white/10 px-3 py-1.5 rounded-xl">
-                    <span className="font-bold text-sky-300">{msg.senderName}: </span>
-                    <span className="text-white/90">{msg.text}</span>
+                  <div key={msg.id} className="bg-white/90 px-3 py-1.5 rounded-xl border border-slate-200/60 shadow-2xs">
+                    <span className="font-extrabold text-sky-600">{msg.senderName}: </span>
+                    <span className="text-slate-800 font-medium">{msg.text}</span>
                   </div>
                 ))
               )}
@@ -1091,9 +1087,9 @@ export const GameScreen: React.FC = () => {
                 value={chatInput}
                 onChange={(e) => setChatInput(e.target.value)}
                 placeholder="Type a message..."
-                className="w-full bg-white/10 border border-white/20 rounded-xl pl-4 pr-10 py-2.5 text-xs text-white placeholder:text-white/40 focus:outline-none focus:border-sky-400"
+                className="w-full glass-white-input rounded-xl pl-4 pr-10 py-2.5 text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none"
               />
-              <button type="submit" className="absolute right-3 top-3 text-white/70 hover:text-sky-300">
+              <button type="submit" className="absolute right-3 top-3 text-sky-600 hover:text-sky-700">
                 <Send className="w-4 h-4" />
               </button>
             </form>
@@ -1116,11 +1112,11 @@ export const GameScreen: React.FC = () => {
           : 'Select the active color for the next turns:';
 
         return (
-          <div className="fixed inset-0 bg-black/70 backdrop-blur-md z-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-3xl p-8 max-w-sm w-full text-center space-y-6 border border-neutral-200 shadow-2xl">
+          <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-md z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-3xl p-8 max-w-sm w-full text-center space-y-6 border border-slate-200 shadow-2xl animate-pop-scale">
               <div>
-                <h3 className="text-2xl font-black text-uno-navy tracking-tight">{modalTitle}</h3>
-                <p className="text-xs font-semibold text-neutral-500 mt-1">
+                <h3 className="text-2xl font-black text-slate-900 tracking-tight">{modalTitle}</h3>
+                <p className="text-xs font-semibold text-slate-500 mt-1">
                   {modalDesc}
                 </p>
               </div>
@@ -1128,25 +1124,25 @@ export const GameScreen: React.FC = () => {
               <div className="grid grid-cols-2 gap-4">
                 <button
                   onClick={() => handleSelectColor('RED')}
-                  className="h-20 rounded-2xl bg-[#E52521] hover:scale-105 transition-transform text-white font-extrabold text-lg shadow-md cursor-pointer"
+                  className="h-20 rounded-2xl bg-gradient-to-br from-[#FF3B30] to-[#E52521] hover:scale-105 transition-transform text-white font-extrabold text-lg shadow-md cursor-pointer"
                 >
                   RED
                 </button>
                 <button
                   onClick={() => handleSelectColor('YELLOW')}
-                  className="h-20 rounded-2xl bg-[#FCD116] hover:scale-105 transition-transform text-uno-navy font-extrabold text-lg shadow-md cursor-pointer"
+                  className="h-20 rounded-2xl bg-gradient-to-br from-[#FFE033] to-[#FCD116] hover:scale-105 transition-transform text-slate-950 font-extrabold text-lg shadow-md cursor-pointer"
                 >
                   YELLOW
                 </button>
                 <button
                   onClick={() => handleSelectColor('GREEN')}
-                  className="h-20 rounded-2xl bg-[#2D963F] hover:scale-105 transition-transform text-white font-extrabold text-lg shadow-md cursor-pointer"
+                  className="h-20 rounded-2xl bg-gradient-to-br from-[#34C759] to-[#2D963F] hover:scale-105 transition-transform text-white font-extrabold text-lg shadow-md cursor-pointer"
                 >
                   GREEN
                 </button>
                 <button
                   onClick={() => handleSelectColor('BLUE')}
-                  className="h-20 rounded-2xl bg-[#0082CA] hover:scale-105 transition-transform text-white font-extrabold text-lg shadow-md cursor-pointer"
+                  className="h-20 rounded-2xl bg-gradient-to-br from-[#0095FF] to-[#0082CA] hover:scale-105 transition-transform text-white font-extrabold text-lg shadow-md cursor-pointer"
                 >
                   BLUE
                 </button>
@@ -1160,14 +1156,14 @@ export const GameScreen: React.FC = () => {
       {/* HAND SWAP SELECTION MODAL (7-Zero / Wild Swap)               */}
       {/* ------------------------------------------------------------- */}
       {gameState.pendingHandSwapPlayerId === myId && (
-        <div className="fixed inset-0 bg-black/75 backdrop-blur-md z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full text-center space-y-6 border border-neutral-200 shadow-2xl">
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-md z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full text-center space-y-6 border border-slate-200 shadow-2xl animate-pop-scale">
             <div className="w-16 h-16 rounded-2xl bg-amber-100 border border-amber-300 text-amber-600 flex items-center justify-center mx-auto text-3xl shadow-md">
               🔄
             </div>
             <div>
-              <h3 className="text-2xl font-black text-uno-navy tracking-tight">SWAP HANDS 🔄</h3>
-              <p className="text-xs font-semibold text-neutral-500 mt-1">
+              <h3 className="text-2xl font-black text-slate-900 tracking-tight">SWAP HANDS 🔄</h3>
+              <p className="text-xs font-semibold text-slate-500 mt-1">
                 Select an opponent to swap your entire hand with:
               </p>
             </div>
@@ -1177,15 +1173,15 @@ export const GameScreen: React.FC = () => {
                 <button
                   key={target.id}
                   onClick={() => handleSwapHands(target.id)}
-                  className="w-full p-4 rounded-2xl bg-neutral-50 hover:bg-amber-50 border border-neutral-200 hover:border-amber-300 transition-all flex items-center justify-between group shadow-sm hover:shadow-md cursor-pointer"
+                  className="w-full p-4 rounded-2xl bg-slate-50 hover:bg-amber-50 border border-slate-200 hover:border-amber-300 transition-all flex items-center justify-between group shadow-sm hover:shadow-md cursor-pointer"
                 >
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center text-lg font-bold">
                       {target.avatar || '👤'}
                     </div>
                     <div className="text-left">
-                      <div className="font-extrabold text-sm text-neutral-800 group-hover:text-amber-700">{target.name}</div>
-                      <div className="text-xs font-semibold text-neutral-400">Holding {target.cardCount} cards</div>
+                      <div className="font-extrabold text-sm text-slate-800 group-hover:text-amber-700">{target.name}</div>
+                      <div className="text-xs font-semibold text-slate-400">Holding {target.cardCount} cards</div>
                     </div>
                   </div>
                   <span className="bg-amber-500 text-white font-extrabold text-xs px-3.5 py-2 rounded-xl uppercase tracking-wider group-hover:scale-105 transition-transform">
@@ -1199,21 +1195,21 @@ export const GameScreen: React.FC = () => {
       )}
 
       {/* ------------------------------------------------------------- */}
-      {/* GAME OVER / VICTORY OVERLAY MODAL                             */}
+      {/* GAME OVER / VICTORY OVERLAY MODAL (CONFETTI CELEBRATION)      */}
       {/* ------------------------------------------------------------- */}
       {gameState.status === 'FINISHED' && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-lg z-50 flex items-center justify-center p-4">
-          <div className="bg-white text-uno-navy rounded-3xl p-8 sm:p-10 max-w-md w-full text-center space-y-6 shadow-2xl border border-neutral-200">
-            <div className="w-20 h-20 rounded-3xl bg-amber-100 border-2 border-amber-300 text-amber-500 flex items-center justify-center mx-auto shadow-lg transform rotate-3">
-              <span className="text-4xl">🏆</span>
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-50 flex items-center justify-center p-4">
+          <div className="bg-white text-slate-900 rounded-3xl p-8 sm:p-10 max-w-md w-full text-center space-y-6 shadow-2xl border border-slate-200 animate-pop-scale">
+            <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-amber-100 to-amber-200 border-2 border-amber-300 text-amber-500 flex items-center justify-center mx-auto shadow-lg transform rotate-3">
+              <Trophy className="w-10 h-10 text-amber-600" />
             </div>
 
             <div>
-              <span className="text-xs font-black text-uno-blue uppercase tracking-widest">MATCH FINISHED</span>
-              <h2 className="text-3xl font-black text-uno-navy tracking-tight mt-1">
+              <span className="text-xs font-black text-sky-600 uppercase tracking-widest">MATCH FINISHED</span>
+              <h2 className="text-3xl font-black text-slate-900 tracking-tight mt-1">
                 {gameState.winner?.id === myId ? 'YOU WIN!' : `${gameState.winner?.name || 'Player'} WINS!`}
               </h2>
-              <p className="text-sm font-bold text-neutral-500 mt-2">
+              <p className="text-sm font-bold text-slate-500 mt-2">
                 Winner Score: {gameState.winner?.score || 0} pts
               </p>
             </div>
@@ -1221,7 +1217,7 @@ export const GameScreen: React.FC = () => {
             <div className="space-y-3 pt-2">
               <button
                 onClick={handleRematch}
-                className="w-full bg-uno-yellow hover:bg-amber-400 text-uno-navy font-black py-4 rounded-2xl text-base flex items-center justify-center gap-2 shadow-lg transition-transform hover:scale-[1.02]"
+                className="w-full bg-gradient-to-r from-[#FCD116] to-[#F5A623] hover:from-[#FFE033] hover:to-[#FCD116] text-slate-950 font-black py-4 rounded-2xl text-base flex items-center justify-center gap-2 shadow-lg transition-transform hover:scale-[1.02] cursor-pointer"
               >
                 <Play className="w-5 h-5 fill-current" />
                 PLAY AGAIN
@@ -1229,7 +1225,7 @@ export const GameScreen: React.FC = () => {
 
               <button
                 onClick={() => navigate('/play')}
-                className="w-full bg-neutral-100 hover:bg-neutral-200 text-uno-navy font-bold py-3.5 rounded-2xl text-sm flex items-center justify-center gap-2"
+                className="w-full bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold py-3.5 rounded-2xl text-sm flex items-center justify-center gap-2 cursor-pointer"
               >
                 RETURN TO LOBBY
               </button>

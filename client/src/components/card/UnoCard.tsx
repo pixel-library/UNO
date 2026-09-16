@@ -15,19 +15,39 @@ export interface UnoCardProps {
 }
 
 const SIZE_MAP = {
-  xs: { width: 'w-10', height: 'h-14', text: 'text-xs', cornerText: 'text-[9px]', pad: 'p-[2px]', border: 'rounded-[5px]', innerBorder: 'rounded-[3px]', ovalWidth: 'w-[82%]', ovalHeight: 'h-[68%]' },
-  sm: { width: 'w-14', height: 'h-20', text: 'text-xl', cornerText: 'text-[11px]', pad: 'p-[3px]', border: 'rounded-[7px]', innerBorder: 'rounded-[4px]', ovalWidth: 'w-[84%]', ovalHeight: 'h-[70%]' },
-  md: { width: 'w-20 sm:w-24', height: 'h-28 sm:h-36', text: 'text-3xl sm:text-5xl', cornerText: 'text-xs sm:text-base', pad: 'p-1 sm:p-1.5', border: 'rounded-[10px] sm:rounded-[12px]', innerBorder: 'rounded-[7px] sm:rounded-[9px]', ovalWidth: 'w-[85%]', ovalHeight: 'h-[70%]' },
-  lg: { width: 'w-28 sm:w-32', height: 'h-40 sm:h-48', text: 'text-5xl sm:text-6xl', cornerText: 'text-base sm:text-lg', pad: 'p-1.5 sm:p-2', border: 'rounded-[12px] sm:rounded-[14px]', innerBorder: 'rounded-[9px] sm:rounded-[11px]', ovalWidth: 'w-[85%]', ovalHeight: 'h-[70%]' },
-  xl: { width: 'w-36 sm:w-40', height: 'h-52 sm:h-60', text: 'text-6xl sm:text-7xl', cornerText: 'text-lg sm:text-xl', pad: 'p-2 sm:p-2.5', border: 'rounded-[14px] sm:rounded-[16px]', innerBorder: 'rounded-[11px] sm:rounded-[13px]', ovalWidth: 'w-[85%]', ovalHeight: 'h-[70%]' }
+  xs: { width: 'w-10', height: 'h-14', text: 'text-xs', cornerText: 'text-[9px]', pad: 'p-[2px]', border: 'rounded-[6px]', innerBorder: 'rounded-[4px]', ovalWidth: 'w-[82%]', ovalHeight: 'h-[68%]' },
+  sm: { width: 'w-14 sm:w-16', height: 'h-20 sm:h-24', text: 'text-xl sm:text-2xl', cornerText: 'text-[11px] sm:text-xs', pad: 'p-[3px]', border: 'rounded-[8px] sm:rounded-[10px]', innerBorder: 'rounded-[5px] sm:rounded-[7px]', ovalWidth: 'w-[84%]', ovalHeight: 'h-[70%]' },
+  md: { width: 'w-20 sm:w-26', height: 'h-28 sm:h-38', text: 'text-3xl sm:text-5xl', cornerText: 'text-xs sm:text-base', pad: 'p-1 sm:p-[5px]', border: 'rounded-[10px] sm:rounded-[14px]', innerBorder: 'rounded-[7px] sm:rounded-[10px]', ovalWidth: 'w-[85%]', ovalHeight: 'h-[70%]' },
+  lg: { width: 'w-28 sm:w-34', height: 'h-40 sm:h-50', text: 'text-5xl sm:text-6xl', cornerText: 'text-base sm:text-lg', pad: 'p-1.5 sm:p-2', border: 'rounded-[12px] sm:rounded-[16px]', innerBorder: 'rounded-[9px] sm:rounded-[12px]', ovalWidth: 'w-[85%]', ovalHeight: 'h-[70%]' },
+  xl: { width: 'w-36 sm:w-44', height: 'h-52 sm:h-64', text: 'text-6xl sm:text-7xl', cornerText: 'text-lg sm:text-xl', pad: 'p-2 sm:p-2.5', border: 'rounded-[14px] sm:rounded-[18px]', innerBorder: 'rounded-[11px] sm:rounded-[14px]', ovalWidth: 'w-[85%]', ovalHeight: 'h-[70%]' }
 };
 
-const COLOR_MAP: Record<CardColor, { bg: string; text: string }> = {
-  RED: { bg: 'bg-[#E52521]', text: 'text-[#E52521]' },
-  YELLOW: { bg: 'bg-[#FCD116]', text: 'text-[#FCD116]' },
-  GREEN: { bg: 'bg-[#2D963F]', text: 'text-[#2D963F]' },
-  BLUE: { bg: 'bg-[#0082CA]', text: 'text-[#0082CA]' },
-  WILD: { bg: 'bg-[#1E1E1E]', text: 'text-white' }
+const COLOR_MAP: Record<CardColor, { bg: string; text: string; shadow: string }> = {
+  RED: { 
+    bg: 'bg-gradient-to-br from-[#FF3B30] via-[#E52521] to-[#C01111]', 
+    text: 'text-[#E52521]',
+    shadow: 'shadow-[0_8px_20px_rgba(229,37,33,0.3)]'
+  },
+  YELLOW: { 
+    bg: 'bg-gradient-to-br from-[#FFE033] via-[#FCD116] to-[#D9AC00]', 
+    text: 'text-[#D9AC00]',
+    shadow: 'shadow-[0_8px_20px_rgba(252,209,22,0.3)]'
+  },
+  GREEN: { 
+    bg: 'bg-gradient-to-br from-[#34C759] via-[#2D963F] to-[#1E6B2C]', 
+    text: 'text-[#2D963F]',
+    shadow: 'shadow-[0_8px_20px_rgba(45,150,63,0.3)]'
+  },
+  BLUE: { 
+    bg: 'bg-gradient-to-br from-[#0095FF] via-[#0082CA] to-[#005B9E]', 
+    text: 'text-[#0082CA]',
+    shadow: 'shadow-[0_8px_20px_rgba(0,130,202,0.3)]'
+  },
+  WILD: { 
+    bg: 'bg-gradient-to-br from-[#1E293B] via-[#0F172A] to-[#020617]', 
+    text: 'text-white',
+    shadow: 'shadow-[0_8px_20px_rgba(15,23,42,0.4)]'
+  }
 };
 
 export const UnoCard: React.FC<UnoCardProps> = ({
@@ -46,24 +66,27 @@ export const UnoCard: React.FC<UnoCardProps> = ({
   const colorConfig = COLOR_MAP[color] || COLOR_MAP.RED;
   const isNumberDigit = /^[0-9]$/.test(value || '');
 
-  // Render Face-Down Card
+  // Render Face-Down Card (Gold-embossed 3D UNO Logo)
   if (faceDown) {
     return (
       <div
         onClick={!disabled && onClick ? onClick : undefined}
         style={style}
-        className={`relative select-none ${sizeConfig.width} ${sizeConfig.height} bg-white ${sizeConfig.pad} ${sizeConfig.border} border border-neutral-300 shadow-[0_4px_10px_rgba(0,0,0,0.3)] transition-all duration-200 cursor-pointer hover:shadow-xl ${className}`}
+        className={`relative select-none ${sizeConfig.width} ${sizeConfig.height} bg-white ${sizeConfig.pad} ${sizeConfig.border} border border-neutral-300/80 shadow-[0_8px_18px_rgba(0,0,0,0.25)] transition-all duration-200 cursor-pointer hover:shadow-2xl hover:-translate-y-1 ${className}`}
       >
-        <div className={`w-full h-full bg-[#111111] ${sizeConfig.innerBorder} flex items-center justify-center relative overflow-hidden border border-neutral-800 p-1`}>
-          {/* Subtle background diagonal stripes pattern */}
-          <div className="absolute inset-0 opacity-10 bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:8px_8px]" />
+        <div className={`w-full h-full bg-gradient-to-br from-[#1A1A1A] via-[#111111] to-[#050505] ${sizeConfig.innerBorder} flex items-center justify-center relative overflow-hidden border border-neutral-800 p-1`}>
+          {/* Subtle background diagonal grid pattern */}
+          <div className="absolute inset-0 opacity-15 bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:8px_8px]" />
           
-          {/* Inner tilted Red Oval with yellow border & yellow/white 3D UNO logo */}
-          <div className="w-[88%] h-[72%] bg-[#E52521] rounded-full -rotate-[28deg] border-2 border-[#FCD116] flex items-center justify-center shadow-lg z-10">
-            <span className="font-black tracking-tighter drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)] font-sans italic text-center px-1" style={{ fontSize: size === 'xs' ? '9px' : size === 'sm' ? '13px' : size === 'md' ? '20px' : '28px' }}>
-              <span className="text-[#FCD116] drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">U</span>
-              <span className="text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">N</span>
-              <span className="text-[#FCD116] drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">O</span>
+          {/* Light glossy sheen overlay */}
+          <div className="absolute inset-0 card-gloss-sheen pointer-events-none z-10" />
+
+          {/* Inner tilted Red Oval with gold border & gold/white 3D UNO logo */}
+          <div className="w-[88%] h-[72%] bg-gradient-to-br from-[#FF2D20] via-[#E52521] to-[#B3100C] rounded-full -rotate-[28deg] border-2 border-[#FCD116] flex items-center justify-center shadow-[0_4px_12px_rgba(0,0,0,0.6)] z-20">
+            <span className="font-black tracking-tighter drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)] font-sans italic text-center px-1" style={{ fontSize: size === 'xs' ? '10px' : size === 'sm' ? '14px' : size === 'md' ? '22px' : '30px' }}>
+              <span className="text-[#FCD116] drop-shadow-[0_1.5px_2px_rgba(0,0,0,0.8)]">U</span>
+              <span className="text-white drop-shadow-[0_1.5px_2px_rgba(0,0,0,0.8)]">N</span>
+              <span className="text-[#FCD116] drop-shadow-[0_1.5px_2px_rgba(0,0,0,0.8)]">O</span>
             </span>
           </div>
         </div>
@@ -76,83 +99,87 @@ export const UnoCard: React.FC<UnoCardProps> = ({
     switch (value) {
       case 'SKIP':
         return (
-          <svg className="w-2/3 h-2/3 stroke-current fill-none stroke-[3]" viewBox="0 0 24 24">
+          <svg className="w-3/4 h-3/4 stroke-current fill-none stroke-[3.2] drop-shadow-[0_1px_2px_rgba(0,0,0,0.2)]" viewBox="0 0 24 24">
             <circle cx="12" cy="12" r="9" />
             <line x1="5.6" y1="5.6" x2="18.4" y2="18.4" />
           </svg>
         );
       case 'REVERSE':
         return (
-          <svg className="w-2/3 h-2/3 fill-current" viewBox="0 0 24 24">
+          <svg className="w-3/4 h-3/4 fill-current drop-shadow-[0_1px_2px_rgba(0,0,0,0.2)]" viewBox="0 0 24 24">
             <path d="M7 7h10v3l5-4-5-4v3H5v6h2V7zm10 10H7v-3l-5 4 5 4v-3h12v-6h-2v4z" />
           </svg>
         );
       case 'DRAW_TWO':
-        return <span className="font-black italic tracking-tighter drop-shadow-[0_2px_2px_rgba(0,0,0,0.3)]">+2</span>;
+        return (
+          <div className="flex flex-col items-center justify-center leading-none">
+            <span className="font-black italic tracking-tighter drop-shadow-[0_2px_2px_rgba(0,0,0,0.25)]">+2</span>
+          </div>
+        );
       case 'WILD':
         return (
           <div className="w-full h-full flex items-center justify-center relative">
-            <div className="w-[88%] h-[88%] rounded-full overflow-hidden grid grid-cols-2 grid-rows-2 shadow-inner border border-white/60 transform -rotate-[28deg]">
+            <div className="w-[88%] h-[88%] rounded-full overflow-hidden grid grid-cols-2 grid-rows-2 shadow-inner border-2 border-white/80 transform -rotate-[28deg]">
               <div className="bg-[#E52521]" />
               <div className="bg-[#0082CA]" />
               <div className="bg-[#FCD116]" />
               <div className="bg-[#2D963F]" />
             </div>
-            <span className="absolute font-black italic tracking-tighter text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)] text-xl sm:text-2xl">WILD</span>
+            <span className="absolute font-black italic tracking-tighter text-white drop-shadow-[0_2px_6px_rgba(0,0,0,0.9)] text-lg sm:text-2xl">WILD</span>
           </div>
         );
       case 'WILD_DRAW_FOUR':
         return (
           <div className="w-full h-full flex items-center justify-center relative">
-            <div className="w-[88%] h-[88%] rounded-full overflow-hidden grid grid-cols-2 grid-rows-2 shadow-inner border border-white/60 transform -rotate-[28deg]">
+            <div className="w-[88%] h-[88%] rounded-full overflow-hidden grid grid-cols-2 grid-rows-2 shadow-inner border-2 border-white/80 transform -rotate-[28deg]">
               <div className="bg-[#E52521]" />
               <div className="bg-[#0082CA]" />
               <div className="bg-[#FCD116]" />
               <div className="bg-[#2D963F]" />
             </div>
-            <span className="absolute font-black italic tracking-tighter text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)] text-2xl sm:text-3xl">+4</span>
+            <span className="absolute font-black italic tracking-tighter text-white drop-shadow-[0_2px_6px_rgba(0,0,0,0.9)] text-2xl sm:text-3xl">+4</span>
           </div>
         );
       case 'DISCARD_ALL':
-        return <span className="font-black italic tracking-tighter drop-shadow-[0_2px_2px_rgba(0,0,0,0.3)] text-sm sm:text-lg">ALL 🎨</span>;
+        return <span className="font-black italic tracking-tighter drop-shadow-[0_2px_2px_rgba(0,0,0,0.25)] text-sm sm:text-lg">ALL 🎨</span>;
       case 'WILD_SHUFFLE':
         return (
           <div className="w-full h-full flex items-center justify-center relative">
-            <div className="w-[88%] h-[88%] rounded-full overflow-hidden grid grid-cols-2 grid-rows-2 shadow-inner border border-white/60 transform -rotate-[28deg]">
+            <div className="w-[88%] h-[88%] rounded-full overflow-hidden grid grid-cols-2 grid-rows-2 shadow-inner border-2 border-white/80 transform -rotate-[28deg]">
               <div className="bg-[#E52521]" />
               <div className="bg-[#0082CA]" />
               <div className="bg-[#FCD116]" />
               <div className="bg-[#2D963F]" />
             </div>
-            <span className="absolute font-black italic tracking-tighter text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)] text-lg sm:text-2xl">🌀</span>
+            <span className="absolute font-black italic tracking-tighter text-white drop-shadow-[0_2px_6px_rgba(0,0,0,0.9)] text-lg sm:text-2xl">🌀</span>
           </div>
         );
       case 'WILD_SWAP':
         return (
           <div className="w-full h-full flex items-center justify-center relative">
-            <div className="w-[88%] h-[88%] rounded-full overflow-hidden grid grid-cols-2 grid-rows-2 shadow-inner border border-white/60 transform -rotate-[28deg]">
+            <div className="w-[88%] h-[88%] rounded-full overflow-hidden grid grid-cols-2 grid-rows-2 shadow-inner border-2 border-white/80 transform -rotate-[28deg]">
               <div className="bg-[#E52521]" />
               <div className="bg-[#0082CA]" />
               <div className="bg-[#FCD116]" />
               <div className="bg-[#2D963F]" />
             </div>
-            <span className="absolute font-black italic tracking-tighter text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)] text-lg sm:text-2xl">🎯</span>
+            <span className="absolute font-black italic tracking-tighter text-white drop-shadow-[0_2px_6px_rgba(0,0,0,0.9)] text-lg sm:text-2xl">🎯</span>
           </div>
         );
       case 'REPLAY':
         return (
-          <svg className="w-2/3 h-2/3 fill-current" viewBox="0 0 24 24">
+          <svg className="w-3/4 h-3/4 fill-current drop-shadow-[0_1px_2px_rgba(0,0,0,0.2)]" viewBox="0 0 24 24">
             <path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z" />
           </svg>
         );
       case 'SKIP_WILD':
         return (
-          <div className="w-3/4 h-3/4 rounded-full overflow-hidden grid grid-cols-2 grid-rows-2 relative flex items-center justify-center">
+          <div className="w-3/4 h-3/4 rounded-full overflow-hidden grid grid-cols-2 grid-rows-2 relative flex items-center justify-center border border-white/80">
             <div className="bg-[#E52521]" />
             <div className="bg-[#0082CA]" />
             <div className="bg-[#FCD116]" />
             <div className="bg-[#2D963F]" />
-            <svg className="absolute inset-0 m-auto w-full h-full stroke-white fill-none stroke-[3]" viewBox="0 0 24 24">
+            <svg className="absolute inset-0 m-auto w-full h-full stroke-white fill-none stroke-[3.2]" viewBox="0 0 24 24">
               <circle cx="12" cy="12" r="9" />
               <line x1="5.6" y1="5.6" x2="18.4" y2="18.4" />
             </svg>
@@ -166,7 +193,7 @@ export const UnoCard: React.FC<UnoCardProps> = ({
       case 'MINUS_TWO_WILD':
         return <span className="font-black italic">-2</span>;
       default:
-        return <span className="font-black italic tracking-tight drop-shadow-[0_2px_3px_rgba(0,0,0,0.25)]">{value}</span>;
+        return <span className="font-black italic tracking-tight drop-shadow-[0_2px_4px_rgba(0,0,0,0.25)]">{value}</span>;
     }
   };
 
@@ -195,29 +222,32 @@ export const UnoCard: React.FC<UnoCardProps> = ({
       onClick={!disabled && onClick ? onClick : undefined}
       style={style}
       className={`relative select-none ${sizeConfig.width} ${sizeConfig.height} bg-white ${sizeConfig.pad} ${sizeConfig.border} 
-        border border-neutral-300 shadow-[0_4px_10px_rgba(0,0,0,0.3)] transition-all duration-200 cursor-pointer
-        ${playable ? 'ring-2 ring-emerald-400 ring-offset-1 shadow-[0_0_15px_rgba(52,211,153,0.8)] scale-[1.03] z-20' : ''}
-        ${selected ? '-translate-y-8 shadow-2xl ring-2 ring-yellow-400 ring-offset-1 z-30' : ''}
+        border border-neutral-200/90 ${colorConfig.shadow} transition-all duration-200 cursor-pointer
+        ${playable ? 'ring-4 ring-emerald-400/90 ring-offset-2 ring-offset-white shadow-[0_0_20px_rgba(52,211,153,0.85)] scale-[1.04] z-20' : ''}
+        ${selected ? '-translate-y-8 shadow-2xl ring-4 ring-amber-400 ring-offset-2 z-30 scale-[1.08]' : ''}
         ${disabled ? 'opacity-60 grayscale cursor-not-allowed' : ''}
         ${className}`}
     >
-      {/* Colored Inner Card Face */}
-      <div className={`w-full h-full ${colorConfig.bg} ${sizeConfig.innerBorder} relative overflow-hidden flex items-center justify-center p-1 border border-black/10`}>
+      {/* Colored Inner Card Face with Gradient */}
+      <div className={`w-full h-full ${colorConfig.bg} ${sizeConfig.innerBorder} relative overflow-hidden flex items-center justify-center p-1 border border-black/10 shadow-inner`}>
         
+        {/* Light Glossy Sheen Overlay */}
+        <div className="absolute inset-0 card-gloss-sheen pointer-events-none z-10" />
+
         {/* Top-Left Corner Value with Underline for digits */}
-        <div className={`absolute top-1 left-1.5 font-black ${sizeConfig.cornerText} text-white drop-shadow-[0_1.5px_2px_rgba(0,0,0,0.9)] leading-none z-10 font-sans flex flex-col items-center`}>
+        <div className={`absolute top-1 left-1.5 font-black ${sizeConfig.cornerText} text-white drop-shadow-[0_1.5px_3px_rgba(0,0,0,0.9)] leading-none z-20 font-sans flex flex-col items-center`}>
           <span>{cornerLabel()}</span>
           {isNumberDigit && <div className="w-[85%] h-[1.5px] bg-white rounded-full mt-[1px] opacity-90 shadow-sm" />}
         </div>
 
         {/* Bottom-Right Corner Value (Rotated 180 deg) with Underline for digits */}
-        <div className={`absolute bottom-1 right-1.5 font-black ${sizeConfig.cornerText} text-white drop-shadow-[0_1.5px_2px_rgba(0,0,0,0.9)] leading-none z-10 transform rotate-180 font-sans flex flex-col items-center`}>
+        <div className={`absolute bottom-1 right-1.5 font-black ${sizeConfig.cornerText} text-white drop-shadow-[0_1.5px_3px_rgba(0,0,0,0.9)] leading-none z-20 transform rotate-180 font-sans flex flex-col items-center`}>
           <span>{cornerLabel()}</span>
           {isNumberDigit && <div className="w-[85%] h-[1.5px] bg-white rounded-full mt-[1px] opacity-90 shadow-sm" />}
         </div>
 
         {/* Tilted White Oval Center */}
-        <div className={`${sizeConfig.ovalWidth} ${sizeConfig.ovalHeight} bg-white rounded-full -rotate-[28deg] flex items-center justify-center shadow-[inset_0_2px_4px_rgba(0,0,0,0.2)] relative overflow-hidden border border-black/5`}>
+        <div className={`${sizeConfig.ovalWidth} ${sizeConfig.ovalHeight} bg-white rounded-full -rotate-[28deg] flex items-center justify-center shadow-[inset_0_3px_6px_rgba(0,0,0,0.25)] relative overflow-hidden border border-black/5 z-10`}>
           {/* Symbol Container */}
           <div className={`${colorConfig.text} ${sizeConfig.text} font-black flex items-center justify-center w-full h-full transform rotate-[28deg]`}>
             {renderSymbol()}
@@ -228,3 +258,4 @@ export const UnoCard: React.FC<UnoCardProps> = ({
     </div>
   );
 };
+
