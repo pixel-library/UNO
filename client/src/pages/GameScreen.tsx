@@ -702,10 +702,13 @@ export const GameScreen: React.FC = () => {
           </div>
 
           {/* --------------------------------------------------------- */}
-          {/* CENTER OVAL TABLE CANVAS                                  */}
+          {/* CENTER OVAL TABLE CANVAS (DEEP OCEAN BLUE TABLE)          */}
           {/* --------------------------------------------------------- */}
-          <div className="relative px-4 sm:px-12 py-6 sm:py-10 flex flex-col items-center justify-center bg-gradient-to-b from-white/95 via-slate-50/90 to-sky-50/80 border-4 border-slate-200/80 shadow-[0_25px_60px_-15px_rgba(15,23,42,0.1)] rounded-[40px] sm:rounded-[60px] border-white">
+          <div className="relative px-5 sm:px-14 py-6 sm:py-10 flex flex-col items-center justify-center bg-gradient-to-b from-[#094888] via-[#053B6D] to-[#032448] border-4 border-sky-300/60 shadow-[0_25px_60px_-15px_rgba(5,59,109,0.5)] rounded-[40px] sm:rounded-[60px] text-white">
             
+            {/* Inner subtle table ring accent */}
+            <div className="absolute inset-2 rounded-[34px] sm:rounded-[54px] border border-white/15 pointer-events-none" />
+
             {/* ACTIVE STACK PENALTY BANNER */}
             {(gameState.activeStackCount || 0) > 0 && (
               <div className="mb-3 bg-gradient-to-r from-red-600 via-amber-500 to-red-600 border-2 border-yellow-300 px-4 py-1.5 rounded-full text-white font-black text-[11px] sm:text-xs shadow-lg animate-pulse flex items-center gap-2 z-20">
@@ -730,8 +733,8 @@ export const GameScreen: React.FC = () => {
                 </div>
 
                 <div className="mt-2 text-center">
-                  <span className="text-[9px] sm:text-xs font-black tracking-wider text-slate-500 uppercase block">DRAW</span>
-                  <span className="text-xs sm:text-sm font-black text-slate-800">{gameState.drawPileCount || 73}</span>
+                  <span className="text-[9px] sm:text-xs font-black tracking-wider text-sky-200/90 uppercase block">DRAW</span>
+                  <span className="text-xs sm:text-sm font-black text-white">{gameState.drawPileCount || 73}</span>
                 </div>
               </div>
 
@@ -742,17 +745,17 @@ export const GameScreen: React.FC = () => {
                 </div>
 
                 <div className="mt-2 text-center">
-                  <span className="text-[9px] sm:text-xs font-black tracking-wider text-slate-500 uppercase block">DISCARD</span>
-                  <span className="text-xs sm:text-sm font-black text-slate-800">{gameState.discardPileCount || 1}</span>
+                  <span className="text-[9px] sm:text-xs font-black tracking-wider text-sky-200/90 uppercase block">DISCARD</span>
+                  <span className="text-xs sm:text-sm font-black text-white">{gameState.discardPileCount || 1}</span>
                 </div>
               </div>
 
             </div>
 
             {/* YOUR TURN INDICATOR */}
-            <div className="mt-3 sm:mt-6 z-10 flex items-center gap-2 bg-white/80 px-4 py-1 rounded-full border border-slate-200/80 shadow-sm">
-              <span className={`w-2.5 h-2.5 rounded-full ${isMyTurn ? 'bg-emerald-500 animate-ping' : 'bg-slate-300'}`} />
-              <span className="font-extrabold text-[10px] sm:text-xs tracking-widest text-slate-800 uppercase">
+            <div className="mt-3 sm:mt-6 z-10 flex items-center gap-2 bg-white/15 backdrop-blur-md px-4 py-1.5 rounded-full border border-white/20 shadow-sm">
+              <span className={`w-2.5 h-2.5 rounded-full ${isMyTurn ? 'bg-emerald-400 animate-ping' : 'bg-white/40'}`} />
+              <span className="font-extrabold text-[10px] sm:text-xs tracking-widest text-white uppercase">
                 {isMyTurn ? 'YOUR TURN' : 'WAITING FOR OPPONENT'}
               </span>
             </div>

@@ -73,36 +73,36 @@ export const Home: React.FC = () => {
           </div>
 
           {/* Dynamic Uno Cards Fan */}
-          <div className="relative w-[300px] h-[300px] sm:w-[420px] sm:h-[420px] flex items-center justify-center scale-75 sm:scale-100">
+          <div className="relative w-[300px] h-[300px] sm:w-[440px] sm:h-[420px] flex items-center justify-center scale-90 sm:scale-100">
             
             {/* Card 1: Red Draw Two */}
-            <div className="absolute transform -rotate-[24deg] -translate-x-24 sm:-translate-x-28 -translate-y-6 shadow-2xl transition-transform duration-300 hover:scale-105 hover:z-30">
-              <UnoCard color="RED" value="DRAW_TWO" size="lg" />
+            <div className="absolute transform -rotate-[20deg] -translate-x-28 sm:-translate-x-36 -translate-y-4 shadow-xl transition-transform duration-300 hover:scale-110 hover:z-30">
+              <UnoCard color="RED" value="DRAW_TWO" size="md" />
             </div>
 
             {/* Card 2: Blue Reverse */}
-            <div className="absolute transform -rotate-[12deg] -translate-x-12 sm:-translate-x-14 -translate-y-12 shadow-2xl transition-transform duration-300 hover:scale-105 hover:z-30">
-              <UnoCard color="BLUE" value="REVERSE" size="lg" />
+            <div className="absolute transform -rotate-[10deg] -translate-x-14 sm:-translate-x-18 -translate-y-8 shadow-xl transition-transform duration-300 hover:scale-110 hover:z-30">
+              <UnoCard color="BLUE" value="REVERSE" size="md" />
             </div>
 
             {/* Card 3: Yellow 7 */}
-            <div className="absolute transform rotate-[2deg] translate-y-[-50px] shadow-2xl transition-transform duration-300 hover:scale-105 hover:z-30">
-              <UnoCard color="YELLOW" value="7" size="lg" />
+            <div className="absolute transform rotate-[0deg] translate-y-[-40px] shadow-xl transition-transform duration-300 hover:scale-110 hover:z-30">
+              <UnoCard color="YELLOW" value="7" size="md" />
             </div>
 
             {/* Card 4: Green Skip */}
-            <div className="absolute transform rotate-[14deg] translate-x-12 sm:translate-x-14 -translate-y-12 shadow-2xl transition-transform duration-300 hover:scale-105 hover:z-30">
-              <UnoCard color="GREEN" value="SKIP" size="lg" />
+            <div className="absolute transform rotate-[10deg] translate-x-14 sm:translate-x-18 -translate-y-8 shadow-xl transition-transform duration-300 hover:scale-110 hover:z-30">
+              <UnoCard color="GREEN" value="SKIP" size="md" />
             </div>
 
             {/* Card 5: Wild */}
-            <div className="absolute transform rotate-[26deg] translate-x-24 sm:translate-x-28 -translate-y-6 shadow-2xl transition-transform duration-300 hover:scale-105 hover:z-30">
-              <UnoCard color="WILD" value="WILD" size="lg" />
+            <div className="absolute transform rotate-[20deg] translate-x-28 sm:translate-x-36 -translate-y-4 shadow-xl transition-transform duration-300 hover:scale-110 hover:z-30">
+              <UnoCard color="WILD" value="WILD" size="md" />
             </div>
 
-            {/* Foreground Overlapping UNO Face Down Card */}
-            <div className="absolute transform rotate-[-8deg] translate-y-16 translate-x-4 shadow-2xl z-20 transition-transform duration-300 hover:scale-110">
-              <UnoCard faceDown size="lg" />
+            {/* Foreground UNO Face Down Card */}
+            <div className="absolute transform rotate-[-6deg] translate-y-12 translate-x-2 shadow-2xl z-20 transition-transform duration-300 hover:scale-110">
+              <UnoCard faceDown size="md" />
             </div>
 
           </div>
@@ -170,7 +170,7 @@ export const Home: React.FC = () => {
           
           {/* Left Cards Stack */}
           <div className="lg:col-span-6 flex justify-center overflow-hidden py-4 sm:py-0">
-            <div className="flex -space-x-5 sm:-space-x-12 transform -rotate-3 scale-75 sm:scale-100">
+            <div className="flex -space-x-3 sm:-space-x-5 transform -rotate-2 hover:rotate-0 transition-transform duration-300">
               <UnoCard color="RED" value="7" size="md" />
               <UnoCard color="BLUE" value="REVERSE" size="md" />
               <UnoCard color="YELLOW" value="3" size="md" />
