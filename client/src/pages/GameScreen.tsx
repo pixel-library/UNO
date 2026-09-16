@@ -620,10 +620,47 @@ export const GameScreen: React.FC = () => {
       {/* ------------------------------------------------------------- */}
       <main className="relative flex-1 w-full max-w-7xl mx-auto flex flex-col items-center justify-between px-1 sm:px-4 py-1 overflow-hidden">
 
-        {/* Top Opponent Hand resting above table */}
-        <div className="z-10 mt-1 min-h-[3.5rem] sm:min-h-[5rem] flex items-center justify-center">
+        {/* ----------------------------------------------------------- */}
+        {/* MOBILE ALL OPPONENTS TOP BAR (< 640px)                       */}
+        {/* ----------------------------------------------------------- */}
+        <div className="flex sm:hidden w-full items-center justify-center gap-2 px-1 pt-1 pb-1 z-20 flex-wrap">
+          {relativeOpponents.map((opp) => {
+            const isOppTurn = currentTurnPlayerId === opp.id;
+            return (
+              <div key={opp.id} className="relative">
+                <div className={`bg-white/10 backdrop-blur-md px-2.5 py-1 rounded-xl border transition-all flex items-center gap-1.5 shadow-sm ${
+                  isOppTurn
+                    ? 'border-emerald-400 ring-2 ring-emerald-400/60 bg-emerald-500/20'
+                    : 'border-white/20'
+                }`}>
+                  <div className="w-5 h-5 rounded-full bg-sky-400/30 text-white flex items-center justify-center text-[10px] font-bold border border-sky-300/40">
+                    {opp.avatar || '👤'}
+                  </div>
+                  <div className="text-left leading-tight">
+                    <div className="font-extrabold text-[10px] text-white uppercase tracking-wider truncate max-w-[70px]">{opp.name}</div>
+                    <div className="text-[9px] font-semibold text-white/70 flex items-center gap-1">
+                      <span>🂠 {opp.cardCount}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Floating Emotes Overlay for Opponent on Mobile */}
+                {floatingEmotes.filter(e => e.senderId === opp.id).map((e) => (
+                  <div key={e.id} className="absolute -top-10 left-1/2 -translate-x-1/2 pointer-events-none z-50 animate-float-emote text-3xl select-none filter drop-shadow-[0_4px_4px_rgba(0,0,0,0.4)]">
+                    {e.emote}
+                  </div>
+                ))}
+              </div>
+            );
+          })}
+        </div>
+
+        {/* ----------------------------------------------------------- */}
+        {/* DESKTOP TOP OPPONENT HAND (>= 640px)                        */}
+        {/* ----------------------------------------------------------- */}
+        <div className="hidden sm:flex z-10 mt-1 min-h-[5rem] items-center justify-center">
           {topOpponent && (
-            <div className="flex -space-x-8 transform scale-75 sm:scale-90">
+            <div className="flex -space-x-8 transform scale-90">
               {Array.from({ length: Math.min(topOpponent.cardCount || 7, 10) }).map((_, idx, arr) => {
                 const total = arr.length;
                 const mid = (total - 1) / 2;
@@ -647,68 +684,61 @@ export const GameScreen: React.FC = () => {
         {/* ----------------------------------------------------------- */}
         <div className="w-full flex items-center justify-between px-1 sm:px-6 z-10 my-auto">
           
-          {/* Left Opponent */}
-          <div className="flex items-center gap-1 sm:gap-3 shrink-0 min-w-0 sm:min-w-[90px] lg:min-w-[120px]">
-            {leftOpponent ? (
+          {/* Left Opponent (Desktop) */}
+          <div className="hidden sm:flex items-center gap-1 sm:gap-3 shrink-0 min-w-[90px] lg:min-w-[120px]">
+            {leftOpponent && (
               <div className="flex flex-col sm:flex-row items-center gap-1 sm:gap-3 shrink-0">
-                {!isMobile && (
-                  <div className="relative flex flex-col items-center justify-center min-w-0 sm:min-w-[60px]">
-                    <div className="flex -space-x-8 transform rotate-90 scale-75 lg:scale-90 origin-center py-2 sm:py-4">
-                      {Array.from({ length: Math.min(leftOpponent.cardCount || 7, 8) }).map((_, idx, arr) => {
-                        const total = arr.length;
-                        const mid = (total - 1) / 2;
-                        const arcAngle = (idx - mid) * 4;
-                        return (
-                          <div
-                            key={idx}
-                            className="transition-transform duration-200"
-                            style={{ transform: `rotate(${arcAngle}deg)` }}
-                          >
-                            <UnoCard faceDown size="sm" />
-                          </div>
-                        );
-                      })}
-                    </div>
+                <div className="relative flex flex-col items-center justify-center min-w-[60px]">
+                  <div className="flex -space-x-8 transform rotate-90 scale-75 lg:scale-90 origin-center py-2 sm:py-4">
+                    {Array.from({ length: Math.min(leftOpponent.cardCount || 7, 8) }).map((_, idx, arr) => {
+                      const total = arr.length;
+                      const mid = (total - 1) / 2;
+                      const arcAngle = (idx - mid) * 4;
+                      return (
+                        <div
+                          key={idx}
+                          className="transition-transform duration-200"
+                          style={{ transform: `rotate(${arcAngle}deg)` }}
+                        >
+                          <UnoCard faceDown size="sm" />
+                        </div>
+                      );
+                    })}
                   </div>
-                )}
+                </div>
 
                 {/* Left Status Badge */}
                 <div className="flex flex-col items-start space-y-0.5 relative">
-                  <div className={`bg-white/10 backdrop-blur-md px-2 py-1 sm:px-3 sm:py-1.5 rounded-xl sm:rounded-2xl border transition-all text-xs font-bold flex items-center gap-1.5 shadow-md ${
+                  <div className={`bg-white/10 backdrop-blur-md px-3 py-1.5 rounded-2xl border transition-all text-xs font-bold flex items-center gap-1.5 shadow-md ${
                     currentTurnPlayerId === leftOpponent.id
                       ? 'border-emerald-400 ring-2 ring-emerald-400/60 bg-emerald-500/20 shadow-[0_0_15px_rgba(52,211,153,0.5)]'
                       : 'border-white/20'
                   }`}>
-                    <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-sky-400/30 text-white flex items-center justify-center text-[10px] font-bold border border-sky-300/40">
+                    <div className="w-6 h-6 rounded-full bg-sky-400/30 text-white flex items-center justify-center text-xs font-bold border border-sky-300/40">
                       {leftOpponent.avatar || '👤'}
                     </div>
                     <div className="text-left">
-                      <div className="text-[10px] sm:text-[11px] font-extrabold truncate max-w-[45px] sm:max-w-none text-white">{leftOpponent.name}</div>
-                      <div className="text-[8px] sm:text-[9px] font-semibold text-white/70">{leftOpponent.cardCount} cards</div>
+                      <div className="text-[11px] font-extrabold text-white">{leftOpponent.name}</div>
+                      <div className="text-[9px] font-semibold text-white/70">{leftOpponent.cardCount} cards</div>
                     </div>
                   </div>
 
                   {/* Floating Emotes Overlay for Left Opponent */}
                   {floatingEmotes.filter(e => e.senderId === leftOpponent!.id).map((e) => (
-                    <div key={e.id} className="absolute -top-12 left-1/2 -translate-x-1/2 pointer-events-none z-50 animate-float-emote text-4xl sm:text-5xl select-none filter drop-shadow-[0_10px_10px_rgba(0,0,0,0.2)]">
+                    <div key={e.id} className="absolute -top-12 left-1/2 -translate-x-1/2 pointer-events-none z-50 animate-float-emote text-4xl select-none filter drop-shadow-[0_10px_10px_rgba(0,0,0,0.2)]">
                       {e.emote}
                     </div>
                   ))}
                 </div>
               </div>
-            ) : (
-              <div className="w-2 sm:w-12 shrink-0 pointer-events-none" />
             )}
           </div>
 
           {/* --------------------------------------------------------- */}
-          {/* CENTER OVAL TABLE CANVAS (DEEP OCEAN BLUE TABLE)          */}
+          {/* CENTER CARDS AREA (BOXLESS & BORDERLESS DIRECT ARENA)       */}
           {/* --------------------------------------------------------- */}
-          <div className="relative px-5 sm:px-14 py-6 sm:py-10 flex flex-col items-center justify-center bg-gradient-to-b from-[#094888] via-[#053B6D] to-[#032448] border-4 border-sky-300/60 shadow-[0_25px_60px_-15px_rgba(5,59,109,0.5)] rounded-[40px] sm:rounded-[60px] text-white">
+          <div className="relative py-2 sm:py-6 px-2 flex flex-col items-center justify-center text-white mx-auto">
             
-            {/* Inner subtle table ring accent */}
-            <div className="absolute inset-2 rounded-[34px] sm:rounded-[54px] border border-white/15 pointer-events-none" />
-
             {/* ACTIVE STACK PENALTY BANNER */}
             {(gameState.activeStackCount || 0) > 0 && (
               <div className="mb-3 bg-gradient-to-r from-red-600 via-amber-500 to-red-600 border-2 border-yellow-300 px-4 py-1.5 rounded-full text-white font-black text-[11px] sm:text-xs shadow-lg animate-pulse flex items-center gap-2 z-20">
@@ -718,7 +748,7 @@ export const GameScreen: React.FC = () => {
             )}
 
             {/* Piles Container: DRAW PILE on Left, DISCARD PILE on Right */}
-            <div className="flex items-center gap-4 sm:gap-10 lg:gap-16 z-10">
+            <div className="flex items-center gap-6 sm:gap-12 lg:gap-16 z-10">
               
               {/* DRAW PILE */}
               <div
@@ -738,9 +768,9 @@ export const GameScreen: React.FC = () => {
                 </div>
               </div>
 
-              {/* DISCARD PILE with Color Glowing Aura Ring */}
+              {/* DISCARD PILE */}
               <div className="flex flex-col items-center">
-                <div className={`rounded-xl sm:rounded-2xl p-1 transition-all ${discardGlowClass}`}>
+                <div className="p-0.5">
                   <UnoCard color={topDiscard.color} value={topDiscard.value} size={isMobile ? 'sm' : 'md'} />
                 </div>
 
@@ -762,57 +792,53 @@ export const GameScreen: React.FC = () => {
 
           </div>
 
-          {/* Right Opponent */}
-          <div className="flex items-center gap-1 sm:gap-3 shrink-0 min-w-0 sm:min-w-[90px] lg:min-w-[120px] justify-end">
-            {rightOpponent ? (
+          {/* Right Opponent (Desktop) */}
+          <div className="hidden sm:flex items-center gap-1 sm:gap-3 shrink-0 min-w-[90px] lg:min-w-[120px] justify-end">
+            {rightOpponent && (
               <div className="flex flex-col sm:flex-row items-center gap-1 sm:gap-3 shrink-0">
                 {/* Right Status Badge */}
                 <div className="flex flex-col items-end space-y-0.5 relative">
-                  <div className={`bg-white/10 backdrop-blur-md px-2 py-1 sm:px-3 sm:py-1.5 rounded-xl sm:rounded-2xl border transition-all text-xs font-bold flex items-center gap-1.5 shadow-md ${
+                  <div className={`bg-white/10 backdrop-blur-md px-3 py-1.5 rounded-2xl border transition-all text-xs font-bold flex items-center gap-1.5 shadow-md ${
                     currentTurnPlayerId === rightOpponent.id
                       ? 'border-emerald-400 ring-2 ring-emerald-400/60 bg-emerald-500/20 shadow-[0_0_15px_rgba(52,211,153,0.5)]'
                       : 'border-white/20'
                   }`}>
                     <div className="text-right">
-                      <div className="text-[10px] sm:text-[11px] font-extrabold truncate max-w-[45px] sm:max-w-none text-white">{rightOpponent.name}</div>
-                      <div className="text-[8px] sm:text-[9px] font-semibold text-white/70">{rightOpponent.cardCount} cards</div>
+                      <div className="text-[11px] font-extrabold text-white">{rightOpponent.name}</div>
+                      <div className="text-[9px] font-semibold text-white/70">{rightOpponent.cardCount} cards</div>
                     </div>
-                    <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-sky-400/30 text-white flex items-center justify-center text-[10px] font-bold border border-sky-300/40">
+                    <div className="w-6 h-6 rounded-full bg-sky-400/30 text-white flex items-center justify-center text-xs font-bold border border-sky-300/40">
                       {rightOpponent.avatar || '👤'}
                     </div>
                   </div>
 
                   {/* Floating Emotes Overlay for Right Opponent */}
                   {floatingEmotes.filter(e => e.senderId === rightOpponent!.id).map((e) => (
-                    <div key={e.id} className="absolute -top-12 right-1/2 translate-x-1/2 pointer-events-none z-50 animate-float-emote text-4xl sm:text-5xl select-none filter drop-shadow-[0_10px_10px_rgba(0,0,0,0.2)]">
+                    <div key={e.id} className="absolute -top-12 right-1/2 translate-x-1/2 pointer-events-none z-50 animate-float-emote text-4xl select-none filter drop-shadow-[0_10px_10px_rgba(0,0,0,0.2)]">
                       {e.emote}
                     </div>
                   ))}
                 </div>
 
-                {!isMobile && (
-                  <div className="relative flex flex-col items-center justify-center min-w-0 sm:min-w-[60px]">
-                    <div className="flex -space-x-8 transform -rotate-90 scale-75 lg:scale-90 origin-center py-2 sm:py-4">
-                      {Array.from({ length: Math.min(rightOpponent.cardCount || 7, 8) }).map((_, idx, arr) => {
-                        const total = arr.length;
-                        const mid = (total - 1) / 2;
-                        const arcAngle = (idx - mid) * 4;
-                        return (
-                          <div
-                            key={idx}
-                            className="transition-transform duration-200"
-                            style={{ transform: `rotate(${arcAngle}deg)` }}
-                          >
-                            <UnoCard faceDown size="sm" />
-                          </div>
-                        );
-                      })}
-                    </div>
+                <div className="relative flex flex-col items-center justify-center min-w-[60px]">
+                  <div className="flex -space-x-8 transform -rotate-90 scale-75 lg:scale-90 origin-center py-2 sm:py-4">
+                    {Array.from({ length: Math.min(rightOpponent.cardCount || 7, 8) }).map((_, idx, arr) => {
+                      const total = arr.length;
+                      const mid = (total - 1) / 2;
+                      const arcAngle = (idx - mid) * 4;
+                      return (
+                        <div
+                          key={idx}
+                          className="transition-transform duration-200"
+                          style={{ transform: `rotate(${arcAngle}deg)` }}
+                        >
+                          <UnoCard faceDown size="sm" />
+                        </div>
+                      );
+                    })}
                   </div>
-                )}
+                </div>
               </div>
-            ) : (
-              <div className="w-2 sm:w-12 shrink-0 pointer-events-none" />
             )}
           </div>
 
@@ -855,7 +881,7 @@ export const GameScreen: React.FC = () => {
               </button>
 
               {showEmotePicker && (
-                <div className="absolute bottom-full mb-3 left-1/2 -translate-x-1/2 glass-white-panel rounded-2xl p-3 shadow-2xl z-50 w-64 sm:w-72 animate-pop-scale">
+                <div className="absolute bottom-full mb-3 left-1/2 -translate-x-1/2 glass-white-panel rounded-2xl p-3 shadow-none z-50 w-64 sm:w-72 animate-pop-scale border border-slate-200">
                   <div className="flex items-center justify-between border-b border-slate-200/80 pb-1.5 mb-2">
                     <span className="text-xs font-extrabold text-slate-800 flex items-center gap-1.5">
                       <Smile className="w-3.5 h-3.5 text-amber-500" /> Express Yourself
@@ -906,7 +932,7 @@ export const GameScreen: React.FC = () => {
 
           <div className="w-full flex items-end justify-between gap-2">
             {/* BOTTOM LEFT: WHITE GLASSMORPHIC CHAT BOX WIDGET (DESKTOP) */}
-            <div className="hidden lg:flex w-64 lg:w-72 glass-white-panel rounded-2xl p-3 shadow-2xl flex-col space-y-2 shrink-0 border border-white">
+            <div className="hidden lg:flex w-64 lg:w-72 glass-white-panel rounded-2xl p-3 shadow-none flex-col space-y-2 shrink-0 border border-slate-200">
               <div className="flex items-center justify-between border-b border-slate-200/80 pb-1.5">
                 <span className="font-extrabold text-xs text-slate-800 flex items-center gap-1.5">
                   <MessageSquare className="w-3.5 h-3.5 text-sky-600" /> Room Chat
@@ -1063,7 +1089,7 @@ export const GameScreen: React.FC = () => {
       {/* ------------------------------------------------------------- */}
       {showMobileChat && (
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-end justify-center p-0 lg:hidden">
-          <div className="glass-white-panel border-t border-white rounded-t-3xl p-4 w-full sm:max-w-md shadow-2xl space-y-3">
+          <div className="glass-white-panel border-t border-slate-200 rounded-t-3xl p-4 w-full sm:max-w-md shadow-none space-y-3">
             <div className="flex items-center justify-between border-b border-slate-200/80 pb-2">
               <span className="font-extrabold text-sm text-slate-800 flex items-center gap-2">
                 <MessageSquare className="w-4 h-4 text-sky-600" /> Room Chat
