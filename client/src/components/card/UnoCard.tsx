@@ -205,7 +205,7 @@ export const UnoCard: React.FC<UnoCardProps> = ({
       className={`relative select-none ${sizeConfig.width} ${sizeConfig.height} bg-white ${sizeConfig.pad} ${sizeConfig.border} 
         border-2 border-slate-900/80 ${colorConfig.shadow} card-3d-tilt transition-all duration-250 ease-[cubic-bezier(0.34,1.56,0.64,1)] cursor-pointer
         hover:-translate-y-2 hover:scale-105 active:scale-95
-        ${activePlayable ? `${colorConfig.aura} scale-[1.04] z-20` : ''}
+        ${activePlayable ? '-translate-y-1.5 ring-2 ring-emerald-400/90 z-20' : ''}
         ${selected ? '-translate-y-8 shadow-2xl ring-4 ring-amber-400 ring-offset-2 z-30 scale-[1.08]' : ''}
         ${disabled ? 'opacity-60 grayscale cursor-not-allowed' : ''}
         ${className}`}

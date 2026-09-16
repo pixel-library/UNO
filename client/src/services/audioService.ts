@@ -225,71 +225,9 @@ class SoundEngine {
   }
 
   public triggerVictoryConfetti() {
-    if (typeof window === 'undefined') return;
-    try {
-      const canvas = document.createElement('canvas');
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-      canvas.style.position = 'fixed';
-      canvas.style.top = '0';
-      canvas.style.left = '0';
-      canvas.style.width = '100vw';
-      canvas.style.height = '100vh';
-      canvas.style.pointerEvents = 'none';
-      canvas.style.zIndex = '999999';
-      document.body.appendChild(canvas);
-
-      const ctx = canvas.getContext('2d');
-      if (!ctx) return;
-
-      const particles: Array<{ x: number; y: number; vx: number; vy: number; color: string; size: number; alpha: number }> = [];
-      const colors = ['#E52521', '#FCD116', '#2D963F', '#0082CA', '#EC4899', '#A855F7'];
-
-      for (let i = 0; i < 120; i++) {
-        particles.push({
-          x: window.innerWidth / 2,
-          y: window.innerHeight / 2,
-          vx: (Math.random() - 0.5) * 18,
-          vy: (Math.random() - 0.8) * 18,
-          color: colors[Math.floor(Math.random() * colors.length)],
-          size: Math.random() * 8 + 6,
-          alpha: 1
-        });
-      }
-
-      let startTime = performance.now();
-      const animate = (now: number) => {
-        const elapsed = now - startTime;
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-        particles.forEach((p) => {
-          p.x += p.vx;
-          p.y += p.vy;
-          p.vy += 0.3; // gravity
-          p.alpha -= 0.008;
-
-          ctx.save();
-          ctx.globalAlpha = Math.max(0, p.alpha);
-          ctx.fillStyle = p.color;
-          ctx.beginPath();
-          ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.restore();
-        });
-
-        if (elapsed < 3000) {
-          requestAnimationFrame(animate);
-        } else {
-          document.body.removeChild(canvas);
-        }
-      };
-
-      requestAnimationFrame(animate);
-    } catch (err) {
-      console.warn('Confetti error:', err);
-    }
+    // Victory balls/confetti particle animation removed as requested
+    return;
   }
 }
 
 export const audioService = new SoundEngine();
-
