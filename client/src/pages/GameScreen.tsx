@@ -503,12 +503,12 @@ export const GameScreen: React.FC = () => {
   };
 
   return (
-    <div className="w-full h-screen max-h-screen bg-gradient-to-br from-slate-50 via-sky-50/40 to-slate-100 text-slate-800 flex flex-col justify-between overflow-hidden relative selection:bg-none font-sans">
+    <div className="w-full h-screen max-h-screen bg-gradient-to-br from-[#0B4A8B] via-[#052D56] to-[#021832] text-white flex flex-col justify-between overflow-hidden relative selection:bg-none font-sans">
       
       {/* ------------------------------------------------------------- */}
-      {/* TOP HEADER BAR (WHITE GLASS)                                  */}
+      {/* TOP HEADER BAR (BLUE GLASS ARENA HEADER)                       */}
       {/* ------------------------------------------------------------- */}
-      <header className="w-full px-2 sm:px-6 py-2 flex items-center justify-between z-30 shrink-0 gap-2 bg-white/70 backdrop-blur-xl border-b border-slate-200/80 shadow-sm">
+      <header className="w-full px-2 sm:px-6 py-2 flex items-center justify-between z-30 shrink-0 gap-2 bg-[#062447]/80 backdrop-blur-xl border-b border-sky-400/20 shadow-md">
         
         {/* Left: UNO ONLINE Logo + Room Badge */}
         <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
@@ -521,14 +521,14 @@ export const GameScreen: React.FC = () => {
                 <span className="text-[#FCD116]">U</span>N<span className="text-[#FCD116]">O</span>
               </span>
             </div>
-            <span className="text-[10px] sm:text-xs font-black text-slate-800 uppercase tracking-wider hidden sm:inline">ONLINE</span>
+            <span className="text-[10px] sm:text-xs font-black text-white/90 uppercase tracking-wider hidden sm:inline">ONLINE</span>
           </div>
 
-          <div className="bg-slate-100/90 px-2.5 py-1 rounded-xl border border-slate-200/80 flex items-center gap-1.5 text-[10px] sm:text-xs font-bold text-slate-700 shadow-inner">
-            <span className="text-slate-400 hidden sm:inline uppercase">Room:</span>
-            <span className="text-slate-900 font-mono tracking-wider font-extrabold">{gameState.roomCode}</span>
-            <button onClick={handleCopyCode} className="hover:text-sky-600 transition-colors ml-0.5 cursor-pointer" title="Copy Room Code">
-              {copiedCode ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5 text-slate-500" />}
+          <div className="bg-sky-950/70 px-2.5 py-1 rounded-xl border border-sky-400/30 flex items-center gap-1.5 text-[10px] sm:text-xs font-bold text-white shadow-inner">
+            <span className="text-white/60 hidden sm:inline uppercase">Room:</span>
+            <span className="text-white font-mono tracking-wider font-extrabold">{gameState.roomCode}</span>
+            <button onClick={handleCopyCode} className="hover:text-uno-yellow transition-colors ml-0.5 cursor-pointer" title="Copy Room Code">
+              {copiedCode ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5 text-white/70" />}
             </button>
           </div>
         </div>
@@ -536,29 +536,29 @@ export const GameScreen: React.FC = () => {
         {/* Top Center: Top Opponent Status Pill */}
         <div className="flex flex-col items-center z-20 shrink relative">
           {topOpponent ? (
-            <div className={`glass-white-card px-3 py-1 sm:px-4 sm:py-1.5 rounded-2xl border transition-all flex items-center gap-2 sm:gap-3 shadow-md ${
+            <div className={`bg-white/10 backdrop-blur-md px-3 py-1 sm:px-4 sm:py-1.5 rounded-2xl border transition-all flex items-center gap-2 sm:gap-3 shadow-md ${
               currentTurnPlayerId === topOpponent.id
-                ? 'border-emerald-500 ring-2 ring-emerald-400/60 bg-emerald-50/80 shadow-[0_0_15px_rgba(16,185,129,0.3)]'
-                : 'border-slate-200/80'
+                ? 'border-emerald-400 ring-2 ring-emerald-400/60 bg-emerald-500/20 shadow-[0_0_15px_rgba(52,211,153,0.5)]'
+                : 'border-white/20'
             }`}>
-              <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-sky-100 text-sky-700 flex items-center justify-center text-[10px] sm:text-xs font-bold border border-sky-200">
+              <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-sky-400/30 text-white flex items-center justify-center text-[10px] sm:text-xs font-bold border border-sky-300/40">
                 {topOpponent.avatar || '👤'}
               </div>
               <div className="text-left leading-tight">
-                <div className="font-extrabold text-[10px] sm:text-xs text-slate-900 uppercase tracking-wider truncate max-w-[70px] sm:max-w-none">{topOpponent.name}</div>
-                <div className="text-[9px] font-semibold text-slate-500">{topOpponent.cardCount} cards</div>
+                <div className="font-extrabold text-[10px] sm:text-xs text-white uppercase tracking-wider truncate max-w-[70px] sm:max-w-none">{topOpponent.name}</div>
+                <div className="text-[9px] font-semibold text-white/70">{topOpponent.cardCount} cards</div>
               </div>
-              <span className="hidden sm:flex items-center gap-1 bg-emerald-100 px-2 py-0.5 rounded-full text-[10px] text-emerald-700 font-bold border border-emerald-300/40">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" /> {topOpponent.isConnected ? 'Online' : 'Offline'}
+              <span className="hidden sm:flex items-center gap-1 bg-emerald-500/20 px-2 py-0.5 rounded-full text-[10px] text-emerald-300 font-bold border border-emerald-400/30">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> {topOpponent.isConnected ? 'Online' : 'Offline'}
               </span>
             </div>
           ) : (
-            <div className="text-[10px] sm:text-xs font-black tracking-widest text-slate-400 uppercase">UNO ARENA</div>
+            <div className="text-[10px] sm:text-xs font-black tracking-widest text-sky-200/60 uppercase">UNO ARENA</div>
           )}
 
           {/* Floating Emotes Overlay for Top Opponent */}
           {topOpponent && floatingEmotes.filter(e => e.senderId === topOpponent!.id).map((e) => (
-            <div key={e.id} className="absolute top-10 left-1/2 -translate-x-1/2 pointer-events-none z-50 animate-float-emote text-4xl sm:text-5xl select-none filter drop-shadow-[0_10px_10px_rgba(0,0,0,0.2)]">
+            <div key={e.id} className="absolute top-10 left-1/2 -translate-x-1/2 pointer-events-none z-50 animate-float-emote text-4xl sm:text-5xl select-none filter drop-shadow-[0_10px_10px_rgba(0,0,0,0.5)]">
               {e.emote}
             </div>
           ))}
@@ -568,30 +568,30 @@ export const GameScreen: React.FC = () => {
         <div className="flex items-center gap-1 sm:gap-2 shrink-0">
           <button
             onClick={toggleSound}
-            className="p-1.5 sm:px-3 sm:py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200/80 border border-slate-200 transition-all text-xs font-bold flex items-center gap-1.5 text-slate-700 cursor-pointer"
+            className="p-1.5 sm:px-3 sm:py-1.5 rounded-xl bg-white/10 hover:bg-white/20 border border-white/15 transition-all text-xs font-bold flex items-center gap-1.5 text-white cursor-pointer"
             title="Toggle Sound"
           >
-            {soundEnabled ? <Volume2 className="w-3.5 h-3.5 text-sky-600" /> : <VolumeX className="w-3.5 h-3.5 text-red-500" />}
+            {soundEnabled ? <Volume2 className="w-3.5 h-3.5 text-sky-400" /> : <VolumeX className="w-3.5 h-3.5 text-red-400" />}
             <span className="hidden sm:inline">Sound</span>
           </button>
 
           <button
             onClick={toggleMusic}
-            className={`p-1.5 sm:px-3 sm:py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200/80 border border-slate-200 transition-all text-xs font-bold flex items-center gap-1.5 cursor-pointer ${
-              musicEnabled ? 'text-slate-800' : 'text-slate-400'
+            className={`p-1.5 sm:px-3 sm:py-1.5 rounded-xl bg-white/10 hover:bg-white/20 border border-white/15 transition-all text-xs font-bold flex items-center gap-1.5 cursor-pointer ${
+              musicEnabled ? 'text-white' : 'text-white/50'
             }`}
             title="Toggle Music"
           >
-            <Music className="w-3.5 h-3.5 text-purple-600" />
+            <Music className="w-3.5 h-3.5 text-purple-400" />
             <span className="hidden sm:inline">Music</span>
           </button>
 
           <button
             onClick={() => navigate('/settings')}
-            className="p-1.5 sm:px-3 sm:py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200/80 border border-slate-200 transition-all text-xs font-bold flex items-center gap-1.5 text-slate-700 cursor-pointer"
+            className="p-1.5 sm:px-3 sm:py-1.5 rounded-xl bg-white/10 hover:bg-white/20 border border-white/15 transition-all text-xs font-bold flex items-center gap-1.5 text-white cursor-pointer"
             title="Settings"
           >
-            <Settings className="w-3.5 h-3.5 text-slate-600" />
+            <Settings className="w-3.5 h-3.5 text-white/80" />
             <span className="hidden sm:inline">Settings</span>
           </button>
 
@@ -604,11 +604,11 @@ export const GameScreen: React.FC = () => {
               }
             }}
             className={`p-1.5 sm:px-3 sm:py-1.5 rounded-xl border transition-all text-xs font-bold flex items-center gap-1.5 cursor-pointer ${
-              (showChat || showMobileChat) ? 'bg-sky-500/10 border-sky-400 text-sky-700 font-extrabold shadow-sm' : 'bg-slate-100 border-slate-200 text-slate-700'
+              (showChat || showMobileChat) ? 'bg-sky-500/30 border-sky-400 text-sky-200 font-extrabold shadow-sm' : 'bg-white/10 border-white/15 text-white'
             }`}
             title="Chat"
           >
-            <MessageSquare className="w-3.5 h-3.5 text-sky-600" />
+            <MessageSquare className="w-3.5 h-3.5 text-sky-300" />
             <span className="hidden sm:inline">Chat</span>
           </button>
         </div>
@@ -674,17 +674,17 @@ export const GameScreen: React.FC = () => {
 
                 {/* Left Status Badge */}
                 <div className="flex flex-col items-start space-y-0.5 relative">
-                  <div className={`glass-white-card px-2 py-1 sm:px-3 sm:py-1.5 rounded-xl sm:rounded-2xl border transition-all text-xs font-bold flex items-center gap-1.5 ${
+                  <div className={`bg-white/10 backdrop-blur-md px-2 py-1 sm:px-3 sm:py-1.5 rounded-xl sm:rounded-2xl border transition-all text-xs font-bold flex items-center gap-1.5 shadow-md ${
                     currentTurnPlayerId === leftOpponent.id
-                      ? 'border-emerald-500 ring-2 ring-emerald-400/60 bg-emerald-50/80 shadow-[0_0_15px_rgba(16,185,129,0.3)]'
-                      : 'border-slate-200/80'
+                      ? 'border-emerald-400 ring-2 ring-emerald-400/60 bg-emerald-500/20 shadow-[0_0_15px_rgba(52,211,153,0.5)]'
+                      : 'border-white/20'
                   }`}>
-                    <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-purple-100 text-purple-700 flex items-center justify-center text-[10px] font-bold border border-purple-200">
+                    <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-sky-400/30 text-white flex items-center justify-center text-[10px] font-bold border border-sky-300/40">
                       {leftOpponent.avatar || '👤'}
                     </div>
                     <div className="text-left">
-                      <div className="text-[10px] sm:text-[11px] font-extrabold truncate max-w-[45px] sm:max-w-none text-slate-800">{leftOpponent.name}</div>
-                      <div className="text-[8px] sm:text-[9px] font-semibold text-slate-500">{leftOpponent.cardCount} cards</div>
+                      <div className="text-[10px] sm:text-[11px] font-extrabold truncate max-w-[45px] sm:max-w-none text-white">{leftOpponent.name}</div>
+                      <div className="text-[8px] sm:text-[9px] font-semibold text-white/70">{leftOpponent.cardCount} cards</div>
                     </div>
                   </div>
 
@@ -768,16 +768,16 @@ export const GameScreen: React.FC = () => {
               <div className="flex flex-col sm:flex-row items-center gap-1 sm:gap-3 shrink-0">
                 {/* Right Status Badge */}
                 <div className="flex flex-col items-end space-y-0.5 relative">
-                  <div className={`glass-white-card px-2 py-1 sm:px-3 sm:py-1.5 rounded-xl sm:rounded-2xl border transition-all text-xs font-bold flex items-center gap-1.5 ${
+                  <div className={`bg-white/10 backdrop-blur-md px-2 py-1 sm:px-3 sm:py-1.5 rounded-xl sm:rounded-2xl border transition-all text-xs font-bold flex items-center gap-1.5 shadow-md ${
                     currentTurnPlayerId === rightOpponent.id
-                      ? 'border-emerald-500 ring-2 ring-emerald-400/60 bg-emerald-50/80 shadow-[0_0_15px_rgba(16,185,129,0.3)]'
-                      : 'border-slate-200/80'
+                      ? 'border-emerald-400 ring-2 ring-emerald-400/60 bg-emerald-500/20 shadow-[0_0_15px_rgba(52,211,153,0.5)]'
+                      : 'border-white/20'
                   }`}>
                     <div className="text-right">
-                      <div className="text-[10px] sm:text-[11px] font-extrabold truncate max-w-[45px] sm:max-w-none text-slate-800">{rightOpponent.name}</div>
-                      <div className="text-[8px] sm:text-[9px] font-semibold text-slate-500">{rightOpponent.cardCount} cards</div>
+                      <div className="text-[10px] sm:text-[11px] font-extrabold truncate max-w-[45px] sm:max-w-none text-white">{rightOpponent.name}</div>
+                      <div className="text-[8px] sm:text-[9px] font-semibold text-white/70">{rightOpponent.cardCount} cards</div>
                     </div>
-                    <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center text-[10px] font-bold border border-amber-200">
+                    <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-sky-400/30 text-white flex items-center justify-center text-[10px] font-bold border border-sky-300/40">
                       {rightOpponent.avatar || '👤'}
                     </div>
                   </div>
@@ -1031,12 +1031,12 @@ export const GameScreen: React.FC = () => {
               </div>
 
               {/* Player Status Pill */}
-              <div className="glass-white-card px-3.5 py-1 rounded-full border border-slate-200/80 flex items-center gap-2 text-[10px] sm:text-xs font-extrabold z-10 my-0.5 relative shadow-sm text-slate-800">
-                <div className="w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-sky-500 text-white flex items-center justify-center text-[9px] sm:text-[10px]">👤</div>
+              <div className="bg-white/10 backdrop-blur-md px-3.5 py-1 rounded-full border border-white/20 flex items-center gap-2 text-[10px] sm:text-xs font-extrabold z-10 my-0.5 relative shadow-md text-white">
+                <div className="w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-sky-400/30 text-white flex items-center justify-center text-[9px] sm:text-[10px] border border-sky-300/40">👤</div>
                 <span>You</span>
-                <span className="text-slate-400">({displayHand.length} Cards)</span>
-                <span className="hidden sm:flex items-center gap-1 text-emerald-600 text-[10px]">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> Online
+                <span className="text-white/70">({displayHand.length} Cards)</span>
+                <span className="hidden sm:flex items-center gap-1 text-emerald-400 text-[10px]">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> Online
                 </span>
 
                 {/* Floating Emotes Overlay for Me */}
