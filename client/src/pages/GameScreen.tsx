@@ -533,8 +533,8 @@ export const GameScreen: React.FC = () => {
           </div>
         </div>
 
-        {/* Top Center: Top Opponent Status Pill */}
-        <div className="flex flex-col items-center z-20 shrink relative">
+        {/* Top Center: Top Opponent Status Pill (Desktop only to prevent mobile crowding) */}
+        <div className="hidden sm:flex flex-col items-center z-20 shrink relative">
           {topOpponent ? (
             <div className={`bg-white/10 backdrop-blur-md px-3 py-1 sm:px-4 sm:py-1.5 rounded-2xl border transition-all flex items-center gap-2 sm:gap-3 shadow-md ${
               currentTurnPlayerId === topOpponent.id
@@ -1125,6 +1125,20 @@ export const GameScreen: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* FLOATING CHAT BUTTON FOR MOBILE & TABLET DEVICES (< 1024px) */}
+      <button
+        onClick={() => setShowMobileChat(!showMobileChat)}
+        className="fixed bottom-20 right-4 lg:hidden z-40 bg-sky-500 hover:bg-sky-600 text-white p-3.5 rounded-full shadow-xl flex items-center justify-center border-2 border-white cursor-pointer active:scale-95 transition-transform"
+        title="Open Chat"
+      >
+        <MessageSquare className="w-5 h-5 text-white" />
+        {chatMessages.length > 0 && (
+          <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full border-2 border-white text-[9px] font-black flex items-center justify-center text-white shadow-xs">
+            {chatMessages.length}
+          </span>
+        )}
+      </button>
 
       {/* ------------------------------------------------------------- */}
       {/* WILD COLOR PICKER MODAL                                       */}
