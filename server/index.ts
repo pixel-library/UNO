@@ -78,8 +78,19 @@ setInterval(() => {
       const elapsedSeconds = (Date.now() - game.turnStartedAt) / 1000;
       if (elapsedSeconds >= game.settings.turnTimerSeconds) {
         const curr = game.getCurrentPlayer();
-        console.log(`[AFK TIMER] Player ${curr.name} in room ${game.roomCode} timed out (${elapsedSeconds.toFixed(1)}s). Auto-drawing card.`);
-        game.drawCard(curr.id);
+        console.log(`[AFK TIMER] Player ${curr.name} in room ${game.roomCode} timed out (${elapsedSeconds.toFixed(1)}s).`);
+        if (game.pendingHandSwapPlayerId) {
+          const activePlayers = game.players.filter(p => !p.isSpectator);
+          const target = activePlayers.find(p => p.id !== game.pendingHandSwapPlayerId);
+          if (target) {
+            game.swapHands(game.pendingHandSwapPlayerId, target.id);
+          } else {
+            game.pendingHandSwapPlayerId = null;
+          }
+        } else {
+          game.drawCard(curr.id);
+        }
+        game.turnStartedAt = Date.now();
         broadcastGameState(game);
       }
     }
@@ -621,10 +632,18 @@ io.on('connection', (socket) => {
     const game = activeGames.get(playerInfo.roomCode);
     if (!game) return;
 
-    game.startGame();
-    if (callback) callback({ success: true });
+    const player = game.players.find(p => p.id === playerInfo.playerId);
+    if (!player || !player.isHost) {
+      if (callback) callback({ success: false, error: 'Only the host can start a rematch.' });
+      return;
+    }
 
-    broadcastGameState(game);
+    const started = game.startGame();
+    if (callback) callback({ success: started, error: started ? undefined : 'Need at least 2 players to start.' });
+
+    if (started) {
+      broadcastGameState(game);
+    }
   });
 
   // 7. Chat Message

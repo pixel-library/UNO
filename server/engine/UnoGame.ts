@@ -75,11 +75,33 @@ export class UnoGame {
 
 
   public removePlayer(playerId: string): void {
+    if (this.pendingHandSwapPlayerId === playerId) {
+      this.pendingHandSwapPlayerId = null;
+    }
+
     this.players = this.players.filter(p => p.id !== playerId);
     this.playerHands.delete(playerId);
+
     if (this.players.length > 0 && !this.players.some(p => p.isHost)) {
       const firstActive = this.players.find(p => !p.isSpectator);
       if (firstActive) firstActive.isHost = true;
+    }
+
+    if (this.status === 'PLAYING') {
+      const activePlayers = this.players.filter(p => !p.isSpectator);
+      if (activePlayers.length < 2) {
+        this.status = 'FINISHED';
+        if (activePlayers.length === 1) {
+          this.winner = activePlayers[0];
+          this.calculateScores();
+          this.lastActionMessage = `${activePlayers[0].name} won as opponent left the game!`;
+        } else {
+          this.lastActionMessage = 'Game ended: Not enough players remaining.';
+        }
+      } else {
+        this.currentPlayerIndex = this.currentPlayerIndex % activePlayers.length;
+        this.turnStartedAt = Date.now();
+      }
     }
   }
 
@@ -458,6 +480,8 @@ export class UnoGame {
 
     const drawnCard = this.deck.draw();
     if (!drawnCard || !drawnCard.id || !drawnCard.color || !drawnCard.value) {
+      this.lastActionMessage = `${currentPlayer.name} passed turn (deck empty).`;
+      this.advanceTurn();
       return { success: false, error: 'No valid cards left in deck' };
     }
 

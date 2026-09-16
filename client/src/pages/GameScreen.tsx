@@ -495,7 +495,7 @@ export const GameScreen: React.FC = () => {
     gameState.currentColor === 'BLUE' ? 'arena-glow-blue' :
     'arena-glow-wild';
 
-  const isClockwise = gameState.direction === 1 || gameState.direction === undefined;
+  const isClockwise = gameState.direction === 'CW' || gameState.direction === undefined;
 
   const checkCardPlayable = (card: Card): boolean => {
     if (!isMyTurn || !card) return false;
