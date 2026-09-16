@@ -1126,20 +1126,6 @@ export const GameScreen: React.FC = () => {
         </div>
       )}
 
-      {/* FLOATING CHAT BUTTON FOR MOBILE & TABLET DEVICES (< 1024px) */}
-      <button
-        onClick={() => setShowMobileChat(!showMobileChat)}
-        className="fixed bottom-20 right-4 lg:hidden z-40 bg-sky-500 hover:bg-sky-600 text-white p-3.5 rounded-full shadow-xl flex items-center justify-center border-2 border-white cursor-pointer active:scale-95 transition-transform"
-        title="Open Chat"
-      >
-        <MessageSquare className="w-5 h-5 text-white" />
-        {chatMessages.length > 0 && (
-          <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full border-2 border-white text-[9px] font-black flex items-center justify-center text-white shadow-xs">
-            {chatMessages.length}
-          </span>
-        )}
-      </button>
-
       {/* ------------------------------------------------------------- */}
       {/* WILD COLOR PICKER MODAL                                       */}
       {/* ------------------------------------------------------------- */}
