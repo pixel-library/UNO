@@ -6,11 +6,77 @@
   body {
     background-color: #F8FAFC;
     color: #0F172A;
-    font-family: 'Outfit', 'Inter', system-ui, sans-serif;
+    font-family: 'Fredoka', 'Outfit', 'Inter', system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
 }
+
+/* -------------------------------------------------------------------------- */
+/* CLEAN 3D UTILITY & ANIMATION CLASSES                                       */
+/* -------------------------------------------------------------------------- */
+
+.perspective-1000 {
+  perspective: 1000px;
+}
+
+.perspective-500 {
+  perspective: 500px;
+}
+
+.transform-style-3d {
+  transform-style: preserve-3d;
+}
+
+.card-3d-tilt {
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.25s ease;
+  transform-style: preserve-3d;
+}
+
+.card-3d-tilt:hover {
+  transform: translateY(-8px) rotateX(6deg) rotateY(-4deg) scale(1.05);
+  box-shadow: 0 20px 30px -10px rgba(15, 23, 42, 0.3), 0 10px 15px -5px rgba(15, 23, 42, 0.2);
+}
+
+.clean-3d-shadow {
+  box-shadow: 0 8px 0 0 rgba(15, 23, 42, 0.85), 0 15px 20px -5px rgba(0, 0, 0, 0.25);
+}
+
+.pedestal-3d {
+  box-shadow: inset 0 6px 12px rgba(0, 0, 0, 0.4), 0 15px 30px rgba(15, 23, 42, 0.25);
+}
+
+/* Subtle Playable Card Glowing Pulsing Auras */
+@keyframes subtle-pulse-red {
+  0%, 100% { box-shadow: 0 0 15px 2px rgba(239, 68, 68, 0.7), 0 8px 0 0 rgba(15, 23, 42, 0.85); }
+  50% { box-shadow: 0 0 25px 6px rgba(239, 68, 68, 0.95), 0 8px 0 0 rgba(15, 23, 42, 0.85); }
+}
+
+@keyframes subtle-pulse-blue {
+  0%, 100% { box-shadow: 0 0 15px 2px rgba(59, 130, 246, 0.7), 0 8px 0 0 rgba(15, 23, 42, 0.85); }
+  50% { box-shadow: 0 0 25px 6px rgba(59, 130, 246, 0.95), 0 8px 0 0 rgba(15, 23, 42, 0.85); }
+}
+
+@keyframes subtle-pulse-green {
+  0%, 100% { box-shadow: 0 0 15px 2px rgba(34, 197, 94, 0.7), 0 8px 0 0 rgba(15, 23, 42, 0.85); }
+  50% { box-shadow: 0 0 25px 6px rgba(34, 197, 94, 0.95), 0 8px 0 0 rgba(15, 23, 42, 0.85); }
+}
+
+@keyframes subtle-pulse-yellow {
+  0%, 100% { box-shadow: 0 0 15px 2px rgba(245, 158, 11, 0.7), 0 8px 0 0 rgba(15, 23, 42, 0.85); }
+  50% { box-shadow: 0 0 25px 6px rgba(245, 158, 11, 0.95), 0 8px 0 0 rgba(15, 23, 42, 0.85); }
+}
+
+@keyframes subtle-pulse-wild {
+  0%, 100% { box-shadow: 0 0 18px 3px rgba(168, 85, 247, 0.7), 0 8px 0 0 rgba(15, 23, 42, 0.85); }
+  50% { box-shadow: 0 0 28px 8px rgba(236, 72, 153, 0.95), 0 8px 0 0 rgba(15, 23, 42, 0.85); }
+}
+
+.aura-clean-red { animation: subtle-pulse-red 2s infinite ease-in-out; }
+.aura-clean-blue { animation: subtle-pulse-blue 2s infinite ease-in-out; }
+.aura-clean-green { animation: subtle-pulse-green 2s infinite ease-in-out; }
+.aura-clean-yellow { animation: subtle-pulse-yellow 2s infinite ease-in-out; }
+.aura-clean-wild { animation: subtle-pulse-wild 2s infinite ease-in-out; }
 
 /* -------------------------------------------------------------------------- */
 /* WHITE GLASSMORPHISM UTILITY CLASSES                                        */
