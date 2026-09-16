@@ -502,8 +502,18 @@ export const GameScreen: React.FC = () => {
     return false;
   };
 
+  const arenaColorGlowClass =
+    gameState.currentColor === 'RED' ? 'arena-glow-red' :
+    gameState.currentColor === 'YELLOW' ? 'arena-glow-yellow' :
+    gameState.currentColor === 'GREEN' ? 'arena-glow-green' :
+    gameState.currentColor === 'BLUE' ? 'arena-glow-blue' :
+    'arena-glow-wild';
+
   return (
     <div className="w-full h-screen max-h-screen bg-gradient-to-br from-[#0B4A8B] via-[#052D56] to-[#021832] text-white flex flex-col justify-between overflow-hidden relative selection:bg-none font-sans">
+      
+      {/* Dynamic Active Color Ambient Aura Glow Overlay */}
+      <div className={`absolute inset-0 pointer-events-none transition-all duration-700 z-0 ${arenaColorGlowClass}`} />
       
       {/* ------------------------------------------------------------- */}
       {/* TOP HEADER BAR (BLUE GLASS ARENA HEADER)                       */}

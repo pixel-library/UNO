@@ -20,8 +20,10 @@ import {
   ChevronRight
 } from 'lucide-react';
 import { UnoCard } from '@/components/card/UnoCard';
+import { useScroll3D } from '@/hooks/useScroll3D';
 
 export const HowToPlay: React.FC = () => {
+  useScroll3D();
   const [activeTab, setActiveTab] = useState<'basics' | 'stacking' | 'special' | 'uno_call'>('basics');
 
   return (

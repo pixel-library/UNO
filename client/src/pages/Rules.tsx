@@ -19,8 +19,10 @@ import {
   CheckCircle2
 } from 'lucide-react';
 import { UnoCard } from '@/components/card/UnoCard';
+import { useScroll3D } from '@/hooks/useScroll3D';
 
 export const Rules: React.FC = () => {
+  useScroll3D();
   const [filterCategory, setFilterCategory] = useState<'all' | 'standard' | 'action' | 'special' | 'scoring'>('all');
 
   return (

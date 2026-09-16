@@ -4,9 +4,11 @@ import { socketService } from '@/services/socketService';
 import { supabaseRoomService } from '@/services/supabaseRoomService';
 import { validateRoomCode } from '@shared/validation/roomValidator';
 import { UnoCard } from '@/components/card/UnoCard';
+import { useScroll3D } from '@/hooks/useScroll3D';
 
 export const Play: React.FC = () => {
   const navigate = useNavigate();
+  useScroll3D();
 
   // Create Game State
   const [maxPlayers, setMaxPlayers] = useState<number>(4);

@@ -222,8 +222,9 @@ export const UnoCard: React.FC<UnoCardProps> = ({
       onClick={!disabled && onClick ? onClick : undefined}
       style={style}
       className={`relative select-none ${sizeConfig.width} ${sizeConfig.height} bg-white ${sizeConfig.pad} ${sizeConfig.border} 
-        border border-neutral-200/90 ${colorConfig.shadow} transition-all duration-200 cursor-pointer
-        ${playable ? 'ring-4 ring-emerald-400/90 ring-offset-2 ring-offset-white shadow-[0_0_20px_rgba(52,211,153,0.85)] scale-[1.04] z-20' : ''}
+        border border-neutral-200/90 ${colorConfig.shadow} transition-all duration-250 ease-[cubic-bezier(0.34,1.56,0.64,1)] cursor-pointer
+        hover:-translate-y-2 hover:scale-105 hover:shadow-2xl active:scale-95
+        ${playable ? 'ring-4 ring-emerald-400/90 ring-offset-2 ring-offset-white shadow-[0_0_25px_rgba(52,211,153,0.9)] scale-[1.04] z-20' : ''}
         ${selected ? '-translate-y-8 shadow-2xl ring-4 ring-amber-400 ring-offset-2 z-30 scale-[1.08]' : ''}
         ${disabled ? 'opacity-60 grayscale cursor-not-allowed' : ''}
         ${className}`}

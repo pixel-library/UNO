@@ -2,9 +2,11 @@ import React from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Play, Monitor, Users, Zap, BookOpen, ShieldCheck, Trophy, ArrowRight, Layers, Sparkles, CheckCircle2 } from 'lucide-react';
 import { UnoCard } from '@/components/card/UnoCard';
+import { useScroll3D } from '@/hooks/useScroll3D';
 
 export const Home: React.FC = () => {
   const navigate = useNavigate();
+  useScroll3D();
 
   const handleStartGame = () => {
     const storedName = localStorage.getItem('uno_player_name');
@@ -16,11 +18,11 @@ export const Home: React.FC = () => {
   };
 
   return (
-    <div className="w-full min-h-screen bg-white">
+    <div className="w-full min-h-screen bg-white overflow-hidden">
       {/* ------------------------------------------------------------- */}
       {/* HERO SECTION                                                  */}
       {/* ------------------------------------------------------------- */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 pb-20 grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 pb-20 grid grid-cols-1 lg:grid-cols-12 gap-12 items-center scroll-3d-reveal">
         
         {/* Left Hero Text */}
         <div className="lg:col-span-6 space-y-6 text-center lg:text-left">
@@ -113,7 +115,7 @@ export const Home: React.FC = () => {
       {/* ------------------------------------------------------------- */}
       {/* PLAY YOUR WAY SECTION                                         */}
       {/* ------------------------------------------------------------- */}
-      <section className="bg-neutral-50 py-20 border-y border-neutral-100">
+      <section className="bg-neutral-50 py-20 border-y border-neutral-100 scroll-3d-reveal">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-3xl font-extrabold text-uno-navy">PLAY YOUR WAY</h2>
           <p className="text-neutral-500 font-medium mt-2">Multiple game modes, endless fun.</p>
@@ -123,7 +125,7 @@ export const Home: React.FC = () => {
             {/* Card 1: Create Game */}
             <div
               onClick={() => handleStartGame()}
-              className="bg-white p-8 rounded-3xl border border-neutral-200 hover:border-uno-blue hover:shadow-xl transition-all text-left cursor-pointer group flex flex-col justify-between"
+              className="bg-white p-8 rounded-3xl border border-neutral-200 hover:border-uno-blue hover:shadow-xl transition-all text-left cursor-pointer group flex flex-col justify-between scroll-3d-card"
             >
               <div>
                 <div className="w-14 h-14 rounded-2xl bg-blue-100 text-uno-blue flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
@@ -142,7 +144,7 @@ export const Home: React.FC = () => {
             {/* Card 2: Join Game */}
             <div
               onClick={() => handleStartGame()}
-              className="bg-white p-8 rounded-3xl border border-neutral-200 hover:border-emerald-500 hover:shadow-xl transition-all text-left cursor-pointer group flex flex-col justify-between"
+              className="bg-white p-8 rounded-3xl border border-neutral-200 hover:border-emerald-500 hover:shadow-xl transition-all text-left cursor-pointer group flex flex-col justify-between scroll-3d-card"
             >
               <div>
                 <div className="w-14 h-14 rounded-2xl bg-emerald-100 text-emerald-600 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
@@ -165,7 +167,7 @@ export const Home: React.FC = () => {
       {/* ------------------------------------------------------------- */}
       {/* THE CLASSIC GAME, REIMAGINED                                  */}
       {/* ------------------------------------------------------------- */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 scroll-3d-scale">
         <div className="bg-gradient-to-r from-blue-50 via-sky-50 to-blue-50 rounded-3xl p-8 sm:p-14 border border-blue-100 grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
           
           {/* Left Cards Stack */}
@@ -213,44 +215,44 @@ export const Home: React.FC = () => {
       {/* ------------------------------------------------------------- */}
       {/* POWERFUL UNO CARDS                                            */}
       {/* ------------------------------------------------------------- */}
-      <section className="bg-neutral-50 py-20 border-t border-neutral-100">
+      <section className="bg-neutral-50 py-20 border-t border-neutral-100 scroll-3d-reveal">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-3xl font-extrabold text-uno-navy">POWERFUL UNO CARDS</h2>
           <p className="text-neutral-500 font-medium mt-2">Each card brings a new strategy.</p>
 
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-6 mt-12">
             
-            <div className="bg-white p-4 rounded-xl border border-neutral-200 flex flex-col items-center">
+            <div className="bg-white p-4 rounded-xl border border-neutral-200 flex flex-col items-center scroll-3d-card">
               <UnoCard color="RED" value="7" size="sm" />
               <h4 className="font-bold text-sm text-uno-navy mt-4">Number</h4>
               <p className="text-xs text-neutral-500 mt-1">Match the number or color.</p>
             </div>
 
-            <div className="bg-white p-4 rounded-xl border border-neutral-200 flex flex-col items-center">
+            <div className="bg-white p-4 rounded-xl border border-neutral-200 flex flex-col items-center scroll-3d-card">
               <UnoCard color="YELLOW" value="SKIP" size="sm" />
               <h4 className="font-bold text-sm text-uno-navy mt-4">Skip</h4>
               <p className="text-xs text-neutral-500 mt-1">Next player skips their turn.</p>
             </div>
 
-            <div className="bg-white p-4 rounded-xl border border-neutral-200 flex flex-col items-center">
+            <div className="bg-white p-4 rounded-xl border border-neutral-200 flex flex-col items-center scroll-3d-card">
               <UnoCard color="BLUE" value="REVERSE" size="sm" />
               <h4 className="font-bold text-sm text-uno-navy mt-4">Reverse</h4>
               <p className="text-xs text-neutral-500 mt-1">Change the direction of play.</p>
             </div>
 
-            <div className="bg-white p-4 rounded-xl border border-neutral-200 flex flex-col items-center">
+            <div className="bg-white p-4 rounded-xl border border-neutral-200 flex flex-col items-center scroll-3d-card">
               <UnoCard color="RED" value="DRAW_TWO" size="sm" />
               <h4 className="font-bold text-sm text-uno-navy mt-4">Draw Two</h4>
               <p className="text-xs text-neutral-500 mt-1">Next player draws 2 cards.</p>
             </div>
 
-            <div className="bg-white p-4 rounded-xl border border-neutral-200 flex flex-col items-center">
+            <div className="bg-white p-4 rounded-xl border border-neutral-200 flex flex-col items-center scroll-3d-card">
               <UnoCard color="WILD" value="WILD" size="sm" />
               <h4 className="font-bold text-sm text-uno-navy mt-4">Wild</h4>
               <p className="text-xs text-neutral-500 mt-1">Choose the active game color.</p>
             </div>
 
-            <div className="bg-white p-4 rounded-xl border border-neutral-200 flex flex-col items-center">
+            <div className="bg-white p-4 rounded-xl border border-neutral-200 flex flex-col items-center scroll-3d-card">
               <UnoCard color="WILD" value="WILD_DRAW_FOUR" size="sm" />
               <h4 className="font-bold text-sm text-uno-navy mt-4">Wild Draw Four</h4>
               <p className="text-xs text-neutral-500 mt-1">Choose color & make next draw 4.</p>

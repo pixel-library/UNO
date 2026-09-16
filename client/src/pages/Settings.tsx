@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { Settings as SettingsIcon, Volume2, VolumeX, Music, Zap, Eye, Check } from 'lucide-react';
 import { audioService } from '@/services/audioService';
+import { useScroll3D } from '@/hooks/useScroll3D';
 
 export const Settings: React.FC = () => {
+  useScroll3D();
   const [sound, setSound] = useState(audioService.isSoundEnabled());
   const [music, setMusic] = useState(audioService.isMusicEnabled());
   const [reducedMotion, setReducedMotion] = useState(false);
