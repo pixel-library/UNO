@@ -121,14 +121,13 @@ export const GameScreen: React.FC = () => {
     // Initial sync
     handleSync();
 
-    syncTimer = setTimeout(() => {
-      if (!gameState) {
-        handleSync();
-      }
-    }, 2500);
+    // Fast 1000ms sync heartbeat to ensure instant turn updates across rooms
+    const syncInterval = setInterval(() => {
+      handleSync();
+    }, 1000);
 
     return () => {
-      clearTimeout(syncTimer);
+      clearInterval(syncInterval);
       socket.off('game:state');
       socket.off('chat:message');
       socket.off('connect', handleSync);
@@ -223,11 +222,17 @@ export const GameScreen: React.FC = () => {
     // Zero-Latency Optimistic UI update on local state
     setGameState((prev) => {
       if (!prev) return prev;
+      const activePlayers = prev.players.filter(p => !p.isSpectator);
+      const isCW = prev.direction === 'CW' || prev.direction === undefined;
+      const step = isCW ? 1 : -1;
+      const nextIdx = (prev.currentPlayerIndex + step + activePlayers.length) % (activePlayers.length || 1);
+
       return {
         ...prev,
         hand: prev.hand.filter(c => c.id !== card.id),
         topDiscardCard: card,
-        currentColor: card.color
+        currentColor: card.color === 'WILD' ? prev.currentColor : card.color,
+        currentPlayerIndex: nextIdx
       };
     });
 

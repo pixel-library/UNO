@@ -517,11 +517,13 @@ export const supabaseRoomService = {
           if (callbacks) {
             callbacks.forEach(cb => cb(privateState));
           }
+          socketService.triggerLocalEvent('game:state', privateState);
         } else if (payload.hand) {
           const callbacks = stateUpdateCallbacks.get(formattedCode);
           if (callbacks) {
             callbacks.forEach(cb => cb(payload));
           }
+          socketService.triggerLocalEvent('game:state', payload);
         }
       }
     });
