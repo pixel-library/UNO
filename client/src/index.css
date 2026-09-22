@@ -309,3 +309,76 @@
   animation: turnGlowPulse 1.8s ease-in-out infinite;
 }
 
+/* -------------------------------------------------------------------------- */
+/* TACTILE 3D BUTTON UTILITY CLASSES                                         */
+/* -------------------------------------------------------------------------- */
+
+/* -------------------------------------------------------------------------- */
+/* CLEAN FLAT MINIMALIST BUTTON UTILITY CLASSES                               */
+/* -------------------------------------------------------------------------- */
+
+.btn-3d-yellow, .btn-flat-yellow {
+  background-color: #FCD116;
+  color: #0F172A;
+  border: 1px solid rgba(217, 172, 0, 0.4);
+  box-shadow: 0 2px 4px rgba(252, 209, 22, 0.2);
+  transition: all 0.15s ease-in-out;
+}
+.btn-3d-yellow:hover, .btn-flat-yellow:hover {
+  background-color: #f3c807;
+  box-shadow: 0 4px 10px rgba(252, 209, 22, 0.35);
+}
+.btn-3d-yellow:active, .btn-flat-yellow:active {
+  transform: scale(0.98);
+  box-shadow: 0 1px 2px rgba(252, 209, 22, 0.2);
+}
+
+.btn-3d-red, .btn-flat-red {
+  background-color: #E52521;
+  color: #FFFFFF;
+  border: 1px solid rgba(179, 16, 12, 0.4);
+  box-shadow: 0 2px 4px rgba(229, 37, 33, 0.2);
+  transition: all 0.15s ease-in-out;
+}
+.btn-3d-red:hover, .btn-flat-red:hover {
+  background-color: #d41c18;
+  box-shadow: 0 4px 10px rgba(229, 37, 33, 0.35);
+}
+.btn-3d-red:active, .btn-flat-red:active {
+  transform: scale(0.98);
+  box-shadow: 0 1px 2px rgba(229, 37, 33, 0.2);
+}
+
+.btn-3d-blue, .btn-flat-blue {
+  background-color: #0082CA;
+  color: #FFFFFF;
+  border: 1px solid rgba(0, 91, 158, 0.4);
+  box-shadow: 0 2px 4px rgba(0, 130, 202, 0.2);
+  transition: all 0.15s ease-in-out;
+}
+.btn-3d-blue:hover, .btn-flat-blue:hover {
+  background-color: #0074b5;
+  box-shadow: 0 4px 10px rgba(0, 130, 202, 0.35);
+}
+.btn-3d-blue:active, .btn-flat-blue:active {
+  transform: scale(0.98);
+  box-shadow: 0 1px 2px rgba(0, 130, 202, 0.2);
+}
+
+.btn-3d-green, .btn-flat-green {
+  background-color: #2D963F;
+  color: #FFFFFF;
+  border: 1px solid rgba(30, 107, 44, 0.4);
+  box-shadow: 0 2px 4px rgba(45, 150, 63, 0.2);
+  transition: all 0.15s ease-in-out;
+}
+.btn-3d-green:hover, .btn-flat-green:hover {
+  background-color: #258335;
+  box-shadow: 0 4px 10px rgba(45, 150, 63, 0.35);
+}
+.btn-3d-green:active, .btn-flat-green:active {
+  transform: scale(0.98);
+  box-shadow: 0 1px 2px rgba(45, 150, 63, 0.2);
+}
+
+

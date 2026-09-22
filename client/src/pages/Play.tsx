@@ -40,6 +40,79 @@ export const Play: React.FC = () => {
     }
   };
 
+  // VS Computer (AI) State
+  const [botMatchSize, setBotMatchSize] = useState<2 | 3 | 4>(4);
+  const [isCreatingBot, setIsCreatingBot] = useState<boolean>(false);
+
+  const handleCreateVsBot = (sizeOverride?: number) => {
+    if (isCreatingBot) return;
+    const playerName = localStorage.getItem('uno_player_name');
+    if (!playerName) {
+      navigate('/enter-name', { state: { returnTo: '/play' } });
+      return;
+    }
+
+    const selectedSize = sizeOverride || botMatchSize;
+    const botCount = Math.min(3, Math.max(1, selectedSize - 1));
+
+    setIsCreatingBot(true);
+    let handled = false;
+    const timer = setTimeout(() => {
+      if (!handled) {
+        handled = true;
+        setIsCreatingBot(false);
+        alert('Computer match creation timed out. Please try again.');
+      }
+    }, 4000);
+
+    try {
+      const socket = socketService.getSocket();
+      socket.emit(
+        'room:createVsBot',
+        {
+          playerName,
+          botCount,
+          settings: {
+            startingCards: 7,
+            turnTimerSeconds: 30,
+            houseRules: {
+              stacking,
+              jumpIn,
+              sevenZero,
+              forcePlay,
+              drawUntilPlayable,
+              discardAll,
+              counterDeflect,
+              shuffleHands,
+              wildSwap
+            }
+          }
+        },
+        (res: any) => {
+          if (handled) return;
+          handled = true;
+          clearTimeout(timer);
+          setIsCreatingBot(false);
+          if (res?.success) {
+            if (res.playerId) {
+              localStorage.setItem('uno_player_id', res.playerId);
+            }
+            navigate(`/room/${res.roomCode}`);
+          } else {
+            alert(res?.error || 'Failed to start Computer match');
+          }
+        }
+      );
+    } catch (err) {
+      if (!handled) {
+        handled = true;
+        clearTimeout(timer);
+        setIsCreatingBot(false);
+        alert('An unexpected error occurred while starting Computer match.');
+      }
+    }
+  };
+
   // Join Game State
   const [roomCode, setRoomCode] = useState('');
   const [joinError, setJoinError] = useState<string | null>(null);
@@ -278,25 +351,25 @@ export const Play: React.FC = () => {
     <div className="w-full min-h-[calc(100vh-80px)] bg-[#F8F9FA] py-10 px-4 sm:px-6 lg:px-8 flex flex-col justify-center items-center selection:bg-none relative overflow-hidden">
       
       {/* ------------------------------------------------------------- */}
-      {/* HEADER SECTION (Matching Image 2)                             */}
+      {/* HEADER SECTION                                                */}
       {/* ------------------------------------------------------------- */}
       <div className="text-center space-y-1.5 mb-10 z-10">
-        <h1 className="text-3xl sm:text-4xl font-extrabold text-[#111827] tracking-tight font-sans">
-          CREATE A GAME
+        <h1 className="text-3xl sm:text-4xl font-extrabold text-[#111827] tracking-tight font-sans uppercase">
+          SELECT GAME MODE
         </h1>
         <p className="text-base font-normal text-neutral-500">
-          Play UNO with your friends.
+          Play UNO online with friends or offline vs computer AI bots.
         </p>
       </div>
 
       {/* ------------------------------------------------------------- */}
-      {/* MAIN CONTAINER WITH CIRCULAR CARDS WHEEL IN BACKGROUND       */}
+      {/* MAIN CONTAINER WITH 3 MODE CARDS                              */}
       {/* ------------------------------------------------------------- */}
-      <div className="relative max-w-5xl w-full flex flex-col md:flex-row items-center justify-between gap-8 z-10">
+      <div className="relative max-w-6xl w-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 z-10 items-start">
         
-        {/* CENTER DECORATIVE CIRCULAR CARD FAN GRAPHIC (Matching Image 2) */}
+        {/* CENTER DECORATIVE CIRCULAR CARD FAN GRAPHIC */}
         <div className="absolute inset-0 pointer-events-none hidden lg:flex items-center justify-center -z-0">
-          <div className="relative w-[420px] h-[420px] flex items-center justify-center">
+          <div className="relative w-[420px] h-[420px] flex items-center justify-center opacity-30">
             {wheelCards.map((card, idx) => {
               const angle = (idx * 360) / wheelCards.length;
               return (
@@ -319,13 +392,111 @@ export const Play: React.FC = () => {
         </div>
 
         {/* ----------------------------------------------------------- */}
-        {/* LEFT CARD: CREATE GAME                                      */}
+        {/* CARD 1: PLAY VS COMPUTER (AI MATCH)                          */}
         {/* ----------------------------------------------------------- */}
-        <div className="w-full md:w-[380px] bg-white rounded-3xl p-5 sm:p-7 border border-neutral-200/90 shadow-lg hover:shadow-xl transition-shadow flex flex-col justify-between z-10 space-y-6">
+        <div className="w-full bg-white rounded-3xl p-5 sm:p-7 border border-neutral-200/90 shadow-lg hover:shadow-xl transition-shadow flex flex-col justify-between z-10 space-y-6">
+          
+          <div className="space-y-5">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-extrabold text-[#111827] tracking-wide uppercase flex items-center gap-2">
+                🤖 VS COMPUTER
+              </h2>
+              <span className="text-[10px] font-black bg-amber-100 text-amber-800 px-2.5 py-1 rounded-full uppercase border border-amber-200">
+                OFFLINE / AI
+              </span>
+            </div>
+
+            <p className="text-xs text-neutral-500 font-medium leading-relaxed">
+              Practice your skills against smart AI bots. Pick match size and start playing immediately!
+            </p>
+
+            {/* Match Size Selection: 2, 3, or 4 Players */}
+            <div className="space-y-3 pt-2">
+              <span className="text-xs font-bold text-neutral-700 uppercase tracking-wider block">
+                Select Match Size:
+              </span>
+
+              <div className="grid grid-cols-3 gap-2">
+                {[
+                  { size: 2, label: '2 PLAYERS', desc: '1 vs 1 AI' },
+                  { size: 3, label: '3 PLAYERS', desc: '1 vs 2 AI' },
+                  { size: 4, label: '4 PLAYERS', desc: '1 vs 3 AI' }
+                ].map((item) => (
+                  <button
+                    key={item.size}
+                    type="button"
+                    onClick={() => setBotMatchSize(item.size as 2 | 3 | 4)}
+                    className={`py-3 px-2 rounded-2xl flex flex-col items-center justify-center border-2 transition-all ${
+                      botMatchSize === item.size
+                        ? 'border-amber-400 bg-amber-50/90 text-amber-950 shadow-sm ring-2 ring-amber-300/40 font-bold'
+                        : 'border-neutral-200 text-neutral-600 hover:border-neutral-300 bg-neutral-50/50'
+                    }`}
+                  >
+                    <span className="font-extrabold text-xs">{item.label}</span>
+                    <span className="text-[10px] text-neutral-500 font-bold mt-0.5">{item.desc}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Visual Player Roster Preview */}
+            <div className="bg-neutral-50 rounded-2xl p-3 border border-neutral-200/80 space-y-2">
+              <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider block">
+                Match Roster Preview:
+              </span>
+              <div className="flex flex-wrap items-center gap-2">
+                {/* Human Player */}
+                <div className="flex items-center gap-1.5 bg-blue-100 text-blue-900 border border-blue-200 px-2.5 py-1 rounded-xl text-xs font-bold">
+                  <span>👤</span>
+                  <span>You</span>
+                </div>
+                
+                {/* AI Bot 1 */}
+                <div className="flex items-center gap-1.5 bg-amber-100 text-amber-900 border border-amber-200 px-2.5 py-1 rounded-xl text-xs font-bold">
+                  <span>🤖</span>
+                  <span>Bot 1</span>
+                </div>
+
+                {/* AI Bot 2 (if 3 or 4) */}
+                {botMatchSize >= 3 && (
+                  <div className="flex items-center gap-1.5 bg-amber-100 text-amber-900 border border-amber-200 px-2.5 py-1 rounded-xl text-xs font-bold">
+                    <span>🤖</span>
+                    <span>Bot 2</span>
+                  </div>
+                )}
+
+                {/* AI Bot 3 (if 4) */}
+                {botMatchSize >= 4 && (
+                  <div className="flex items-center gap-1.5 bg-amber-100 text-amber-900 border border-amber-200 px-2.5 py-1 rounded-xl text-xs font-bold">
+                    <span>🤖</span>
+                    <span>Bot 3</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* START VS COMPUTER Button */}
+          <div className="pt-2">
+            <button
+              onClick={() => handleCreateVsBot()}
+              disabled={isCreatingBot}
+              className="w-full btn-3d-yellow py-3.5 rounded-2xl text-sm font-black tracking-wider uppercase disabled:opacity-50 flex items-center justify-center gap-2"
+            >
+              {isCreatingBot ? 'STARTING MATCH...' : `PLAY ${botMatchSize}P VS COMPUTER ⚡`}
+            </button>
+          </div>
+
+        </div>
+
+        {/* ----------------------------------------------------------- */}
+        {/* CARD 2: CREATE MULTIPLAYER GAME                             */}
+        {/* ----------------------------------------------------------- */}
+        <div className="w-full bg-white rounded-3xl p-5 sm:p-7 border border-neutral-200/90 shadow-lg hover:shadow-xl transition-shadow flex flex-col justify-between z-10 space-y-6">
           
           <div>
             <h2 className="text-lg font-bold text-[#111827] tracking-wide uppercase text-left mb-6">
-              CREATE A GAME
+              CREATE MULTIPLAYER
             </h2>
 
             <div className="space-y-5">
@@ -601,9 +772,9 @@ export const Play: React.FC = () => {
             <button
               onClick={handleCreateGame}
               disabled={isCreating}
-              className="w-full bg-white hover:bg-sky-50 border-2 border-sky-400 text-sky-600 font-extrabold py-3 rounded-full text-sm tracking-wider uppercase transition-all shadow-sm hover:shadow-md active:scale-95 disabled:opacity-50"
+              className="w-full btn-3d-blue py-3.5 rounded-2xl text-sm font-black tracking-wider uppercase disabled:opacity-50"
             >
-              {isCreating ? 'CREATING...' : 'CREATE GAME'}
+              {isCreating ? 'CREATING ROOM...' : 'CREATE GAME'}
             </button>
           </div>
 
@@ -612,7 +783,7 @@ export const Play: React.FC = () => {
         {/* ----------------------------------------------------------- */}
         {/* RIGHT CARD: JOIN A GAME                                     */}
         {/* ----------------------------------------------------------- */}
-        <div className="w-full md:w-[380px] bg-white rounded-3xl p-5 sm:p-7 border border-neutral-200/90 shadow-lg hover:shadow-xl transition-shadow flex flex-col justify-between z-10 min-h-[460px]">
+        <div className="w-full bg-white rounded-3xl p-5 sm:p-7 border border-neutral-200/90 shadow-lg hover:shadow-xl transition-shadow flex flex-col justify-between z-10 space-y-6">
           
           <div className="space-y-8">
             <h2 className="text-lg font-bold text-[#111827] tracking-wide uppercase text-center">
@@ -634,24 +805,25 @@ export const Play: React.FC = () => {
                       setJoinError(null);
                     }}
                     placeholder="[ ABC123 ]"
-                    className="w-full px-4 py-3 rounded-xl border border-neutral-300 focus:border-emerald-500 focus:outline-none font-mono text-center text-lg font-extrabold text-neutral-800 uppercase tracking-widest placeholder:text-neutral-300 bg-neutral-50/50"
+                    className="w-full px-4 py-3 rounded-xl border-2 border-slate-200 focus:border-emerald-500 focus:outline-none font-mono text-center text-lg font-black text-slate-900 uppercase tracking-widest placeholder:text-slate-300 bg-slate-50/50"
                   />
                   {joinError && (
-                    <p className="text-xs font-semibold text-red-500 mt-1.5">{joinError}</p>
+                    <p className="text-xs font-extrabold text-red-500 mt-1.5">{joinError}</p>
                   )}
                 </div>
               </div>
 
-              {/* JOIN GAME Button (Matching Image 2 green outline button) */}
+              {/* JOIN GAME Button */}
               <button
                 type="submit"
                 disabled={isJoining}
-                className="w-full bg-white hover:bg-emerald-50 border-2 border-emerald-500 text-emerald-600 font-extrabold py-3 rounded-full text-sm tracking-wider uppercase transition-all shadow-sm hover:shadow-md active:scale-95 disabled:opacity-50"
+                className="w-full btn-3d-green py-3.5 rounded-2xl text-sm font-black tracking-wider uppercase disabled:opacity-50"
               >
-                {isJoining ? 'JOINING...' : 'JOIN GAME'}
+                {isJoining ? 'JOINING ROOM...' : 'JOIN GAME'}
               </button>
             </form>
           </div>
+
 
           {/* OR Divider & Invite Link Action (Matching Image 2) */}
           <div className="space-y-6 pt-6 text-center">

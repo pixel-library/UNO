@@ -55,7 +55,11 @@ export interface PlayerPublic {
   isSpectator: boolean;
   hasCalledUno: boolean;
   score: number;
+  isBot?: boolean;
+  isFinished?: boolean;
+  rank?: number;
 }
+
 
 export interface ActionEvent {
   type: 'SKIP' | 'REVERSE' | 'DRAW_TWO' | 'WILD_DRAW_FOUR' | 'STACK' | 'HAND_SWAP' | 'HAND_ROTATE' | 'UNO_CALL' | 'UNO_CHALLENGE' | 'JUMP_IN' | 'DISCARD_ALL' | 'DEFLECT' | 'SHUFFLE_HANDS' | 'WILD_SWAP';
@@ -69,6 +73,14 @@ export interface TableEmote {
   senderName: string;
   emote: string;
   timestamp: number;
+}
+
+export interface FinishedRankItem {
+  playerId: string;
+  name: string;
+  avatar: string;
+  rank: number;
+  score: number;
 }
 
 export interface GamePublicState {
@@ -92,6 +104,7 @@ export interface GamePublicState {
   lastActionEvent?: ActionEvent | null;
   activeEmote?: TableEmote | null;
   chatMessages?: ChatMessage[];
+  finishedRankings?: FinishedRankItem[];
 }
 
 export interface PlayerPrivateState extends GamePublicState {

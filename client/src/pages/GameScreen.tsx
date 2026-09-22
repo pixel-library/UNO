@@ -616,22 +616,24 @@ export const GameScreen: React.FC = () => {
             <span className="hidden sm:inline">Settings</span>
           </button>
 
-          <button
-            onClick={() => {
-              if (window.innerWidth < 1024) {
-                setShowMobileChat(!showMobileChat);
-              } else {
-                setShowChat(!showChat);
-              }
-            }}
-            className={`p-1.5 sm:px-3 sm:py-1.5 rounded-xl border transition-all text-xs font-bold flex items-center gap-1.5 cursor-pointer ${
-              (showChat || showMobileChat) ? 'bg-sky-500/30 border-sky-400 text-sky-200 font-extrabold shadow-sm' : 'bg-white/10 border-white/15 text-white'
-            }`}
-            title="Chat"
-          >
-            <MessageSquare className="w-3.5 h-3.5 text-sky-300" />
-            <span className="hidden sm:inline">Chat</span>
-          </button>
+          {!(gameState?.settings?.mode === 'VS_COMPUTER' || gameState?.settings?.enableChat === false || gameState?.players?.some(p => p.isBot)) && (
+            <button
+              onClick={() => {
+                if (window.innerWidth < 1024) {
+                  setShowMobileChat(!showMobileChat);
+                } else {
+                  setShowChat(!showChat);
+                }
+              }}
+              className={`p-1.5 sm:px-3 sm:py-1.5 rounded-xl border transition-all text-xs font-bold flex items-center gap-1.5 cursor-pointer ${
+                (showChat || showMobileChat) ? 'bg-sky-500/30 border-sky-400 text-sky-200 font-extrabold shadow-sm' : 'bg-white/10 border-white/15 text-white'
+              }`}
+              title="Chat"
+            >
+              <MessageSquare className="w-3.5 h-3.5 text-sky-300" />
+              <span className="hidden sm:inline">Chat</span>
+            </button>
+          )}
         </div>
 
       </header>
@@ -966,42 +968,46 @@ export const GameScreen: React.FC = () => {
 
           <div className="w-full flex items-end justify-between gap-2">
             {/* BOTTOM LEFT: WHITE GLASSMORPHIC CHAT BOX WIDGET (DESKTOP) */}
-            <div className="hidden lg:flex w-64 lg:w-72 glass-white-panel rounded-2xl p-3 shadow-none flex-col space-y-2 shrink-0 border border-slate-200">
-              <div className="flex items-center justify-between border-b border-slate-200/80 pb-1.5">
-                <span className="font-extrabold text-xs text-slate-800 flex items-center gap-1.5">
-                  <MessageSquare className="w-3.5 h-3.5 text-sky-600" /> Room Chat
-                </span>
-                <span className="text-[10px] font-bold text-slate-400 uppercase">Live</span>
-              </div>
+            {!(gameState?.settings?.mode === 'VS_COMPUTER' || gameState?.settings?.enableChat === false || gameState?.players?.some(p => p.isBot)) ? (
+              <div className="hidden lg:flex w-64 lg:w-72 glass-white-panel rounded-2xl p-3 shadow-none flex-col space-y-2 shrink-0 border border-slate-200">
+                <div className="flex items-center justify-between border-b border-slate-200/80 pb-1.5">
+                  <span className="font-extrabold text-xs text-slate-800 flex items-center gap-1.5">
+                    <MessageSquare className="w-3.5 h-3.5 text-sky-600" /> Room Chat
+                  </span>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase">Live</span>
+                </div>
 
-              {/* Chat Messages Window */}
-              <div className="h-24 overflow-y-auto space-y-1.5 text-[11px] pr-1 scrollbar-none">
-                {chatMessages.length === 0 ? (
-                  <p className="text-slate-400 italic text-center py-4 text-[10px]">Type a message below...</p>
-                ) : (
-                  chatMessages.map((msg) => (
-                    <div key={msg.id} className="bg-white/90 px-2.5 py-1 rounded-xl border border-slate-100 shadow-2xs">
-                      <span className="font-extrabold text-sky-600">{msg.senderName}: </span>
-                      <span className="text-slate-700 font-medium">{msg.text}</span>
-                    </div>
-                  ))
-                )}
-              </div>
+                {/* Chat Messages Window */}
+                <div className="h-24 overflow-y-auto space-y-1.5 text-[11px] pr-1 scrollbar-none">
+                  {chatMessages.length === 0 ? (
+                    <p className="text-slate-400 italic text-center py-4 text-[10px]">Type a message below...</p>
+                  ) : (
+                    chatMessages.map((msg) => (
+                      <div key={msg.id} className="bg-white/90 px-2.5 py-1 rounded-xl border border-slate-100 shadow-2xs">
+                        <span className="font-extrabold text-sky-600">{msg.senderName}: </span>
+                        <span className="text-slate-700 font-medium">{msg.text}</span>
+                      </div>
+                    ))
+                  )}
+                </div>
 
-              {/* White Translucent Chat Input */}
-              <form onSubmit={handleSendChat} className="relative">
-                <input
-                  type="text"
-                  value={chatInput}
-                  onChange={(e) => setChatInput(e.target.value)}
-                  placeholder="Type a message..."
-                  className="w-full glass-white-input rounded-xl pl-3 pr-8 py-1.5 text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none"
-                />
-                <button type="submit" className="absolute right-2.5 top-2 text-sky-600 hover:text-sky-700">
-                  <Send className="w-3.5 h-3.5" />
-                </button>
-              </form>
-            </div>
+                {/* White Translucent Chat Input */}
+                <form onSubmit={handleSendChat} className="relative">
+                  <input
+                    type="text"
+                    value={chatInput}
+                    onChange={(e) => setChatInput(e.target.value)}
+                    placeholder="Type a message..."
+                    className="w-full glass-white-input rounded-xl pl-3 pr-8 py-1.5 text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none"
+                  />
+                  <button type="submit" className="absolute right-2.5 top-2 text-sky-600 hover:text-sky-700">
+                    <Send className="w-3.5 h-3.5" />
+                  </button>
+                </form>
+              </div>
+            ) : (
+              <div className="hidden lg:block w-64 lg:w-72 shrink-0 pointer-events-none" />
+            )}
 
             {/* BOTTOM CENTER: FANNED PLAYER HAND & STATUS PILL */}
             <div className="flex flex-col items-center w-full lg:max-w-[70vw] z-30 flex-1 px-1">
@@ -1121,7 +1127,7 @@ export const GameScreen: React.FC = () => {
       {/* ------------------------------------------------------------- */}
       {/* MOBILE & TABLET SLIDE-UP WHITE GLASS CHAT DRAWER              */}
       {/* ------------------------------------------------------------- */}
-      {showMobileChat && (
+      {!(gameState?.settings?.mode === 'VS_COMPUTER' || gameState?.settings?.enableChat === false || gameState?.players?.some(p => p.isBot)) && showMobileChat && (
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-end justify-center p-0 lg:hidden">
           <div className="glass-white-panel border-t border-slate-200 rounded-t-3xl p-4 w-full sm:max-w-md shadow-none space-y-3">
             <div className="flex items-center justify-between border-b border-slate-200/80 pb-2">
@@ -1261,34 +1267,66 @@ export const GameScreen: React.FC = () => {
       {/* GAME OVER / VICTORY OVERLAY MODAL (CONFETTI CELEBRATION)      */}
       {/* ------------------------------------------------------------- */}
       {gameState.status === 'FINISHED' && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-50 flex items-center justify-center p-4">
-          <div className="bg-white text-slate-900 rounded-3xl p-8 sm:p-10 max-w-md w-full text-center space-y-6 shadow-2xl border border-slate-200 animate-pop-scale">
-            <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-amber-100 to-amber-200 border-2 border-amber-300 text-amber-500 flex items-center justify-center mx-auto shadow-lg transform rotate-3">
-              <Trophy className="w-10 h-10 text-amber-600" />
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-50 flex items-center justify-center p-4 font-sans">
+          <div className="bg-white text-slate-900 rounded-3xl p-6 sm:p-8 max-w-md w-full text-center space-y-5 shadow-2xl border border-slate-200 animate-pop-scale">
+            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-100 to-amber-200 border-2 border-amber-300 text-amber-500 flex items-center justify-center mx-auto shadow-md transform rotate-3">
+              <Trophy className="w-8 h-8 text-amber-600" />
             </div>
 
             <div>
               <span className="text-xs font-black text-sky-600 uppercase tracking-widest">MATCH FINISHED</span>
-              <h2 className="text-3xl font-black text-slate-900 tracking-tight mt-1">
-                {gameState.winner?.id === myId ? 'YOU WIN!' : `${gameState.winner?.name || 'Player'} WINS!`}
+              <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight mt-1">
+                {gameState.winner?.id === myId ? '🎉 YOU WIN!' : `🏆 ${gameState.winner?.name || 'Player'} WINS!`}
               </h2>
-              <p className="text-sm font-bold text-slate-500 mt-2">
-                Winner Score: {gameState.winner?.score || 0} pts
-              </p>
             </div>
 
-            <div className="space-y-3 pt-2">
+            {/* Tournament Rankings Leaderboard */}
+            <div className="bg-slate-50 rounded-2xl p-4 border border-slate-200 space-y-2 text-left">
+              <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block text-center">
+                TOURNAMENT FINAL STANDINGS
+              </span>
+              {(gameState.finishedRankings && gameState.finishedRankings.length > 0 
+                ? gameState.finishedRankings 
+                : gameState.players.map((p, idx) => ({ playerId: p.id, name: p.name, avatar: p.avatar, rank: p.rank || (idx + 1), score: p.score }))
+              ).map((rankItem) => {
+                const isMe = rankItem.playerId === myId;
+                const badgeColor = rankItem.rank === 1 
+                  ? 'bg-amber-100 text-amber-900 border-amber-300' 
+                  : rankItem.rank === 2 
+                  ? 'bg-slate-200 text-slate-900 border-slate-300' 
+                  : rankItem.rank === 3 
+                  ? 'bg-amber-800/10 text-amber-900 border-amber-700/30' 
+                  : 'bg-slate-100 text-slate-600 border-slate-200';
+                
+                const rankLabel = rankItem.rank === 1 ? '🥇 1st' : rankItem.rank === 2 ? '🥈 2nd' : rankItem.rank === 3 ? '🥉 3rd' : `${rankItem.rank}th`;
+
+                return (
+                  <div key={rankItem.playerId} className={`p-2.5 rounded-xl border flex items-center justify-between text-xs font-bold ${isMe ? 'bg-blue-50 border-blue-300 ring-1 ring-blue-300' : 'bg-white border-slate-200'}`}>
+                    <div className="flex items-center gap-2">
+                      <span className={`px-2 py-0.5 rounded-lg border text-[11px] font-black ${badgeColor}`}>
+                        {rankLabel}
+                      </span>
+                      <span>{rankItem.avatar || '👤'}</span>
+                      <span className="font-extrabold text-slate-900">{rankItem.name} {isMe && <span className="text-[10px] text-blue-600 font-bold">(YOU)</span>}</span>
+                    </div>
+                    <span className="text-slate-500 font-semibold">{rankItem.score || 0} pts</span>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="space-y-2 pt-1">
               <button
                 onClick={handleRematch}
-                className="w-full bg-gradient-to-r from-[#FCD116] to-[#F5A623] hover:from-[#FFE033] hover:to-[#FCD116] text-slate-950 font-black py-4 rounded-2xl text-base flex items-center justify-center gap-2 shadow-lg transition-transform hover:scale-[1.02] cursor-pointer"
+                className="w-full bg-[#FCD116] hover:bg-[#f3c807] active:scale-95 text-slate-950 font-black py-3.5 rounded-xl text-sm flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer uppercase tracking-wider border border-amber-400/50"
               >
-                <Play className="w-5 h-5 fill-current" />
+                <Play className="w-4 h-4 fill-current text-slate-950" />
                 PLAY AGAIN
               </button>
 
               <button
                 onClick={() => navigate('/play')}
-                className="w-full bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold py-3.5 rounded-2xl text-sm flex items-center justify-center gap-2 cursor-pointer"
+                className="w-full bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold py-3 rounded-xl text-xs flex items-center justify-center gap-2 cursor-pointer border border-slate-200 transition-colors"
               >
                 RETURN TO LOBBY
               </button>

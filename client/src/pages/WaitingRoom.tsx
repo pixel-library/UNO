@@ -446,17 +446,18 @@ export const WaitingRoom: React.FC = () => {
               <button
                 onClick={handleStartGame}
                 disabled={players.length < 2 || isStarting}
-                className="w-full sm:w-auto ml-auto bg-uno-yellow hover:bg-amber-400 disabled:opacity-50 text-uno-navy font-black px-10 py-4 rounded-2xl text-base flex items-center justify-center gap-2 shadow-lg transition-transform hover:scale-105 active:scale-100"
+                className="w-full sm:w-auto ml-auto btn-3d-yellow disabled:opacity-50 font-black px-10 py-4 rounded-2xl text-base flex items-center justify-center gap-2 uppercase tracking-wider"
               >
-                <Play className="w-5 h-5 fill-current" />
+                <Play className="w-5 h-5 fill-current text-slate-950" />
                 {isStarting ? 'STARTING MATCH...' : players.length < 2 ? 'WAITING FOR PLAYERS...' : 'START GAME'}
               </button>
             ) : (
-              <div className="w-full text-center py-3 bg-neutral-100 rounded-xl text-xs font-bold text-neutral-500">
+              <div className="w-full text-center py-4 bg-slate-100 rounded-2xl text-xs font-black text-slate-500 uppercase tracking-wider">
                 WAITING FOR HOST TO START GAME...
               </div>
             )}
           </div>
+
 
         </div>
 

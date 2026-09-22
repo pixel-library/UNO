@@ -70,8 +70,89 @@ function broadcastGameState(game: UnoGame) {
 
 
 // -----------------------------------------------------------------
-// SERVER-SIDE AFK TURN TIMER LOOP
+// SERVER-SIDE COMPUTER AI BOT EXECUTION & TURN TIMERS
 // -----------------------------------------------------------------
+function executeBotTurn(game: UnoGame) {
+  if (game.status !== 'PLAYING') return;
+  const currPlayer = game.getCurrentPlayer();
+  if (!currPlayer || (!currPlayer.isBot && !currPlayer.id.startsWith('bot_'))) return;
+
+  const botId = currPlayer.id;
+  let hand = game.playerHands.get(botId) || [];
+
+  // Handle pending 7-swap or Wild swap
+  if (game.pendingHandSwapPlayerId === botId) {
+    const activePlayers = game.players.filter(p => !p.isSpectator && p.id !== botId);
+    activePlayers.sort((a, b) => a.cardCount - b.cardCount);
+    const target = activePlayers[0] || activePlayers[Math.floor(Math.random() * activePlayers.length)];
+    if (target) {
+      game.swapHands(botId, target.id);
+    } else {
+      game.pendingHandSwapPlayerId = null;
+    }
+    broadcastGameState(game);
+    return;
+  }
+
+  // Find playable cards
+  const playableCards = hand.filter(card => game.isPlayable(card));
+
+  // Determine best color choice for Wild cards based on current hand composition
+  const colorCounts: Record<CardColor, number> = { RED: 0, YELLOW: 0, GREEN: 0, BLUE: 0, WILD: 0 };
+  hand.forEach(c => {
+    if (c.color !== 'WILD') colorCounts[c.color] = (colorCounts[c.color] || 0) + 1;
+  });
+  let bestChosenColor: CardColor = 'RED';
+  let maxCount = -1;
+  (['RED', 'YELLOW', 'GREEN', 'BLUE'] as CardColor[]).forEach(col => {
+    if (colorCounts[col] > maxCount) {
+      maxCount = colorCounts[col];
+      bestChosenColor = col;
+    }
+  });
+
+  if (playableCards.length > 0) {
+    // Prefer Action cards (+2, +4, Skip, Reverse) or matching active color
+    let cardToPlay = playableCards.find(c => c.value === 'WILD_DRAW_FOUR' || c.value === 'DRAW_TWO' || c.value === 'SKIP' || c.value === 'REVERSE');
+    if (!cardToPlay) cardToPlay = playableCards.find(c => c.color === game.currentColor);
+    if (!cardToPlay) cardToPlay = playableCards[0];
+
+    // Call UNO if bot will have 1 card remaining post-play
+    if (hand.length === 2 && !currPlayer.hasCalledUno) {
+      game.callUno(botId);
+    }
+
+    game.playCard(botId, cardToPlay.id, cardToPlay.color === 'WILD' ? bestChosenColor : undefined);
+  } else {
+    // Draw card
+    const drawRes = game.drawCard(botId);
+    if (drawRes.success && drawRes.drawnCard && game.getCurrentPlayer()?.id === botId && game.isPlayable(drawRes.drawnCard)) {
+      const updatedHand = game.playerHands.get(botId) || [];
+      if (updatedHand.length === 2 && !currPlayer.hasCalledUno) {
+        game.callUno(botId);
+      }
+      game.playCard(botId, drawRes.drawnCard.id, drawRes.drawnCard.color === 'WILD' ? bestChosenColor : undefined);
+    }
+  }
+
+  broadcastGameState(game);
+}
+
+// Bot Heartbeat Interval (Triggers Bot Moves every 800ms)
+setInterval(() => {
+  activeGames.forEach((game) => {
+    if (game.status === 'PLAYING') {
+      const hasConnectedHuman = game.players.some(p => !p.isBot && !p.id.startsWith('bot_') && p.isConnected);
+      if (hasConnectedHuman) {
+        const curr = game.getCurrentPlayer();
+        if (curr && (curr.isBot || curr.id.startsWith('bot_'))) {
+          executeBotTurn(game);
+        }
+      }
+    }
+  });
+}, 800);
+
 setInterval(() => {
   activeGames.forEach((game) => {
     if (game.status === 'PLAYING' && game.settings.turnTimerSeconds > 0) {
@@ -191,6 +272,58 @@ io.on('connection', (socket) => {
     broadcastGameState(game);
     broadcastLobbyUpdate();
   });
+
+  // 1b. Create VS Computer Room (2, 3, or 4 Players)
+  socket.on('room:createVsBot', ({ playerName, botCount = 1, settings }: { playerName: string; botCount?: number; settings?: Partial<GameSettings> }, callback) => {
+    const valName = validatePlayerName(playerName);
+    if (!valName.valid) {
+      if (callback) callback({ success: false, error: valName.error });
+      return;
+    }
+
+    const requestedBotCount = Math.min(3, Math.max(1, botCount)); // 1, 2, or 3 bots
+    const maxPlayers = requestedBotCount + 1; // 2, 3, or 4 total players
+
+    const roomCode = generateRoomCode();
+    const gameId = `game_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+    const game = new UnoGame(gameId, roomCode, { ...settings, maxPlayers, mode: 'VS_COMPUTER', enableChat: false });
+
+    const playerId = `player_${Math.random().toString(36).substring(2, 9)}`;
+    const sessionId = `sess_${Math.random().toString(36).substring(2, 9)}`;
+
+    // Add Human player as host
+    game.addPlayer(playerId, sessionId, valName.sanitizedName!, true);
+
+    // Add requested AI bots
+    for (let i = 0; i < requestedBotCount; i++) {
+      game.addBot();
+    }
+
+    activeGames.set(roomCode, game);
+
+    socket.join(`room_${roomCode}`);
+    socket.data.playerId = playerId;
+    socket.data.roomCode = roomCode;
+    socketPlayerMap.set(socket.id, { roomCode, playerId, sessionId });
+
+    // Start VS Computer match immediately
+    game.startGame();
+
+    if (callback) {
+      callback({
+        success: true,
+        roomCode,
+        gameId,
+        playerId,
+        sessionId,
+        state: game.getPrivateState(playerId)
+      });
+    }
+
+    broadcastGameState(game);
+    broadcastLobbyUpdate();
+  });
+
 
 
 

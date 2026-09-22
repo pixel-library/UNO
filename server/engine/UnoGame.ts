@@ -7,7 +7,8 @@ import {
   PlayerPublic,
   ChatMessage,
   ActionEvent,
-  TableEmote
+  TableEmote,
+  FinishedRankItem
 } from '@shared/types/game';
 import { Deck } from './Deck';
 import { DEFAULT_GAME_SETTINGS } from '@shared/constants/gameConstants';
@@ -18,6 +19,7 @@ export class UnoGame {
   public status: 'WAITING' | 'PLAYING' | 'FINISHED' = 'WAITING';
   public players: PlayerPublic[] = [];
   public playerHands: Map<string, Card[]> = new Map();
+  public finishedRankings: FinishedRankItem[] = [];
   public currentPlayerIndex: number = 0;
   public direction: 'CW' | 'CCW' = 'CW';
   public currentColor: CardColor = 'RED';
@@ -72,6 +74,41 @@ export class UnoGame {
     this.playerHands.set(id, []);
     return player;
   }
+
+  public addBot(botName?: string, botAvatar?: string): PlayerPublic | null {
+    if (this.players.filter(p => !p.isSpectator).length >= this.settings.maxPlayers) {
+      return null;
+    }
+
+    const botNames = ['Bot Alex 🤖', 'Bot Maya 🤖', 'Bot Leo 🤖'];
+    const botAvatars = ['🤖', '💻', '👾'];
+    const botIdx = this.players.filter(p => p.isBot).length;
+    const name = botName || botNames[botIdx % botNames.length];
+    const avatar = botAvatar || botAvatars[botIdx % botAvatars.length];
+
+    const botId = `bot_${Math.random().toString(36).substring(2, 9)}`;
+    const sessionId = `sess_${botId}`;
+
+    const botPlayer: PlayerPublic = {
+      id: botId,
+      sessionId,
+      name,
+      avatar,
+      cardCount: 0,
+      isHost: false,
+      isReady: true,
+      isConnected: true,
+      isSpectator: false,
+      hasCalledUno: false,
+      score: 0,
+      isBot: true
+    };
+
+    this.players.push(botPlayer);
+    this.playerHands.set(botId, []);
+    return botPlayer;
+  }
+
 
 
   public removePlayer(playerId: string): void {
@@ -150,6 +187,7 @@ export class UnoGame {
     this.discardPile = [];
     this.direction = 'CW';
     this.currentPlayerIndex = 0;
+    this.finishedRankings = [];
     this.winner = null;
     this.activeStackCount = 0;
     this.pendingHandSwapPlayerId = null;
@@ -160,6 +198,8 @@ export class UnoGame {
       this.playerHands.set(player.id, hand);
       player.cardCount = hand.length;
       player.hasCalledUno = false;
+      player.isFinished = false;
+      player.rank = undefined;
     });
 
     // Draw initial discard card (must not be a Wild Draw Four)
@@ -184,9 +224,69 @@ export class UnoGame {
     return this.discardPile.length > 0 ? this.discardPile[this.discardPile.length - 1] : null;
   }
 
+  public checkAndRecordPlayerFinish(playerId: string): boolean {
+    const player = this.players.find(p => p.id === playerId);
+    if (!player || player.isFinished) return this.status === 'FINISHED';
+
+    const hand = this.playerHands.get(playerId) || [];
+    if (hand.length > 0) return false;
+
+    player.isFinished = true;
+    const rank = this.finishedRankings.length + 1;
+    player.rank = rank;
+
+    const rankText = rank === 1 ? '1st 🏆' : rank === 2 ? '2nd 🥈' : rank === 3 ? '3rd 🥉' : `${rank}th`;
+    this.finishedRankings.push({
+      playerId: player.id,
+      name: player.name,
+      avatar: player.avatar,
+      rank,
+      score: player.score
+    });
+
+    this.lastActionEvent = {
+      type: 'UNO_CALL',
+      title: `${rankText} PLACE! 🎉`,
+      playerName: player.name,
+      timestamp: Date.now()
+    };
+    this.lastActionMessage = `🎉 ${player.name} finished in ${rankText} Place!`;
+
+    const unfinished = this.players.filter(p => !p.isSpectator && !p.isFinished);
+    if (unfinished.length <= 1) {
+      if (unfinished.length === 1) {
+        const lastPlayer = unfinished[0];
+        lastPlayer.isFinished = true;
+        lastPlayer.rank = this.finishedRankings.length + 1;
+        this.finishedRankings.push({
+          playerId: lastPlayer.id,
+          name: lastPlayer.name,
+          avatar: lastPlayer.avatar,
+          rank: lastPlayer.rank,
+          score: lastPlayer.score
+        });
+      }
+
+      this.status = 'FINISHED';
+      const winnerRank = this.finishedRankings[0];
+      this.winner = winnerRank ? (this.players.find(p => p.id === winnerRank.playerId) || null) : null;
+      this.calculateScores();
+      return true;
+    }
+
+    return false;
+  }
+
   public getCurrentPlayer(): PlayerPublic {
     const activePlayers = this.players.filter(p => !p.isSpectator);
-    return activePlayers[this.currentPlayerIndex % activePlayers.length];
+    if (activePlayers.length === 0) return this.players[0];
+
+    const current = activePlayers[this.currentPlayerIndex % activePlayers.length];
+    if (current && current.isFinished) {
+      this.advanceTurnIndex();
+      return activePlayers[this.currentPlayerIndex % activePlayers.length];
+    }
+    return current || activePlayers[0];
   }
 
   public isBasePlayable(card: Card): boolean {
@@ -380,10 +480,8 @@ export class UnoGame {
     }
 
     if (hand.length === 0) {
-      this.status = 'FINISHED';
-      this.winner = player;
-      this.calculateScores();
-      return { success: true };
+      const matchFinished = this.checkAndRecordPlayerFinish(playerId);
+      if (matchFinished) return { success: true };
     }
 
     this.advanceTurn();
@@ -425,16 +523,12 @@ export class UnoGame {
 
     // Check victory post-swap
     if (sourcePlayer.cardCount === 0) {
-      this.status = 'FINISHED';
-      this.winner = sourcePlayer;
-      this.calculateScores();
-      return { success: true };
+      const matchFinished = this.checkAndRecordPlayerFinish(sourcePlayerId);
+      if (matchFinished) return { success: true };
     }
     if (targetPlayer.cardCount === 0) {
-      this.status = 'FINISHED';
-      this.winner = targetPlayer;
-      this.calculateScores();
-      return { success: true };
+      const matchFinished = this.checkAndRecordPlayerFinish(targetPlayerId);
+      if (matchFinished) return { success: true };
     }
 
     this.advanceTurn();
@@ -800,12 +894,19 @@ export class UnoGame {
   private advanceTurnIndex(): void {
     const activePlayers = this.players.filter(p => !p.isSpectator);
     if (activePlayers.length === 0) return;
+    const unfinished = activePlayers.filter(p => !p.isFinished);
+    if (unfinished.length === 0) return;
 
-    if (this.direction === 'CW') {
-      this.currentPlayerIndex = (this.currentPlayerIndex + 1) % activePlayers.length;
-    } else {
-      this.currentPlayerIndex = (this.currentPlayerIndex - 1 + activePlayers.length) % activePlayers.length;
+    const step = this.direction === 'CW' ? 1 : -1;
+    let nextIdx = (this.currentPlayerIndex + step + activePlayers.length) % activePlayers.length;
+    let attempts = 0;
+
+    while (activePlayers[nextIdx]?.isFinished && attempts < activePlayers.length) {
+      nextIdx = (nextIdx + step + activePlayers.length) % activePlayers.length;
+      attempts++;
     }
+
+    this.currentPlayerIndex = nextIdx;
   }
 
   private advanceTurn(): void {
@@ -815,26 +916,36 @@ export class UnoGame {
 
   private getNextPlayer(): PlayerPublic {
     const activePlayers = this.players.filter(p => !p.isSpectator);
+    if (activePlayers.length === 0) return this.players[0];
+
     const step = this.direction === 'CW' ? 1 : -1;
-    const nextIdx = (this.currentPlayerIndex + step + activePlayers.length) % activePlayers.length;
-    return activePlayers[nextIdx];
+    let nextIdx = (this.currentPlayerIndex + step + activePlayers.length) % activePlayers.length;
+    let attempts = 0;
+
+    while (activePlayers[nextIdx]?.isFinished && attempts < activePlayers.length) {
+      nextIdx = (nextIdx + step + activePlayers.length) % activePlayers.length;
+      attempts++;
+    }
+
+    return activePlayers[nextIdx] || activePlayers[0];
   }
 
-
-
   private calculateScores(): void {
-    if (!this.winner) return;
-    let totalScore = 0;
-
-    this.playerHands.forEach((hand, playerId) => {
-      if (playerId !== this.winner!.id) {
-        hand.forEach((card) => {
-          totalScore += card.score;
-        });
-      }
-    });
-
-    this.winner.score = totalScore;
+    if (this.finishedRankings.length > 0) {
+      this.finishedRankings.forEach((item) => {
+        const targetPlayer = this.players.find(p => p.id === item.playerId);
+        if (targetPlayer) {
+          let score = 0;
+          this.playerHands.forEach((hand, pId) => {
+            if (pId !== item.playerId) {
+              hand.forEach(c => { score += c.score; });
+            }
+          });
+          targetPlayer.score = score;
+          item.score = score;
+        }
+      });
+    }
   }
 
   public getPublicState(): GamePublicState {
@@ -858,7 +969,8 @@ export class UnoGame {
       lastActionMessage: this.lastActionMessage,
       lastActionEvent: this.lastActionEvent,
       activeEmote: this.activeEmote,
-      chatMessages: this.chatMessages
+      chatMessages: this.chatMessages,
+      finishedRankings: this.finishedRankings
     };
   }
 
