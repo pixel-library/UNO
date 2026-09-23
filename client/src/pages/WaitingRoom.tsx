@@ -273,10 +273,15 @@ export const WaitingRoom: React.FC = () => {
         {/* Header Card */}
         <div className="glass-white-panel rounded-3xl p-8 border border-white shadow-lg flex flex-col sm:flex-row items-center justify-between gap-6">
           <div>
-            <span className="text-xs font-black text-sky-600 uppercase tracking-widest">WAITING LOBBY</span>
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-black text-sky-600 uppercase tracking-widest">WAITING LOBBY</span>
+              <span className="text-[10px] font-black bg-blue-100 text-blue-800 px-2.5 py-0.5 rounded-full uppercase border border-blue-200">
+                REAL PLAYERS ONLY
+              </span>
+            </div>
             <h1 className="text-3xl font-black text-slate-900 tracking-tight mt-1">ROOM {formattedRoomCode}</h1>
             <p className="text-xs font-semibold text-slate-500 mt-1">
-              Share code or invite link with friends to join match.
+              Share code or invite link with real players to join match. No AI bots.
             </p>
           </div>
 

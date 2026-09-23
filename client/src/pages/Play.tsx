@@ -495,9 +495,18 @@ export const Play: React.FC = () => {
         <div className="w-full bg-white rounded-3xl p-5 sm:p-7 border border-neutral-200/90 shadow-lg hover:shadow-xl transition-shadow flex flex-col justify-between z-10 space-y-6">
           
           <div>
-            <h2 className="text-lg font-bold text-[#111827] tracking-wide uppercase text-left mb-6">
-              CREATE MULTIPLAYER
-            </h2>
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-lg font-extrabold text-[#111827] tracking-wide uppercase">
+                🌐 CREATE MULTIPLAYER
+              </h2>
+              <span className="text-[10px] font-black bg-blue-100 text-blue-800 px-2.5 py-1 rounded-full uppercase border border-blue-200">
+                REAL PLAYERS ONLY
+              </span>
+            </div>
+
+            <p className="text-xs text-neutral-500 font-medium leading-relaxed mb-5">
+              Create an online room for real human players. Invite friends using room code or link. No AI bots.
+            </p>
 
             <div className="space-y-5">
               

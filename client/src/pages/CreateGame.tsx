@@ -149,8 +149,13 @@ export const CreateGame: React.FC = () => {
               <Settings2 className="w-6 h-6" />
             </div>
             <div>
-              <h1 className="text-2xl font-black text-uno-navy">CREATE GAME ROOM</h1>
-              <p className="text-xs font-semibold text-neutral-500">Configure your match rules & privacy before creating.</p>
+              <div className="flex items-center gap-2">
+                <h1 className="text-2xl font-black text-uno-navy">CREATE GAME ROOM</h1>
+                <span className="text-[10px] font-black bg-blue-100 text-blue-800 px-2.5 py-1 rounded-full uppercase border border-blue-200">
+                  REAL PLAYERS ONLY
+                </span>
+              </div>
+              <p className="text-xs font-semibold text-neutral-500 mt-1">Configure online room rules & privacy for real human players. No AI bots.</p>
             </div>
           </div>
         </div>
