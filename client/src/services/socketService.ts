@@ -1,13 +1,14 @@
 import { io, Socket } from 'socket.io-client';
 import { UnoGame } from '../../../server/engine/UnoGame';
 import { validatePlayerName, validateRoomCode } from '../../../shared/validation/roomValidator';
-import { GameSettings, MovePayload } from '../../../shared/types/game';
+import { GameSettings, MovePayload, CardColor } from '../../../shared/types/game';
 import { supabaseRoomService } from './supabaseRoomService';
 
 class SocketService {
   private socket: Socket | null = null;
   private localGames: Map<string, UnoGame> = new Map();
   private eventListeners: Map<string, Set<Function>> = new Map();
+  private botIntervalId: any = null;
 
   public getSocket(): Socket {
     if (!this.socket) {
@@ -73,7 +74,103 @@ class SocketService {
     }
   }
 
+  private getLocalGame(roomCode?: string): UnoGame | undefined {
+    const code = roomCode?.trim().toUpperCase() || (typeof localStorage !== 'undefined' ? localStorage.getItem('uno_room_code') : null) || undefined;
+    if (code && this.localGames.has(code)) {
+      return this.localGames.get(code);
+    }
+    const myId = typeof localStorage !== 'undefined' ? localStorage.getItem('uno_player_id') : null;
+    if (myId) {
+      const found = Array.from(this.localGames.values()).find(g => g.players.some(p => p.id === myId));
+      if (found) return found;
+    }
+    const all = Array.from(this.localGames.values());
+    return all.length > 0 ? all[all.length - 1] : undefined;
+  }
 
+  private startLocalBotInterval() {
+    if (this.botIntervalId) return;
+    this.botIntervalId = setInterval(() => {
+      this.localGames.forEach((game) => {
+        if (game.status === 'PLAYING') {
+          const curr = game.getCurrentPlayer();
+          if (curr && (curr.isBot || curr.id.startsWith('bot_'))) {
+            this.executeLocalBotTurn(game);
+          }
+        }
+      });
+    }, 800);
+  }
+
+  private executeLocalBotTurn(game: UnoGame) {
+    if (game.status !== 'PLAYING') return;
+    const currPlayer = game.getCurrentPlayer();
+    if (!currPlayer || (!currPlayer.isBot && !currPlayer.id.startsWith('bot_'))) return;
+
+    const botId = currPlayer.id;
+    let hand = game.playerHands.get(botId) || [];
+
+    // Handle pending 7-swap or Wild swap
+    if (game.pendingHandSwapPlayerId === botId) {
+      const activePlayers = game.players.filter(p => !p.isSpectator && p.id !== botId);
+      activePlayers.sort((a, b) => a.cardCount - b.cardCount);
+      const target = activePlayers[0] || activePlayers[Math.floor(Math.random() * activePlayers.length)];
+      if (target) {
+        game.swapHands(botId, target.id);
+      } else {
+        game.pendingHandSwapPlayerId = null;
+      }
+      this.notifyLocalGameState(game);
+      return;
+    }
+
+    // Find playable cards
+    const playableCards = hand.filter(card => game.isPlayable(card));
+
+    // Determine best color choice for Wild cards
+    const colorCounts: Record<CardColor, number> = { RED: 0, YELLOW: 0, GREEN: 0, BLUE: 0, WILD: 0 };
+    hand.forEach(c => {
+      if (c.color !== 'WILD') colorCounts[c.color] = (colorCounts[c.color] || 0) + 1;
+    });
+    let bestChosenColor: CardColor = 'RED';
+    let maxCount = -1;
+    (['RED', 'YELLOW', 'GREEN', 'BLUE'] as CardColor[]).forEach(col => {
+      if (colorCounts[col] > maxCount) {
+        maxCount = colorCounts[col];
+        bestChosenColor = col;
+      }
+    });
+
+    if (playableCards.length > 0) {
+      let cardToPlay = playableCards.find(c => c.value === 'WILD_DRAW_FOUR' || c.value === 'DRAW_TWO' || c.value === 'SKIP' || c.value === 'REVERSE');
+      if (!cardToPlay) cardToPlay = playableCards.find(c => c.color === game.currentColor);
+      if (!cardToPlay) cardToPlay = playableCards[0];
+
+      if (hand.length === 2 && !currPlayer.hasCalledUno) {
+        game.callUno(botId);
+      }
+
+      game.playCard(botId, cardToPlay.id, cardToPlay.color === 'WILD' ? bestChosenColor : undefined);
+    } else {
+      const drawRes = game.drawCard(botId);
+      if (drawRes.success && drawRes.drawnCard && game.getCurrentPlayer()?.id === botId && game.isPlayable(drawRes.drawnCard)) {
+        const updatedHand = game.playerHands.get(botId) || [];
+        if (updatedHand.length === 2 && !currPlayer.hasCalledUno) {
+          game.callUno(botId);
+        }
+        game.playCard(botId, drawRes.drawnCard.id, drawRes.drawnCard.color === 'WILD' ? bestChosenColor : undefined);
+      }
+    }
+
+    this.notifyLocalGameState(game);
+  }
+
+  private notifyLocalGameState(game: UnoGame) {
+    const humanPlayer = game.players.find(p => !p.isBot && !p.id.startsWith('bot_')) || game.players[0];
+    if (humanPlayer) {
+      this.triggerLocalEvent('game:state', game.getPrivateState(humanPlayer.id));
+    }
+  }
 
   private handleLocalEmit(eventName: string, args: any[]) {
     const ackCallback = typeof args[args.length - 1] === 'function' ? args[args.length - 1] : null;
@@ -91,7 +188,52 @@ class SocketService {
       return;
     }
 
+    if (eventName === 'room:createVsBot') {
+      const { playerName, botCount = 1, settings } = args[0] || {};
+      const valName = validatePlayerName(playerName);
+      const sanitizedName = valName.valid ? valName.sanitizedName! : (playerName || 'Player');
 
+      const requestedBotCount = Math.min(3, Math.max(1, botCount));
+      const maxPlayers = requestedBotCount + 1;
+
+      const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+      let roomCode = '';
+      for (let i = 0; i < 6; i++) {
+        roomCode += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+
+      const gameId = `local_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+      const game = new UnoGame(gameId, roomCode, { ...settings, maxPlayers, mode: 'VS_COMPUTER', enableChat: false });
+
+      const playerId = localStorage.getItem('uno_player_id') || `player_${Math.random().toString(36).substring(2, 9)}`;
+      const sessionId = `sess_${Math.random().toString(36).substring(2, 9)}`;
+      localStorage.setItem('uno_player_id', playerId);
+      localStorage.setItem('uno_room_code', roomCode);
+
+      game.addPlayer(playerId, sessionId, sanitizedName, true);
+      for (let i = 0; i < requestedBotCount; i++) {
+        game.addBot();
+      }
+
+      this.localGames.set(roomCode, game);
+      game.startGame();
+
+      this.startLocalBotInterval();
+
+      const state = game.getPrivateState(playerId);
+      if (ackCallback) {
+        ackCallback({
+          success: true,
+          roomCode,
+          gameId,
+          playerId,
+          sessionId,
+          state
+        });
+      }
+      this.triggerLocalEvent('game:state', state);
+      return;
+    }
 
     if (eventName === 'room:join') {
       const { roomCode, playerName } = args[0] || {};
@@ -108,6 +250,14 @@ class SocketService {
 
     if (eventName === 'game:sync') {
       const { roomCode, gameId, playerId } = args[0] || {};
+      const localGame = this.getLocalGame(roomCode);
+      if (localGame) {
+        const pId = playerId || localStorage.getItem('uno_player_id') || localGame.players.find(p => !p.isBot)?.id || localGame.players[0].id;
+        const state = localGame.getPrivateState(pId);
+        if (ackCallback) ackCallback({ success: true, state });
+        this.triggerLocalEvent('game:state', state);
+        return;
+      }
       supabaseRoomService.syncCloudRoom(roomCode, gameId, playerId).then(res => {
         if (ackCallback) ackCallback(res);
         if (res.success && res.state?.roomCode) {
@@ -165,14 +315,14 @@ class SocketService {
 
     if (eventName === 'game:playCard') {
       const payload: any = args[0] || {};
-      const game = Array.from(this.localGames.values())[0];
-      if (game && payload?.cardId) {
-        const activePlayer = game.players[0];
-        const playerId = activePlayer?.id || game.getCurrentPlayer().id;
-        const result = game.playCard(playerId, payload.cardId, payload.chosenColor, payload.cardColor, payload.cardValue);
+      const localGame = this.getLocalGame(payload?.roomCode);
+      if (localGame && payload?.cardId) {
+        const activePlayer = localGame.players.find(p => !p.isBot && !p.id.startsWith('bot_')) || localGame.players[0];
+        const playerId = payload?.playerId || activePlayer?.id || localGame.getCurrentPlayer().id;
+        const result = localGame.playCard(playerId, payload.cardId, payload.chosenColor, payload.cardColor, payload.cardValue);
         if (ackCallback) ackCallback(result);
         if (result.success && activePlayer) {
-          const state = game.getPrivateState(activePlayer.id);
+          const state = localGame.getPrivateState(activePlayer.id);
           this.triggerLocalEvent('game:state', state);
         }
       } else {
@@ -185,14 +335,14 @@ class SocketService {
 
     if (eventName === 'game:drawCard') {
       const payload: any = args[0] || {};
-      const game = Array.from(this.localGames.values())[0];
-      if (game) {
-        const activePlayer = game.players[0];
-        const playerId = payload?.playerId || activePlayer?.id || game.getCurrentPlayer().id;
-        const result = game.drawCard(playerId);
+      const localGame = this.getLocalGame(payload?.roomCode);
+      if (localGame) {
+        const activePlayer = localGame.players.find(p => !p.isBot && !p.id.startsWith('bot_')) || localGame.players[0];
+        const playerId = payload?.playerId || activePlayer?.id || localGame.getCurrentPlayer().id;
+        const result = localGame.drawCard(playerId);
         if (ackCallback) ackCallback(result);
         if (result.success && activePlayer) {
-          const state = game.getPrivateState(activePlayer.id);
+          const state = localGame.getPrivateState(activePlayer.id);
           this.triggerLocalEvent('game:state', state);
         }
       } else {
@@ -204,13 +354,13 @@ class SocketService {
     }
 
     if (eventName === 'game:callUno') {
-      const game = Array.from(this.localGames.values())[0];
-      if (game) {
-        const activePlayer = game.players[0];
-        const result = game.callUno(activePlayer?.id || game.players[0].id);
+      const localGame = this.getLocalGame();
+      if (localGame) {
+        const activePlayer = localGame.players.find(p => !p.isBot && !p.id.startsWith('bot_')) || localGame.players[0];
+        const result = localGame.callUno(activePlayer?.id || localGame.players[0].id);
         if (ackCallback) ackCallback(result);
         if (result.success && activePlayer) {
-          const state = game.getPrivateState(activePlayer.id);
+          const state = localGame.getPrivateState(activePlayer.id);
           this.triggerLocalEvent('game:state', state);
         }
       } else {
@@ -223,9 +373,9 @@ class SocketService {
 
     if (eventName === 'game:challengeUno') {
       const payload: any = args[0] || {};
-      const localGame = Array.from(this.localGames.values())[0];
+      const localGame = this.getLocalGame(payload?.roomCode);
       if (localGame) {
-        const activePlayer = localGame.players[0];
+        const activePlayer = localGame.players.find(p => !p.isBot && !p.id.startsWith('bot_')) || localGame.players[0];
         const challengerId = payload?.playerId || activePlayer?.id || localGame.players[0].id;
         const result = localGame.challengeUno(challengerId, payload?.targetPlayerId);
         if (ackCallback) ackCallback(result);
@@ -242,10 +392,10 @@ class SocketService {
     }
 
     if (eventName === 'game:sendEmote') {
-      const { emote } = args[0] || {};
-      const localGame = Array.from(this.localGames.values())[0];
+      const { emote, roomCode } = args[0] || {};
+      const localGame = this.getLocalGame(roomCode);
       if (localGame && emote) {
-        const activePlayer = localGame.players[0];
+        const activePlayer = localGame.players.find(p => !p.isBot && !p.id.startsWith('bot_')) || localGame.players[0];
         const senderId = activePlayer?.id || localGame.players[0].id;
         localGame.sendEmote(senderId, emote);
         if (activePlayer) {
@@ -259,7 +409,7 @@ class SocketService {
 
     if (eventName === 'chat:message') {
       const { text, roomCode, playerId, id } = args[0] || {};
-      const localGame = Array.from(this.localGames.values())[0];
+      const localGame = this.getLocalGame(roomCode);
       if (localGame && text) {
         const myId = playerId || localStorage.getItem('uno_player_id') || localGame.players[0]?.id;
         const sender = localGame.players.find(p => p.id === myId) || localGame.players[0];
@@ -274,7 +424,7 @@ class SocketService {
           localGame.chatMessages.push(msg);
         }
         this.triggerLocalEvent('chat:message', msg);
-        const activePlayer = localGame.players[0];
+        const activePlayer = localGame.players.find(p => !p.isBot && !p.id.startsWith('bot_')) || localGame.players[0];
         if (activePlayer) {
           this.triggerLocalEvent('game:state', localGame.getPrivateState(activePlayer.id));
         }
@@ -287,9 +437,9 @@ class SocketService {
     if (eventName === 'game:swapHand' || eventName === 'game:swapHands') {
       const payload: any = args[0] || {};
       const targetId = payload?.targetSwapPlayerId || payload?.targetPlayerId;
-      const localGame = Array.from(this.localGames.values())[0];
+      const localGame = this.getLocalGame(payload?.roomCode);
       if (localGame && targetId) {
-        const activePlayer = localGame.players[0];
+        const activePlayer = localGame.players.find(p => !p.isBot && !p.id.startsWith('bot_')) || localGame.players[0];
         const sourceId = payload?.playerId || activePlayer?.id || localGame.pendingHandSwapPlayerId;
         if (sourceId) {
           const result = localGame.swapHands(sourceId, targetId, payload?.chosenColor);
@@ -309,9 +459,9 @@ class SocketService {
 
     if (eventName === 'game:passTurn') {
       const payload: any = args[0] || {};
-      const localGame = Array.from(this.localGames.values())[0];
+      const localGame = this.getLocalGame(payload?.roomCode);
       if (localGame) {
-        const activePlayer = localGame.players[0];
+        const activePlayer = localGame.players.find(p => !p.isBot && !p.id.startsWith('bot_')) || localGame.players[0];
         const playerId = payload?.playerId || activePlayer?.id || localGame.getCurrentPlayer().id;
         const result = localGame.passTurn(playerId);
         if (ackCallback) ackCallback(result);
@@ -328,11 +478,11 @@ class SocketService {
     }
 
     if (eventName === 'game:rematch') {
-      const game = Array.from(this.localGames.values())[0];
+      const game = this.getLocalGame();
       if (game) {
         game.startGame();
         if (ackCallback) ackCallback({ success: true });
-        const activePlayer = game.players[0];
+        const activePlayer = game.players.find(p => !p.isBot && !p.id.startsWith('bot_')) || game.players[0];
         if (activePlayer) {
           const state = game.getPrivateState(activePlayer.id);
           this.triggerLocalEvent('game:state', state);

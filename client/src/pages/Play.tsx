@@ -63,7 +63,7 @@ export const Play: React.FC = () => {
         setIsCreatingBot(false);
         alert('Computer match creation timed out. Please try again.');
       }
-    }, 4000);
+    }, 8000);
 
     try {
       const socket = socketService.getSocket();
