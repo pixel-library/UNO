@@ -689,9 +689,9 @@ export const GameScreen: React.FC = () => {
         {/* ----------------------------------------------------------- */}
         {/* DESKTOP TOP OPPONENT HAND (>= 640px)                        */}
         {/* ----------------------------------------------------------- */}
-        <div className="hidden sm:flex z-10 mt-1 min-h-[5rem] items-center justify-center">
+        <div className="hidden sm:flex z-10 mt-0.5 min-h-[3.5rem] items-center justify-center">
           {topOpponent && (
-            <div className="flex -space-x-8 transform scale-90">
+            <div className="flex -space-x-8 transform scale-75 lg:scale-85">
               {Array.from({ length: Math.min(topOpponent.cardCount || 7, 10) }).map((_, idx, arr) => {
                 const total = arr.length;
                 const mid = (total - 1) / 2;
@@ -713,14 +713,14 @@ export const GameScreen: React.FC = () => {
         {/* ----------------------------------------------------------- */}
         {/* CENTRAL LUXURY TABLE SURFACE & SIDE OPPONENTS               */}
         {/* ----------------------------------------------------------- */}
-        <div className="w-full flex items-center justify-between px-1 sm:px-6 z-10 my-auto">
+        <div className="w-full flex items-center justify-between px-1 sm:px-6 z-10 my-1 sm:my-2">
           
           {/* Left Opponent (Desktop) */}
           <div className="hidden sm:flex items-center gap-1 sm:gap-3 shrink-0 min-w-[90px] lg:min-w-[120px]">
             {leftOpponent && (
               <div className="flex flex-col sm:flex-row items-center gap-1 sm:gap-3 shrink-0">
                 <div className="relative flex flex-col items-center justify-center min-w-[60px]">
-                  <div className="flex -space-x-8 transform rotate-90 scale-75 lg:scale-90 origin-center py-2 sm:py-4">
+                  <div className="flex -space-x-8 transform rotate-90 scale-75 lg:scale-85 origin-center py-1 sm:py-2">
                     {Array.from({ length: Math.min(leftOpponent.cardCount || 7, 8) }).map((_, idx, arr) => {
                       const total = arr.length;
                       const mid = (total - 1) / 2;
@@ -740,16 +740,16 @@ export const GameScreen: React.FC = () => {
 
                 {/* Left Status Badge */}
                 <div className="flex flex-col items-start space-y-0.5 relative">
-                  <div className={`bg-white/10 backdrop-blur-md px-3 py-1.5 rounded-2xl border transition-all text-xs font-bold flex items-center gap-1.5 shadow-md ${
+                  <div className={`bg-white/10 backdrop-blur-md px-2.5 py-1 rounded-2xl border transition-all text-xs font-bold flex items-center gap-1.5 shadow-md ${
                     currentTurnPlayerId === leftOpponent.id
                       ? 'border-emerald-400 ring-2 ring-emerald-400/60 bg-emerald-500/20 shadow-[0_0_15px_rgba(52,211,153,0.5)]'
                       : 'border-white/20'
                   }`}>
-                    <div className="w-6 h-6 rounded-full bg-sky-400/30 text-white flex items-center justify-center text-xs font-bold border border-sky-300/40">
+                    <div className="w-5 h-5 rounded-full bg-sky-400/30 text-white flex items-center justify-center text-xs font-bold border border-sky-300/40">
                       {leftOpponent.avatar || '👤'}
                     </div>
                     <div className="text-left">
-                      <div className="text-[11px] font-extrabold text-white">{leftOpponent.name}</div>
+                      <div className="text-[10px] font-extrabold text-white">{leftOpponent.name}</div>
                       <div className="text-[9px] font-semibold text-white/70">{leftOpponent.cardCount} cards</div>
                     </div>
                   </div>
@@ -768,23 +768,23 @@ export const GameScreen: React.FC = () => {
           {/* --------------------------------------------------------- */}
           {/* CENTER CARDS AREA (CLEAN DIRECT ARENA - NO GLOW/SPIRALS)  */}
           {/* --------------------------------------------------------- */}
-          <div className="relative py-2 sm:py-6 px-2 flex flex-col items-center justify-center text-white mx-auto">
+          <div className="relative py-1 sm:py-3 px-2 flex flex-col items-center justify-center text-white mx-auto">
             
             {/* CLEAN GAME DIRECTION CHIP (STATIC - NO ROTATING SPIRAL) */}
-            <div className="mb-2 bg-slate-900/90 text-sky-300 px-3 py-1 rounded-full text-[10px] sm:text-xs font-black border border-slate-700 uppercase tracking-widest flex items-center gap-1.5 shadow-sm">
+            <div className="mb-1.5 bg-slate-900/90 text-sky-300 px-3 py-0.5 rounded-full text-[10px] sm:text-xs font-black border border-slate-700 uppercase tracking-widest flex items-center gap-1.5 shadow-sm">
               <span>{isClockwise ? '↻ CLOCKWISE' : '↺ COUNTER-CLOCKWISE'}</span>
             </div>
 
             {/* ACTIVE STACK PENALTY BANNER */}
             {(gameState.activeStackCount || 0) > 0 && (
-              <div className="mb-3 bg-red-600 border-2 border-yellow-300 px-4 py-1 rounded-full text-white font-black text-[11px] sm:text-xs shadow-md flex items-center gap-2 z-20">
+              <div className="mb-2 bg-red-600 border-2 border-yellow-300 px-4 py-0.5 rounded-full text-white font-black text-[11px] sm:text-xs shadow-md flex items-center gap-2 z-20">
                 <span className="text-sm">⚡</span>
                 <span>+{gameState.activeStackCount} PENALTY STACK ACTIVE!</span>
               </div>
             )}
 
             {/* Piles Container: DRAW PILE on Left, DISCARD PILE on Right */}
-            <div className="flex items-center gap-6 sm:gap-12 lg:gap-16 z-10">
+            <div className="flex items-center gap-6 sm:gap-10 lg:gap-12 z-10">
               
               {/* DRAW PILE */}
               <div
@@ -798,7 +798,7 @@ export const GameScreen: React.FC = () => {
                   <UnoCard faceDown size={isMobile ? 'sm' : 'md'} />
                 </div>
 
-                <div className="mt-2 text-center">
+                <div className="mt-1 text-center">
                   <span className="text-[9px] sm:text-xs font-black tracking-wider text-sky-200/90 uppercase block">DRAW</span>
                   <span className="text-xs sm:text-sm font-black text-white">{gameState.drawPileCount || 73}</span>
                 </div>
@@ -810,7 +810,7 @@ export const GameScreen: React.FC = () => {
                   <UnoCard color={topDiscard.color} value={topDiscard.value} size={isMobile ? 'sm' : 'md'} />
                 </div>
 
-                <div className="mt-2 text-center">
+                <div className="mt-1 text-center">
                   <span className="text-[9px] sm:text-xs font-black tracking-wider text-sky-200/90 uppercase block">DISCARD</span>
                   <span className="text-xs sm:text-sm font-black text-white">{gameState.discardPileCount || 1}</span>
                 </div>
@@ -819,8 +819,8 @@ export const GameScreen: React.FC = () => {
             </div>
 
             {/* YOUR TURN INDICATOR (CLEAN - NO HEAVY GLOW) */}
-            <div className="mt-3 sm:mt-6 z-10 flex items-center gap-2 bg-slate-900/80 px-4 py-1.5 rounded-full border border-slate-700 shadow-sm">
-              <span className={`w-2.5 h-2.5 rounded-full ${isMyTurn ? 'bg-emerald-400' : 'bg-slate-500'}`} />
+            <div className="mt-2 sm:mt-3 z-10 flex items-center gap-2 bg-slate-900/80 px-3.5 py-1 rounded-full border border-slate-700 shadow-sm">
+              <span className={`w-2.5 h-2.5 rounded-full ${isMyTurn ? 'bg-emerald-400 animate-pulse' : 'bg-slate-500'}`} />
               <span className="font-extrabold text-[10px] sm:text-xs tracking-widest text-white uppercase">
                 {isMyTurn ? 'YOUR TURN' : 'WAITING FOR OPPONENT'}
               </span>
@@ -834,16 +834,16 @@ export const GameScreen: React.FC = () => {
               <div className="flex flex-col sm:flex-row items-center gap-1 sm:gap-3 shrink-0">
                 {/* Right Status Badge */}
                 <div className="flex flex-col items-end space-y-0.5 relative">
-                  <div className={`bg-white/10 backdrop-blur-md px-3 py-1.5 rounded-2xl border transition-all text-xs font-bold flex items-center gap-1.5 shadow-md ${
+                  <div className={`bg-white/10 backdrop-blur-md px-2.5 py-1 rounded-2xl border transition-all text-xs font-bold flex items-center gap-1.5 shadow-md ${
                     currentTurnPlayerId === rightOpponent.id
                       ? 'border-emerald-400 ring-2 ring-emerald-400/60 bg-emerald-500/20 shadow-[0_0_15px_rgba(52,211,153,0.5)]'
                       : 'border-white/20'
                   }`}>
                     <div className="text-right">
-                      <div className="text-[11px] font-extrabold text-white">{rightOpponent.name}</div>
+                      <div className="text-[10px] font-extrabold text-white">{rightOpponent.name}</div>
                       <div className="text-[9px] font-semibold text-white/70">{rightOpponent.cardCount} cards</div>
                     </div>
-                    <div className="w-6 h-6 rounded-full bg-sky-400/30 text-white flex items-center justify-center text-xs font-bold border border-sky-300/40">
+                    <div className="w-5 h-5 rounded-full bg-sky-400/30 text-white flex items-center justify-center text-xs font-bold border border-sky-300/40">
                       {rightOpponent.avatar || '👤'}
                     </div>
                   </div>
@@ -857,7 +857,7 @@ export const GameScreen: React.FC = () => {
                 </div>
 
                 <div className="relative flex flex-col items-center justify-center min-w-[60px]">
-                  <div className="flex -space-x-8 transform -rotate-90 scale-75 lg:scale-90 origin-center py-2 sm:py-4">
+                  <div className="flex -space-x-8 transform -rotate-90 scale-75 lg:scale-85 origin-center py-1 sm:py-2">
                     {Array.from({ length: Math.min(rightOpponent.cardCount || 7, 8) }).map((_, idx, arr) => {
                       const total = arr.length;
                       const mid = (total - 1) / 2;
@@ -883,14 +883,14 @@ export const GameScreen: React.FC = () => {
         {/* ----------------------------------------------------------- */}
         {/* BOTTOM AREA: ACTION TOOLBAR, PLAYER HAND & WHITE GLASS CHAT */}
         {/* ----------------------------------------------------------- */}
-        <div className="w-full flex flex-col items-center z-20 pb-2 shrink-0 relative px-1 sm:px-4">
+        <div className="w-full flex flex-col items-center z-20 pb-1 shrink-0 relative px-1 sm:px-4">
           
           {/* PROMINENT CENTERED ACTION TOOLBAR */}
-          <div className="flex items-center gap-2 sm:gap-3 z-30 mb-1 flex-wrap justify-center">
+          <div className="flex items-center gap-1.5 sm:gap-2.5 z-30 mb-0.5 flex-wrap justify-center">
             <button
               onClick={handleDrawCard}
               disabled={!isMyTurn || isActionPending}
-              className="bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 text-white font-extrabold px-4 py-1.5 sm:px-6 sm:py-2 rounded-full text-xs sm:text-sm shadow-md transition-all active:scale-95 disabled:opacity-40 flex items-center gap-1.5 cursor-pointer"
+              className="bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 text-white font-extrabold px-3.5 py-1 sm:px-5 sm:py-1.5 rounded-full text-xs shadow-md transition-all active:scale-95 disabled:opacity-40 flex items-center gap-1 cursor-pointer"
             >
               <span>📥</span> DRAW CARD
             </button>
@@ -899,7 +899,7 @@ export const GameScreen: React.FC = () => {
               <button
                 onClick={handlePassTurn}
                 disabled={!isMyTurn || isActionPending}
-                className="bg-slate-200 hover:bg-slate-300 text-slate-800 disabled:opacity-40 font-extrabold px-4 py-1.5 sm:px-5 sm:py-2 rounded-full text-xs sm:text-sm transition-all shadow-sm active:scale-95 flex items-center gap-1.5 cursor-pointer border border-slate-300/80"
+                className="bg-slate-200 hover:bg-slate-300 text-slate-800 disabled:opacity-40 font-extrabold px-3.5 py-1 sm:px-4 sm:py-1.5 rounded-full text-xs transition-all shadow-sm active:scale-95 flex items-center gap-1 cursor-pointer border border-slate-300/80"
               >
                 <span>➔</span> END TURN
               </button>
@@ -909,32 +909,32 @@ export const GameScreen: React.FC = () => {
             <div className="relative">
               <button
                 onClick={() => setShowEmotePicker(!showEmotePicker)}
-                className="bg-purple-600 hover:bg-purple-500 text-white font-extrabold px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-full text-xs sm:text-sm shadow-md transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer"
+                className="bg-purple-600 hover:bg-purple-500 text-white font-extrabold px-3 py-1 sm:px-4 sm:py-1.5 rounded-full text-xs shadow-md transition-all active:scale-95 flex items-center gap-1 cursor-pointer"
                 title="Send Animated Emoji Reaction"
               >
-                <Smile className="w-4 h-4 text-amber-300" />
+                <Smile className="w-3.5 h-3.5 text-amber-300" />
                 <span>REACTION</span>
               </button>
 
               {showEmotePicker && (
-                <div className="absolute bottom-full mb-3 left-1/2 -translate-x-1/2 glass-white-panel rounded-2xl p-3 shadow-none z-50 w-64 sm:w-72 animate-pop-scale border border-slate-200">
-                  <div className="flex items-center justify-between border-b border-slate-200/80 pb-1.5 mb-2">
-                    <span className="text-xs font-extrabold text-slate-800 flex items-center gap-1.5">
-                      <Smile className="w-3.5 h-3.5 text-amber-500" /> Express Yourself
+                <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 glass-white-panel rounded-2xl p-2.5 shadow-none z-50 w-60 sm:w-68 animate-pop-scale border border-slate-200">
+                  <div className="flex items-center justify-between border-b border-slate-200/80 pb-1 mb-1.5">
+                    <span className="text-[11px] font-extrabold text-slate-800 flex items-center gap-1">
+                      <Smile className="w-3 h-3 text-amber-500" /> Express Yourself
                     </span>
                     <button
                       onClick={() => setShowEmotePicker(false)}
                       className="text-slate-400 hover:text-slate-700 text-xs p-0.5 rounded cursor-pointer"
                     >
-                      <X className="w-3.5 h-3.5" />
+                      <X className="w-3 h-3" />
                     </button>
                   </div>
-                  <div className="grid grid-cols-4 gap-2 text-2xl text-center">
+                  <div className="grid grid-cols-4 gap-1.5 text-xl text-center">
                     {['🔥', '😂', '😎', '😡', '😭', '😱', '👍', '🎉', '💀', '💩', '❤️', '⚡', '💣', '🥳', '🤡', '👑'].map((emote) => (
                       <button
                         key={emote}
                         onClick={() => handleSendEmote(emote)}
-                        className="p-2 rounded-xl hover:bg-slate-100 hover:scale-125 active:scale-95 transition-all cursor-pointer flex items-center justify-center"
+                        className="p-1.5 rounded-lg hover:bg-slate-100 hover:scale-125 active:scale-95 transition-all cursor-pointer flex items-center justify-center"
                       >
                         {emote}
                       </button>
@@ -948,7 +948,7 @@ export const GameScreen: React.FC = () => {
             {displayHand.length <= 2 && (
               <button
                 onClick={handleCallUno}
-                className="bg-gradient-to-r from-red-600 to-amber-500 hover:from-red-500 hover:to-amber-400 border-2 border-yellow-300 text-white font-black px-4 py-1.5 sm:px-5 sm:py-2 rounded-full text-xs sm:text-sm shadow-lg transition-all active:scale-95 flex items-center gap-1 cursor-pointer animate-pulse"
+                className="bg-gradient-to-r from-red-600 to-amber-500 hover:from-red-500 hover:to-amber-400 border-2 border-yellow-300 text-white font-black px-3.5 py-1 sm:px-4 sm:py-1.5 rounded-full text-xs shadow-lg transition-all active:scale-95 flex items-center gap-1 cursor-pointer animate-pulse"
               >
                 <span>🔥</span> CALL UNO!
               </button>
@@ -958,7 +958,7 @@ export const GameScreen: React.FC = () => {
             {activePlayers.some(p => p.id !== myId && p.cardCount === 1 && !p.hasCalledUno) && (
               <button
                 onClick={handleChallengeUno}
-                className="bg-red-700 hover:bg-red-600 border-2 border-yellow-300 text-white font-extrabold px-3 py-1.5 sm:px-4 sm:py-2 rounded-full text-xs sm:text-sm shadow-lg transition-all active:scale-95 animate-bounce flex items-center gap-1 cursor-pointer"
+                className="bg-red-700 hover:bg-red-600 border-2 border-yellow-300 text-white font-extrabold px-3 py-1 sm:px-3.5 sm:py-1.5 rounded-full text-xs shadow-lg transition-all active:scale-95 animate-bounce flex items-center gap-1 cursor-pointer"
                 title="Challenge an opponent holding 1 card who forgot to call UNO!"
               >
                 <span>🚨</span> CATCH UNO!
@@ -969,21 +969,21 @@ export const GameScreen: React.FC = () => {
           <div className="w-full flex items-end justify-between gap-2">
             {/* BOTTOM LEFT: WHITE GLASSMORPHIC CHAT BOX WIDGET (DESKTOP) */}
             {!(gameState?.settings?.mode === 'VS_COMPUTER' || gameState?.settings?.enableChat === false || gameState?.players?.some(p => p.isBot)) ? (
-              <div className="hidden lg:flex w-64 lg:w-72 glass-white-panel rounded-2xl p-3 shadow-none flex-col space-y-2 shrink-0 border border-slate-200">
-                <div className="flex items-center justify-between border-b border-slate-200/80 pb-1.5">
-                  <span className="font-extrabold text-xs text-slate-800 flex items-center gap-1.5">
-                    <MessageSquare className="w-3.5 h-3.5 text-sky-600" /> Room Chat
+              <div className="hidden lg:flex w-56 lg:w-64 glass-white-panel rounded-2xl p-2.5 shadow-none flex-col space-y-1.5 shrink-0 border border-slate-200 mb-0.5">
+                <div className="flex items-center justify-between border-b border-slate-200/80 pb-1">
+                  <span className="font-extrabold text-[11px] text-slate-800 flex items-center gap-1.5">
+                    <MessageSquare className="w-3 h-3 text-sky-600" /> Room Chat
                   </span>
-                  <span className="text-[10px] font-bold text-slate-400 uppercase">Live</span>
+                  <span className="text-[9px] font-bold text-slate-400 uppercase">Live</span>
                 </div>
 
                 {/* Chat Messages Window */}
-                <div className="h-24 overflow-y-auto space-y-1.5 text-[11px] pr-1 scrollbar-none">
+                <div className="h-16 sm:h-20 overflow-y-auto space-y-1 text-[10px] pr-0.5 scrollbar-none">
                   {chatMessages.length === 0 ? (
-                    <p className="text-slate-400 italic text-center py-4 text-[10px]">Type a message below...</p>
+                    <p className="text-slate-400 italic text-center py-2 text-[9px]">Type a message below...</p>
                   ) : (
                     chatMessages.map((msg) => (
-                      <div key={msg.id} className="bg-white/90 px-2.5 py-1 rounded-xl border border-slate-100 shadow-2xs">
+                      <div key={msg.id} className="bg-white/90 px-2 py-0.5 rounded-lg border border-slate-100 shadow-2xs leading-tight">
                         <span className="font-extrabold text-sky-600">{msg.senderName}: </span>
                         <span className="text-slate-700 font-medium">{msg.text}</span>
                       </div>
@@ -998,25 +998,25 @@ export const GameScreen: React.FC = () => {
                     value={chatInput}
                     onChange={(e) => setChatInput(e.target.value)}
                     placeholder="Type a message..."
-                    className="w-full glass-white-input rounded-xl pl-3 pr-8 py-1.5 text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none"
+                    className="w-full glass-white-input rounded-lg pl-2.5 pr-7 py-1 text-[11px] text-slate-800 placeholder:text-slate-400 focus:outline-none"
                   />
-                  <button type="submit" className="absolute right-2.5 top-2 text-sky-600 hover:text-sky-700">
-                    <Send className="w-3.5 h-3.5" />
+                  <button type="submit" className="absolute right-2 top-1.5 text-sky-600 hover:text-sky-700">
+                    <Send className="w-3 h-3" />
                   </button>
                 </form>
               </div>
             ) : (
-              <div className="hidden lg:block w-64 lg:w-72 shrink-0 pointer-events-none" />
+              <div className="hidden lg:block w-56 lg:w-64 shrink-0 pointer-events-none" />
             )}
 
             {/* BOTTOM CENTER: FANNED PLAYER HAND & STATUS PILL */}
             <div className="flex flex-col items-center w-full lg:max-w-[70vw] z-30 flex-1 px-1">
 
               {/* Player Hand Container */}
-              <div className="w-full flex items-center justify-center overflow-x-auto overflow-y-visible pt-2 sm:pt-6 pb-1 px-1 scrollbar-none touch-pan-x">
+              <div className="w-full flex items-center justify-center overflow-x-auto overflow-y-visible pt-1 sm:pt-2 pb-0.5 px-1 scrollbar-none touch-pan-x">
                 {isMobile && displayHand.length > 7 ? (
                   /* Mobile Multi-Row Layout for > 7 Cards */
-                  <div className="w-full flex flex-col items-center justify-center gap-1.5 py-1 px-0.5">
+                  <div className="w-full flex flex-col items-center justify-center gap-1 py-0.5 px-0.5">
                     {[
                       displayHand.slice(0, Math.ceil(displayHand.length / 2)),
                       displayHand.slice(Math.ceil(displayHand.length / 2))
@@ -1051,7 +1051,7 @@ export const GameScreen: React.FC = () => {
                 ) : (
                   /* Single Row Fanned Layout */
                   <div
-                    className="flex items-center justify-center transition-all duration-300 py-2 px-1"
+                    className="flex items-center justify-center transition-all duration-300 py-1 px-1"
                     style={{
                       minWidth: 'max-content'
                     }}
@@ -1063,19 +1063,19 @@ export const GameScreen: React.FC = () => {
                       
                       const angle = isMobile
                         ? (total > 1 ? (idx - mid) * Math.min(2, 16 / total) : 0)
-                        : (total > 1 ? (idx - mid) * Math.min(3, 24 / total) : 0);
+                        : (total > 1 ? (idx - mid) * Math.min(2.5, 20 / total) : 0);
                       
                       const overlapMargin = isMobile
                         ? (total <= 4 ? '-ml-2' : '-ml-4')
                         : (total <= 4 ? '-ml-2 sm:-ml-3' : total <= 7 ? '-ml-4 sm:-ml-7' : total <= 11 ? '-ml-7 sm:-ml-12' : '-ml-10 sm:-ml-16');
 
                       const isPlayable = checkCardPlayable(card);
-                      const cardSize = isMobile ? 'sm' : 'md';
+                      const cardSize = (isMobile || total >= 8) ? 'sm' : 'md';
 
                       return (
                         <div
                           key={card.id || idx}
-                          className={`group relative transition-all duration-200 ease-out ${idx > 0 ? overlapMargin : ''} hover:z-50 hover:-translate-y-6 sm:hover:-translate-y-10 hover:scale-110 sm:hover:scale-125 hover:rotate-0`}
+                          className={`group relative transition-all duration-200 ease-out ${idx > 0 ? overlapMargin : ''} hover:z-50 hover:-translate-y-4 hover:scale-110 hover:rotate-0`}
                           style={{
                             transform: `rotate(${angle}deg)`,
                             zIndex: isSelected ? 40 : idx + 1
@@ -1097,11 +1097,11 @@ export const GameScreen: React.FC = () => {
               </div>
 
               {/* Player Status Pill */}
-              <div className="bg-white/10 backdrop-blur-md px-3.5 py-1 rounded-full border border-white/20 flex items-center gap-2 text-[10px] sm:text-xs font-extrabold z-10 my-0.5 relative shadow-md text-white">
-                <div className="w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-sky-400/30 text-white flex items-center justify-center text-[9px] sm:text-[10px] border border-sky-300/40">👤</div>
+              <div className="bg-white/10 backdrop-blur-md px-3 py-0.5 rounded-full border border-white/20 flex items-center gap-1.5 text-[10px] font-extrabold z-10 my-0.5 relative shadow-md text-white">
+                <div className="w-3.5 h-3.5 rounded-full bg-sky-400/30 text-white flex items-center justify-center text-[8px] border border-sky-300/40">👤</div>
                 <span>You</span>
                 <span className="text-white/70">({displayHand.length} Cards)</span>
-                <span className="hidden sm:flex items-center gap-1 text-emerald-400 text-[10px]">
+                <span className="hidden sm:flex items-center gap-1 text-emerald-400 text-[9px]">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> Online
                 </span>
 
@@ -1116,7 +1116,7 @@ export const GameScreen: React.FC = () => {
             </div>
 
             {/* Desktop right filler to maintain balance */}
-            <div className="hidden lg:block w-64 lg:w-72 shrink-0 pointer-events-none" />
+            <div className="hidden lg:block w-56 lg:w-64 shrink-0 pointer-events-none" />
 
           </div>
 
