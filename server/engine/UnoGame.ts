@@ -414,6 +414,10 @@ export class UnoGame {
   }
 
   public playCard(playerId: string, cardId: string, chosenColor?: CardColor, cardColor?: CardColor, cardValue?: any): { success: boolean; error?: string } {
+    if (this.activeEmote && Date.now() - this.activeEmote.timestamp > 1500) {
+      this.activeEmote = null;
+    }
+
     const currentPlayer = this.getCurrentPlayer();
     if (currentPlayer.id !== playerId) {
       return { success: false, error: 'Not your turn' };
@@ -800,6 +804,13 @@ export class UnoGame {
       emote,
       timestamp: Date.now()
     };
+
+    setTimeout(() => {
+      if (this.activeEmote && Date.now() - this.activeEmote.timestamp >= 2400) {
+        this.activeEmote = null;
+      }
+    }, 2500);
+
     return true;
   }
 

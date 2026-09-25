@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { Copy, Volume2, VolumeX, Settings, MessageSquare, Send, Check, Play, Zap, ArrowRight, Music, X, Smile, Trophy, Sparkles, RefreshCw, BookOpen } from 'lucide-react';
 import { UnoCard } from '@/components/card/UnoCard';
@@ -33,6 +33,7 @@ export const GameScreen: React.FC = () => {
   // Animated Emoji Reaction State
   const [showEmotePicker, setShowEmotePicker] = useState(false);
   const [floatingEmotes, setFloatingEmotes] = useState<{ id: string; senderId: string; emote: string }[]>([]);
+  const seenEmoteIdsRef = useRef<Set<string>>(new Set());
 
   // Responsive screen detection for mobile card sizing
   const [isMobile, setIsMobile] = useState(
@@ -113,14 +114,18 @@ export const GameScreen: React.FC = () => {
       }
       if (newState.activeEmote && newState.activeEmote.timestamp) {
         const emoteId = `${newState.activeEmote.senderId}_${newState.activeEmote.timestamp}_${newState.activeEmote.emote}`;
-        setFloatingEmotes((prev) => {
-          if (prev.some(e => e.id === emoteId)) return prev;
-          return [...prev, { id: emoteId, senderId: newState.activeEmote!.senderId, emote: newState.activeEmote!.emote }];
-        });
-        audioService.playEmoteSound();
-        setTimeout(() => {
-          setFloatingEmotes((prev) => prev.filter(e => e.id !== emoteId));
-        }, 2200);
+        const isFresh = (Date.now() - newState.activeEmote.timestamp) < 2500;
+        if (isFresh && !seenEmoteIdsRef.current.has(emoteId)) {
+          seenEmoteIdsRef.current.add(emoteId);
+          setFloatingEmotes((prev) => {
+            if (prev.some(e => e.id === emoteId)) return prev;
+            return [...prev, { id: emoteId, senderId: newState.activeEmote!.senderId, emote: newState.activeEmote!.emote }];
+          });
+          audioService.playEmoteSound();
+          setTimeout(() => {
+            setFloatingEmotes((prev) => prev.filter(e => e.id !== emoteId));
+          }, 2200);
+        }
       }
       setIsActionPending(false);
       setSyncError(null);
