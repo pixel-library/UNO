@@ -549,7 +549,7 @@ export const HowToPlay: React.FC = () => {
                 </h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                   <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 text-center space-y-2">
-                    <UnoCard color="RED" value="DRAW_SIX" size="sm" />
+                    <UnoCard color="WILD" value="WILD_DRAW_SIX" size="sm" />
                     <span className="block text-xs font-black text-red-700">+6 Draw Six</span>
                     <p className="text-[11px] text-slate-500 font-medium">Forces target to draw 6 cards unless stacked.</p>
                   </div>

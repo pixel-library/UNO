@@ -125,6 +125,7 @@ export const UnoCard: React.FC<UnoCardProps> = ({
           </div>
         );
       case 'WILD':
+        const wildTextSize = size === 'xs' ? 'text-[7px]' : size === 'sm' ? 'text-[9px]' : size === 'md' ? 'text-[11px] sm:text-xs' : 'text-xs sm:text-base';
         return (
           <div className="w-full h-full flex items-center justify-center relative">
             <div className="w-[88%] h-[88%] rounded-full overflow-hidden grid grid-cols-2 grid-rows-2 shadow-inner border-2 border-white/80 transform -rotate-[28deg]">
@@ -133,7 +134,7 @@ export const UnoCard: React.FC<UnoCardProps> = ({
               <div className="bg-[#FCD116]" />
               <div className="bg-[#2D963F]" />
             </div>
-            <span className="absolute font-black italic tracking-tighter text-white drop-shadow-[0_2px_6px_rgba(0,0,0,0.9)] text-lg sm:text-2xl">WILD</span>
+            <span className={`absolute font-black italic tracking-tighter text-white drop-shadow-[0_2px_6px_rgba(0,0,0,0.9)] px-0.5 leading-none whitespace-nowrap max-w-full truncate text-center ${wildTextSize}`}>WILD</span>
           </div>
         );
       case 'WILD_DRAW_FOUR':
@@ -147,11 +148,12 @@ export const UnoCard: React.FC<UnoCardProps> = ({
               <div className="bg-[#FCD116]" />
               <div className="bg-[#2D963F]" />
             </div>
-            <span className="absolute font-black italic tracking-tighter text-white drop-shadow-[0_2px_6px_rgba(0,0,0,0.9)] text-2xl sm:text-3xl">+4</span>
+            <span className="absolute font-black italic tracking-tighter text-white drop-shadow-[0_2px_6px_rgba(0,0,0,0.9)] text-xl sm:text-3xl">+4</span>
           </div>
         );
       case 'DISCARD_ALL':
-        return <span className="font-black italic tracking-tighter drop-shadow-[0_2px_2px_rgba(0,0,0,0.25)] text-sm sm:text-lg">ALL 🎨</span>;
+        const discardTextSize = size === 'xs' ? 'text-[7px]' : size === 'sm' ? 'text-[9px]' : size === 'md' ? 'text-xs' : 'text-sm';
+        return <span className={`font-black italic tracking-tighter drop-shadow-[0_1.5px_2px_rgba(0,0,0,0.25)] ${discardTextSize}`}>DISCARD ALL</span>;
       case 'WILD_SHUFFLE':
         return (
           <div className="w-full h-full flex items-center justify-center relative">
@@ -161,7 +163,7 @@ export const UnoCard: React.FC<UnoCardProps> = ({
               <div className="bg-[#FCD116]" />
               <div className="bg-[#2D963F]" />
             </div>
-            <span className="absolute font-black italic tracking-tighter text-white drop-shadow-[0_2px_6px_rgba(0,0,0,0.9)] text-lg sm:text-2xl">🌀</span>
+            <span className="absolute font-black italic tracking-tighter text-white drop-shadow-[0_2px_6px_rgba(0,0,0,0.9)] text-base sm:text-xl">🌀</span>
           </div>
         );
       case 'WILD_SWAP':
@@ -173,11 +175,11 @@ export const UnoCard: React.FC<UnoCardProps> = ({
               <div className="bg-[#FCD116]" />
               <div className="bg-[#2D963F]" />
             </div>
-            <span className="absolute font-black italic tracking-tighter text-white drop-shadow-[0_2px_6px_rgba(0,0,0,0.9)] text-lg sm:text-2xl">🎯</span>
+            <span className="absolute font-black italic tracking-tighter text-white drop-shadow-[0_2px_6px_rgba(0,0,0,0.9)] text-base sm:text-xl">🎯</span>
           </div>
         );
       case 'SKIP_EVERYONE':
-        return <span className="font-black italic tracking-tighter drop-shadow-[0_2px_2px_rgba(0,0,0,0.25)] text-sm sm:text-base">⊘ ALL</span>;
+        return <span className="font-black italic tracking-tighter drop-shadow-[0_2px_2px_rgba(0,0,0,0.25)] text-xs sm:text-base">⊘ ALL</span>;
       case 'WILD_REVERSE_DRAW_FOUR':
         return (
           <div className="w-full h-full flex items-center justify-center relative">
@@ -187,10 +189,19 @@ export const UnoCard: React.FC<UnoCardProps> = ({
               <div className="bg-[#FCD116]" />
               <div className="bg-[#2D963F]" />
             </div>
-            <span className="absolute font-black italic tracking-tighter text-white drop-shadow-[0_2px_6px_rgba(0,0,0,0.9)] text-xl sm:text-2xl">⇄+4</span>
+            <span className="absolute font-black italic tracking-tighter text-white drop-shadow-[0_2px_6px_rgba(0,0,0,0.9)] text-lg sm:text-2xl">⇄+4</span>
+          </div>
+        );
+      case 'DRAW_SIX':
+      case '+6':
+        const plusSixSize = size === 'xs' ? 'text-xs' : size === 'sm' ? 'text-base' : size === 'md' ? 'text-2xl sm:text-3xl' : 'text-3xl sm:text-4xl';
+        return (
+          <div className="flex flex-col items-center justify-center leading-none">
+            <span className={`font-black italic tracking-tighter drop-shadow-[0_2px_2px_rgba(0,0,0,0.25)] ${plusSixSize}`}>+6</span>
           </div>
         );
       case 'WILD_DRAW_SIX':
+        const wildSixSize = size === 'xs' ? 'text-xs' : size === 'sm' ? 'text-base' : size === 'md' ? 'text-2xl sm:text-3xl' : 'text-3xl sm:text-4xl';
         return (
           <div className="w-full h-full flex items-center justify-center relative">
             <div className="w-[88%] h-[88%] rounded-full overflow-hidden grid grid-cols-2 grid-rows-2 shadow-inner border-2 border-white/80 transform -rotate-[28deg]">
@@ -199,7 +210,7 @@ export const UnoCard: React.FC<UnoCardProps> = ({
               <div className="bg-[#FCD116]" />
               <div className="bg-[#2D963F]" />
             </div>
-            <span className="absolute font-black italic tracking-tighter text-white drop-shadow-[0_2px_6px_rgba(0,0,0,0.9)] text-2xl sm:text-3xl">+6</span>
+            <span className={`absolute font-black italic tracking-tighter text-white drop-shadow-[0_2px_6px_rgba(0,0,0,0.9)] ${wildSixSize}`}>+6</span>
           </div>
         );
       case 'WILD_DRAW_TEN':
@@ -211,7 +222,7 @@ export const UnoCard: React.FC<UnoCardProps> = ({
               <div className="bg-[#FCD116]" />
               <div className="bg-[#2D963F]" />
             </div>
-            <span className="absolute font-black italic tracking-tighter text-white drop-shadow-[0_2px_6px_rgba(0,0,0,0.9)] text-xl sm:text-2xl">+10</span>
+            <span className="absolute font-black italic tracking-tighter text-white drop-shadow-[0_2px_6px_rgba(0,0,0,0.9)] text-lg sm:text-2xl">+10</span>
           </div>
         );
       case 'WILD_COLOR_ROULETTE':
@@ -223,7 +234,7 @@ export const UnoCard: React.FC<UnoCardProps> = ({
               <div className="bg-[#FCD116]" />
               <div className="bg-[#2D963F]" />
             </div>
-            <span className="absolute font-black italic tracking-tighter text-white drop-shadow-[0_2px_6px_rgba(0,0,0,0.9)] text-lg sm:text-xl">🎰</span>
+            <span className="absolute font-black italic tracking-tighter text-white drop-shadow-[0_2px_6px_rgba(0,0,0,0.9)] text-base sm:text-lg">🎰</span>
           </div>
         );
       default:
@@ -246,6 +257,7 @@ export const UnoCard: React.FC<UnoCardProps> = ({
       case 'WILD_SWAP': return '🎯';
       case 'SKIP_EVERYONE': return '⊘ALL';
       case 'WILD_REVERSE_DRAW_FOUR': return '⇄+4';
+      case 'DRAW_SIX':
       case 'WILD_DRAW_SIX': return '+6';
       case 'WILD_DRAW_TEN': return '+10';
       case 'WILD_COLOR_ROULETTE': return '🎰';

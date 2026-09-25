@@ -359,7 +359,7 @@ export const WaitingRoom: React.FC = () => {
                   🔄 7-0 Swap & Rotate
                 </span>
                 <span className="bg-rose-100 border border-rose-300 text-rose-900 px-3 py-1.5 rounded-xl flex items-center gap-1 font-bold">
-                  🎨 Discard All & Color Roulette
+                  Discard All & Color Roulette
                 </span>
               </>
             )}
@@ -385,7 +385,7 @@ export const WaitingRoom: React.FC = () => {
                 <span className={`px-3 py-1.5 rounded-xl border flex items-center gap-1 ${
                   houseRules.discardAll ? 'bg-rose-50 border-rose-300 text-rose-900' : 'bg-neutral-100 border-neutral-200 text-neutral-400 opacity-60'
                 }`}>
-                  🎨 {houseRules.discardAll ? 'Discard All ON' : 'Discard All OFF'}
+                  {houseRules.discardAll ? 'Discard All ON' : 'Discard All OFF'}
                 </span>
                 <span className={`px-3 py-1.5 rounded-xl border flex items-center gap-1 ${
                   houseRules.counterDeflect !== false ? 'bg-blue-50 border-blue-300 text-blue-900' : 'bg-neutral-100 border-neutral-200 text-neutral-400 opacity-60'

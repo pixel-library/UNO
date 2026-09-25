@@ -365,7 +365,7 @@ export const CreateGame: React.FC = () => {
                       <Sparkles className="w-4 h-4" />
                     </div>
                     <div>
-                      <div className="font-bold text-sm text-uno-navy">Discard All Color Rule 🎨</div>
+                      <div className="font-bold text-sm text-uno-navy">Discard All Color Rule</div>
                       <div className="text-xs text-neutral-500">Discard all matching color cards at once.</div>
                     </div>
                   </div>

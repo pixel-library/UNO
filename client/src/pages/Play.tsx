@@ -695,7 +695,7 @@ export const Play: React.FC = () => {
 
                     {/* Discard All Color Switch */}
                     <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium text-neutral-700">Discard All Color 🎨</span>
+                      <span className="text-sm font-medium text-neutral-700">Discard All Color</span>
                       <button
                         type="button"
                         onClick={() => { const next = !discardAll; setDiscardAll(next); if (next) setGameMode('Custom'); }}

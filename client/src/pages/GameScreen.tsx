@@ -197,6 +197,12 @@ export const GameScreen: React.FC = () => {
     setMusicEnabled(!musicEnabled);
   };
 
+  const cancelColorSelection = () => {
+    setShowColorPicker(false);
+    setPendingWildCardId(null);
+    setSelectedCardId(null);
+  };
+
   // Zero-Latency Optimistic Card Play Handler (<50ms)
   const handleCardClick = (card: Card) => {
     if (!gameState || isActionPending) return;
@@ -206,6 +212,12 @@ export const GameScreen: React.FC = () => {
     const currentPlayer = activePlayers[safeIdx];
 
     if (currentPlayer?.id !== myId) return;
+
+    if (!checkCardPlayable(card)) {
+      audioService.playErrorSound();
+      alert("⚠️ Cannot play this card right now!");
+      return;
+    }
 
     setSelectedCardId(card.id);
     audioService.playCardSound();
@@ -289,12 +301,11 @@ export const GameScreen: React.FC = () => {
       roomCode: gameState?.roomCode 
     }, (res: any) => {
       setIsActionPending(false);
-      if (res?.success) {
-        setShowColorPicker(false);
-        setPendingWildCardId(null);
-        setSelectedCardId(null);
-      } else {
-        alert(res?.error || 'Could not set wild card color.');
+      setShowColorPicker(false);
+      setPendingWildCardId(null);
+      setSelectedCardId(null);
+      if (!res?.success) {
+        alert(res?.error || 'Could not play wild card.');
       }
     });
   };
@@ -1332,7 +1343,14 @@ export const GameScreen: React.FC = () => {
 
         return (
           <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-md z-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-3xl p-8 max-w-sm w-full text-center space-y-6 border border-slate-200 shadow-2xl animate-pop-scale">
+            <div className="bg-white rounded-3xl p-8 max-w-sm w-full text-center space-y-6 border border-slate-200 shadow-2xl animate-pop-scale relative">
+              <button
+                onClick={cancelColorSelection}
+                className="absolute top-4 right-4 text-slate-400 hover:text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-full p-2 transition-all cursor-pointer"
+                title="Cancel / Cut"
+              >
+                <X className="w-5 h-5" />
+              </button>
               <div>
                 <h3 className="text-2xl font-black text-slate-900 tracking-tight">{modalTitle}</h3>
                 <p className="text-xs font-semibold text-slate-500 mt-1">
@@ -1366,6 +1384,13 @@ export const GameScreen: React.FC = () => {
                   BLUE
                 </button>
               </div>
+
+              <button
+                onClick={cancelColorSelection}
+                className="w-full py-2.5 rounded-xl border border-slate-300 text-slate-600 hover:text-slate-900 font-bold text-xs uppercase tracking-wider hover:bg-slate-100 transition-all cursor-pointer"
+              >
+                Cancel / Close
+              </button>
             </div>
           </div>
         );
@@ -1578,7 +1603,7 @@ export const GameScreen: React.FC = () => {
                     <span className="font-black text-slate-400">➔</span>
                     <UnoCard color="WILD" value="WILD_DRAW_FOUR" size="sm" />
                     <span className="font-black text-slate-400">➔</span>
-                    <UnoCard color="RED" value="DRAW_SIX" size="sm" />
+                    <UnoCard color="WILD" value="WILD_DRAW_SIX" size="sm" />
                     <span className="font-black text-slate-400">➔</span>
                     <UnoCard color="WILD" value="WILD_DRAW_TEN" size="sm" />
                   </div>
@@ -1613,7 +1638,7 @@ export const GameScreen: React.FC = () => {
                 </div>
 
                 <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 space-y-3">
-                  <div className="font-black text-emerald-900 text-sm">🎨 DISCARD ALL CARDS</div>
+                  <div className="font-black text-emerald-900 text-sm">DISCARD ALL CARDS</div>
                   <div className="flex items-center gap-3 bg-white p-2.5 rounded-xl border border-emerald-200">
                     <UnoCard color="GREEN" value="DISCARD_ALL" size="sm" />
                     <span className="text-[11px] text-slate-600 font-semibold leading-tight">

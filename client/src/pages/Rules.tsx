@@ -314,7 +314,7 @@ export const Rules: React.FC = () => {
                 </div>
 
                 <div className="flex items-center gap-4 bg-slate-50 p-4 rounded-2xl border border-slate-200/80">
-                  <UnoCard color="RED" value="DRAW_SIX" size="sm" />
+                  <UnoCard color="WILD" value="WILD_DRAW_SIX" size="sm" />
                   <div className="text-xs space-y-1">
                     <span className="font-bold text-red-600 block">+6 Penalty Attack</span>
                     <span className="text-slate-500 text-[11px] block font-medium">Stackable with +2, +4, +6, +10</span>
