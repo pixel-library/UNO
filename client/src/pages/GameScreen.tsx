@@ -43,6 +43,19 @@ export const GameScreen: React.FC = () => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  // Prevent user from closing tab or navigating away during active match
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (gameState?.status === 'PLAYING') {
+        e.preventDefault();
+        e.returnValue = 'Match is in progress! You cannot leave until all winning positions finish.';
+        return e.returnValue;
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [gameState?.status]);
+
   // Action pending state for race condition protection
   const [isActionPending, setIsActionPending] = useState(false);
   const [syncError, setSyncError] = useState<string | null>(null);
@@ -446,6 +459,7 @@ export const GameScreen: React.FC = () => {
 
   const storedPlayerId = localStorage.getItem('uno_player_id') || '';
   const myId = gameState?.targetPlayerId || (gameState?.players.find(p => p.id === storedPlayerId)?.id) || storedPlayerId || (gameState?.players[0]?.id || '');
+  const myPlayer = gameState?.players.find(p => p.id === myId);
   const activePlayers = (gameState?.players || []).filter(p => p && !p.isSpectator);
 
   // Compute relative seating order starting from local player
@@ -534,7 +548,13 @@ export const GameScreen: React.FC = () => {
         {/* Left: UNO ONLINE Logo + Room Badge */}
         <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
           <div
-            onClick={() => navigate('/')}
+            onClick={() => {
+              if (gameState?.status === 'PLAYING') {
+                alert('⚠️ Match in progress! You cannot leave the game until all winning positions finish.');
+                return;
+              }
+              navigate('/');
+            }}
             className="flex items-center gap-1.5 cursor-pointer hover:scale-105 transition-transform"
           >
             <div className="bg-[#E52521] border-2 border-[#FCD116] px-2.5 py-0.5 rounded-xl shadow-sm transform -rotate-3">
@@ -783,8 +803,8 @@ export const GameScreen: React.FC = () => {
               </div>
             )}
 
-            {/* Piles Container: DRAW PILE on Left, DISCARD PILE on Right */}
-            <div className="flex items-center gap-6 sm:gap-10 lg:gap-12 z-10">
+            {/* Piles Container: DRAW PILE on Left, RHOMBUS ACTIVE COLOR INDICATOR in Center, DISCARD PILE on Right */}
+            <div className="flex items-center gap-4 sm:gap-8 lg:gap-10 z-10">
               
               {/* DRAW PILE */}
               <div
@@ -801,6 +821,32 @@ export const GameScreen: React.FC = () => {
                 <div className="mt-1 text-center">
                   <span className="text-[9px] sm:text-xs font-black tracking-wider text-sky-200/90 uppercase block">DRAW</span>
                   <span className="text-xs sm:text-sm font-black text-white">{gameState.drawPileCount || 73}</span>
+                </div>
+              </div>
+
+              {/* RHOMBUS (DIAMOND SHAPE) ACTIVE CARD COLOR INDICATOR */}
+              <div className="flex flex-col items-center justify-center mx-1">
+                <div className={`w-9 h-9 sm:w-11 sm:h-11 rotate-45 rounded-xl border-2 shadow-xl transition-all duration-500 flex items-center justify-center ${
+                  gameState.currentColor === 'RED'
+                    ? 'bg-gradient-to-br from-[#FF3B30] to-[#E52521] border-amber-300 shadow-red-500/70 ring-2 ring-red-400/50'
+                    : gameState.currentColor === 'YELLOW'
+                    ? 'bg-gradient-to-br from-[#FFE033] to-[#FCD116] border-white shadow-yellow-500/70 ring-2 ring-yellow-300/50'
+                    : gameState.currentColor === 'GREEN'
+                    ? 'bg-gradient-to-br from-[#34C759] to-[#2D963F] border-amber-300 shadow-green-500/70 ring-2 ring-emerald-400/50'
+                    : gameState.currentColor === 'BLUE'
+                    ? 'bg-gradient-to-br from-[#0095FF] to-[#0082CA] border-amber-300 shadow-blue-500/70 ring-2 ring-sky-400/50'
+                    : 'bg-gradient-to-br from-purple-500 via-pink-500 to-indigo-600 border-amber-300 shadow-purple-500/70 ring-2 ring-purple-400/50'
+                }`}>
+                  <div className="-rotate-45 text-white font-black text-xs sm:text-sm drop-shadow-md">
+                    {gameState.currentColor === 'RED' ? '🔴' :
+                     gameState.currentColor === 'YELLOW' ? '🟡' :
+                     gameState.currentColor === 'GREEN' ? '🟢' :
+                     gameState.currentColor === 'BLUE' ? '🔵' : '🌈'}
+                  </div>
+                </div>
+                <div className="mt-1 text-center">
+                  <span className="text-[9px] sm:text-[10px] font-black tracking-widest text-amber-300 uppercase block">COLOR</span>
+                  <span className="text-[10px] sm:text-xs font-extrabold text-white uppercase">{gameState.currentColor}</span>
                 </div>
               </div>
 
@@ -887,25 +933,37 @@ export const GameScreen: React.FC = () => {
           
           {/* PROMINENT CENTERED ACTION TOOLBAR */}
           <div className="flex items-center gap-1.5 sm:gap-2.5 z-30 mb-0.5 flex-wrap justify-center">
-            <button
-              onClick={handleDrawCard}
-              disabled={!isMyTurn || isActionPending}
-              className="bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 text-white font-extrabold px-3.5 py-1 sm:px-5 sm:py-1.5 rounded-full text-xs shadow-md transition-all active:scale-95 disabled:opacity-40 flex items-center gap-1 cursor-pointer"
-            >
-              <span>📥</span> DRAW CARD
-            </button>
+            
+            {myPlayer?.isFinished && gameState.status === 'PLAYING' ? (
+              <div className="bg-gradient-to-r from-amber-500/30 via-yellow-500/20 to-amber-500/30 border-2 border-amber-400/80 px-4 py-1.5 rounded-full text-white font-black text-xs shadow-lg flex items-center gap-2 animate-pulse">
+                <span className="text-base">🏆</span>
+                <span className="text-amber-300 font-extrabold uppercase tracking-wider">
+                  RANK LOCKED ({myPlayer.rank === 1 ? '1st Place 🥇' : myPlayer.rank === 2 ? '2nd Place 🥈' : myPlayer.rank === 3 ? '3rd Place 🥉' : `${myPlayer.rank}th`}) — SPECTATING MATCH...
+                </span>
+              </div>
+            ) : (
+              <>
+                <button
+                  onClick={handleDrawCard}
+                  disabled={!isMyTurn || isActionPending}
+                  className="bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 text-white font-extrabold px-3.5 py-1 sm:px-5 sm:py-1.5 rounded-full text-xs shadow-md transition-all active:scale-95 disabled:opacity-40 flex items-center gap-1 cursor-pointer"
+                >
+                  <span>📥</span> DRAW CARD
+                </button>
 
-            {!gameState?.settings?.houseRules?.forcePlay && (
-              <button
-                onClick={handlePassTurn}
-                disabled={!isMyTurn || isActionPending}
-                className="bg-slate-200 hover:bg-slate-300 text-slate-800 disabled:opacity-40 font-extrabold px-3.5 py-1 sm:px-4 sm:py-1.5 rounded-full text-xs transition-all shadow-sm active:scale-95 flex items-center gap-1 cursor-pointer border border-slate-300/80"
-              >
-                <span>➔</span> END TURN
-              </button>
+                {!gameState?.settings?.houseRules?.forcePlay && (
+                  <button
+                    onClick={handlePassTurn}
+                    disabled={!isMyTurn || isActionPending}
+                    className="bg-slate-200 hover:bg-slate-300 text-slate-800 disabled:opacity-40 font-extrabold px-3.5 py-1 sm:px-4 sm:py-1.5 rounded-full text-xs transition-all shadow-sm active:scale-95 flex items-center gap-1 cursor-pointer border border-slate-300/80"
+                  >
+                    <span>➔</span> END TURN
+                  </button>
+                )}
+              </>
             )}
 
-            {/* EMOJI REACTION PICKER BUTTON & POPOVER */}
+            {/* EMOJI REACTION PICKER BUTTON & RESPONSIVE MODAL/POPOVER */}
             <div className="relative">
               <button
                 onClick={() => setShowEmotePicker(!showEmotePicker)}
@@ -917,30 +975,61 @@ export const GameScreen: React.FC = () => {
               </button>
 
               {showEmotePicker && (
-                <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 glass-white-panel rounded-2xl p-2.5 shadow-none z-50 w-60 sm:w-68 animate-pop-scale border border-slate-200">
-                  <div className="flex items-center justify-between border-b border-slate-200/80 pb-1 mb-1.5">
-                    <span className="text-[11px] font-extrabold text-slate-800 flex items-center gap-1">
-                      <Smile className="w-3 h-3 text-amber-500" /> Express Yourself
-                    </span>
-                    <button
-                      onClick={() => setShowEmotePicker(false)}
-                      className="text-slate-400 hover:text-slate-700 text-xs p-0.5 rounded cursor-pointer"
-                    >
-                      <X className="w-3 h-3" />
-                    </button>
+                isMobile ? (
+                  /* Mobile Fixed Bottom Sheet Modal (100% visible, touch friendly) */
+                  <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-3 animate-fade-in">
+                    <div className="bg-white rounded-3xl p-4 shadow-2xl z-50 w-full max-w-xs text-slate-900 space-y-3 border border-slate-200 animate-pop-scale">
+                      <div className="flex items-center justify-between border-b border-slate-200 pb-2">
+                        <span className="text-xs font-black text-slate-800 flex items-center gap-1.5">
+                          <Smile className="w-4 h-4 text-amber-500" /> Express Yourself
+                        </span>
+                        <button
+                          onClick={() => setShowEmotePicker(false)}
+                          className="text-slate-500 hover:text-slate-800 text-xs p-1 rounded-full cursor-pointer bg-slate-100"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                      <div className="grid grid-cols-4 gap-2.5 text-2xl text-center py-1">
+                        {['🔥', '😂', '😎', '😡', '😭', '😱', '👍', '🎉', '💀', '💩', '❤️', '⚡', '💣', '🥳', '🤡', '👑'].map((emote) => (
+                          <button
+                            key={emote}
+                            onClick={() => handleSendEmote(emote)}
+                            className="p-2.5 rounded-2xl bg-slate-100 hover:bg-amber-100 active:scale-125 transition-all cursor-pointer flex items-center justify-center shadow-xs"
+                          >
+                            {emote}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
                   </div>
-                  <div className="grid grid-cols-4 gap-1.5 text-xl text-center">
-                    {['🔥', '😂', '😎', '😡', '😭', '😱', '👍', '🎉', '💀', '💩', '❤️', '⚡', '💣', '🥳', '🤡', '👑'].map((emote) => (
+                ) : (
+                  /* Desktop Popover */
+                  <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 glass-white-panel rounded-2xl p-2.5 shadow-none z-50 w-60 sm:w-68 animate-pop-scale border border-slate-200">
+                    <div className="flex items-center justify-between border-b border-slate-200/80 pb-1 mb-1.5">
+                      <span className="text-[11px] font-extrabold text-slate-800 flex items-center gap-1">
+                        <Smile className="w-3 h-3 text-amber-500" /> Express Yourself
+                      </span>
                       <button
-                        key={emote}
-                        onClick={() => handleSendEmote(emote)}
-                        className="p-1.5 rounded-lg hover:bg-slate-100 hover:scale-125 active:scale-95 transition-all cursor-pointer flex items-center justify-center"
+                        onClick={() => setShowEmotePicker(false)}
+                        className="text-slate-400 hover:text-slate-700 text-xs p-0.5 rounded cursor-pointer"
                       >
-                        {emote}
+                        <X className="w-3 h-3" />
                       </button>
-                    ))}
+                    </div>
+                    <div className="grid grid-cols-4 gap-1.5 text-xl text-center">
+                      {['🔥', '😂', '😎', '😡', '😭', '😱', '👍', '🎉', '💀', '💩', '❤️', '⚡', '💣', '🥳', '🤡', '👑'].map((emote) => (
+                        <button
+                          key={emote}
+                          onClick={() => handleSendEmote(emote)}
+                          className="p-1.5 rounded-lg hover:bg-slate-100 hover:scale-125 active:scale-95 transition-all cursor-pointer flex items-center justify-center"
+                        >
+                          {emote}
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                </div>
+                )
               )}
             </div>
 
