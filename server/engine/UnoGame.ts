@@ -183,7 +183,11 @@ export class UnoGame {
     const activePlayers = this.players.filter(p => !p.isSpectator);
     if (activePlayers.length < 2) return false;
 
-    this.deck.createDeck(this.settings.houseRules);
+    if (this.settings.mode === 'NO_MERCY') {
+      this.deck.createNoMercyDeck();
+    } else {
+      this.deck.createDeck(this.settings.houseRules);
+    }
     this.discardPile = [];
     this.direction = 'CW';
     this.currentPlayerIndex = 0;
@@ -199,13 +203,19 @@ export class UnoGame {
       player.cardCount = hand.length;
       player.hasCalledUno = false;
       player.isFinished = false;
+      player.isEliminated = false;
       player.rank = undefined;
     });
 
-    // Draw initial discard card (must not be a Wild Draw Four)
+    // Draw initial discard card (must not be a Wild penalty or roulette card)
     let initialCard = this.deck.draw();
-    while (initialCard && initialCard.value === 'WILD_DRAW_FOUR') {
-      this.deck.createDeck(this.settings.houseRules);
+    const wildPenaltyValues = ['WILD_DRAW_FOUR', 'WILD_REVERSE_DRAW_FOUR', 'WILD_DRAW_SIX', 'WILD_DRAW_TEN', 'WILD_COLOR_ROULETTE'];
+    while (initialCard && wildPenaltyValues.includes(initialCard.value)) {
+      if (this.settings.mode === 'NO_MERCY') {
+        this.deck.createNoMercyDeck();
+      } else {
+        this.deck.createDeck(this.settings.houseRules);
+      }
       initialCard = this.deck.draw();
     }
 
@@ -218,6 +228,66 @@ export class UnoGame {
     this.turnStartedAt = Date.now();
     this.lastActionMessage = 'Game started! Initial card: ' + initialCard?.color + ' ' + initialCard?.value;
     return true;
+  }
+
+  public checkMercyRule(playerId: string): boolean {
+    if (this.settings.mode !== 'NO_MERCY') return false;
+
+    const player = this.players.find(p => p.id === playerId);
+    if (!player || player.isFinished || player.isEliminated) return false;
+
+    const hand = this.playerHands.get(playerId) || [];
+    if (hand.length < 25) return false;
+
+    // ELIMINATE PLAYER! (25+ cards in hand)
+    player.isEliminated = true;
+    player.isFinished = true;
+    this.discardPile.push(...hand);
+    this.playerHands.set(playerId, []);
+    player.cardCount = 0;
+
+    this.lastActionEvent = {
+      type: 'MERCY_ELIMINATION',
+      title: '💀 MERCY RULE ELIMINATION!',
+      playerName: player.name,
+      timestamp: Date.now()
+    };
+    this.lastActionMessage = `💀 MERCY RULE! ${player.name} held ${hand.length} cards (25+ limit) and was ELIMINATED!`;
+
+    const remainingActive = this.players.filter(p => !p.isSpectator && !p.isEliminated && !p.isFinished);
+    if (remainingActive.length <= 1) {
+      this.status = 'FINISHED';
+      if (remainingActive.length === 1) {
+        this.winner = remainingActive[0];
+        remainingActive[0].isFinished = true;
+        this.finishedRankings.unshift({
+          playerId: remainingActive[0].id,
+          name: remainingActive[0].name,
+          avatar: remainingActive[0].avatar,
+          rank: 1,
+          score: remainingActive[0].score
+        });
+      }
+      this.calculateScores();
+      return true;
+    }
+
+    return false;
+  }
+
+  public isPenaltyCard(cardVal: string): boolean {
+    return ['DRAW_TWO', 'WILD_DRAW_FOUR', 'WILD_REVERSE_DRAW_FOUR', 'WILD_DRAW_SIX', 'WILD_DRAW_TEN'].includes(cardVal);
+  }
+
+  public getPenaltyValue(cardVal: string): number {
+    switch (cardVal) {
+      case 'DRAW_TWO': return 2;
+      case 'WILD_DRAW_FOUR':
+      case 'WILD_REVERSE_DRAW_FOUR': return 4;
+      case 'WILD_DRAW_SIX': return 6;
+      case 'WILD_DRAW_TEN': return 10;
+      default: return 0;
+    }
   }
 
   public get topDiscardCard(): Card | null {
@@ -315,10 +385,23 @@ export class UnoGame {
   public isPlayable(card: Card): boolean {
     const cardVal = String(card.value || '').trim().toUpperCase();
 
-    if (this.activeStackCount > 0 && this.settings.houseRules.stacking) {
-      const isCounterCard = cardVal === 'DRAW_TWO' || cardVal === 'WILD_DRAW_FOUR' ||
-        (this.settings.houseRules.counterDeflect && (cardVal === 'SKIP' || cardVal === 'REVERSE' || cardVal === 'SKIP_WILD'));
-      if (isCounterCard) return true;
+    if (this.activeStackCount > 0) {
+      if (this.settings.mode === 'NO_MERCY') {
+        const isPenalty = this.isPenaltyCard(cardVal);
+        if (isPenalty) {
+          const topVal = this.topDiscardCard ? String(this.topDiscardCard.value || '').trim().toUpperCase() : '';
+          const currentPenaltyVal = this.getPenaltyValue(topVal);
+          const playPenaltyVal = this.getPenaltyValue(cardVal);
+          // Can stack if penalty value is equal to or higher than top card's penalty value (or if top was non-penalty)
+          if (playPenaltyVal >= currentPenaltyVal || currentPenaltyVal === 0) {
+            return true;
+          }
+        }
+      } else if (this.settings.houseRules.stacking) {
+        const isCounterCard = cardVal === 'DRAW_TWO' || cardVal === 'WILD_DRAW_FOUR' ||
+          (this.settings.houseRules.counterDeflect && (cardVal === 'SKIP' || cardVal === 'REVERSE' || cardVal === 'SKIP_WILD'));
+        if (isCounterCard) return true;
+      }
     }
 
     return this.isBasePlayable(card);
@@ -507,6 +590,8 @@ export class UnoGame {
     this.playerHands.set(targetPlayerId, sourceHand);
     sourcePlayer.cardCount = targetHand.length;
     targetPlayer.cardCount = sourceHand.length;
+    this.checkMercyRule(sourcePlayerId);
+    this.checkMercyRule(targetPlayerId);
     this.pendingHandSwapPlayerId = null;
 
     if (chosenColor && ['RED', 'YELLOW', 'GREEN', 'BLUE'].includes(chosenColor)) {
@@ -560,6 +645,8 @@ export class UnoGame {
         timestamp: Date.now()
       };
       this.lastActionMessage = `📥 ${currentPlayer.name} drew ${count} penalty cards and lost turn!`;
+
+      this.checkMercyRule(playerId);
 
       // Skip receiving player's turn
       this.advanceTurn();
@@ -758,6 +845,13 @@ export class UnoGame {
         this.lastActionMessage += ' — Next player skipped!';
         break;
 
+      case 'SKIP_EVERYONE':
+        const step = this.direction === 'CW' ? -1 : 1;
+        this.currentPlayerIndex = (this.currentPlayerIndex + step + activePlayers.length) % activePlayers.length;
+        this.lastActionEvent = { type: 'SKIP_EVERYONE', title: 'SKIP EVERYONE! ⊘⊘', playerName, timestamp: Date.now() };
+        this.lastActionMessage = `⊘⊘ ${playerName} played SKIP EVERYONE! Turn stays with ${playerName}!`;
+        break;
+
       case 'REVERSE':
         if (activePlayers.length === 2) {
           this.advanceTurnIndex();
@@ -771,7 +865,7 @@ export class UnoGame {
         break;
 
       case 'DRAW_TWO':
-        if (this.settings.houseRules.stacking) {
+        if (this.settings.mode === 'NO_MERCY' || this.settings.houseRules.stacking) {
           this.activeStackCount += 2;
           this.lastActionEvent = { type: 'STACK', title: `+${this.activeStackCount} STACK! ⚡`, playerName, timestamp: Date.now() };
           this.lastActionMessage += ` — +2 stacked! (Total stack: +${this.activeStackCount})`;
@@ -782,6 +876,7 @@ export class UnoGame {
           nextHand.push(...penaltyCards);
           this.playerHands.set(nextPlayer.id, nextHand);
           nextPlayer.cardCount = nextHand.length;
+          this.checkMercyRule(nextPlayer.id);
           this.advanceTurnIndex();
           this.lastActionEvent = { type: 'STACK', title: '+2 CARDS & SKIPPED! ⚡', playerName, timestamp: Date.now() };
           this.lastActionMessage += ` — ${nextPlayer.name} drew 2 cards and was skipped!`;
@@ -789,7 +884,7 @@ export class UnoGame {
         break;
 
       case 'WILD_DRAW_FOUR':
-        if (this.settings.houseRules.stacking) {
+        if (this.settings.mode === 'NO_MERCY' || this.settings.houseRules.stacking) {
           this.activeStackCount += 4;
           this.lastActionEvent = { type: 'STACK', title: `+${this.activeStackCount} STACK! ⚡`, playerName, timestamp: Date.now() };
           this.lastActionMessage += ` — +4 stacked! (Total stack: +${this.activeStackCount})`;
@@ -800,21 +895,103 @@ export class UnoGame {
           nextHand.push(...penaltyCards);
           this.playerHands.set(nextPlayer.id, nextHand);
           nextPlayer.cardCount = nextHand.length;
+          this.checkMercyRule(nextPlayer.id);
           this.advanceTurnIndex();
           this.lastActionEvent = { type: 'STACK', title: '+4 CARDS & SKIPPED! ⚡', playerName, timestamp: Date.now() };
           this.lastActionMessage += ` — ${nextPlayer.name} drew 4 cards and was skipped!`;
         }
         break;
 
+      case 'WILD_REVERSE_DRAW_FOUR':
+        this.direction = this.direction === 'CW' ? 'CCW' : 'CW';
+        if (this.settings.mode === 'NO_MERCY' || this.settings.houseRules.stacking) {
+          this.activeStackCount += 4;
+          this.lastActionEvent = { type: 'STACK', title: `+${this.activeStackCount} REVERSE STACK! ⚡`, playerName, timestamp: Date.now() };
+          this.lastActionMessage += ` — Reversed & +4 stacked! (Total stack: +${this.activeStackCount})`;
+        } else {
+          const nextPlayer = this.getNextPlayer();
+          const nextHand = this.playerHands.get(nextPlayer.id) || [];
+          const penaltyCards = this.deck.drawMultiple(4, this.discardPile);
+          nextHand.push(...penaltyCards);
+          this.playerHands.set(nextPlayer.id, nextHand);
+          nextPlayer.cardCount = nextHand.length;
+          this.checkMercyRule(nextPlayer.id);
+          this.advanceTurnIndex();
+          this.lastActionEvent = { type: 'STACK', title: 'REVERSED & +4 CARDS! ⚡', playerName, timestamp: Date.now() };
+          this.lastActionMessage += ` — Reversed direction & ${nextPlayer.name} drew 4 cards!`;
+        }
+        break;
+
+      case 'WILD_DRAW_SIX':
+        if (this.settings.mode === 'NO_MERCY' || this.settings.houseRules.stacking) {
+          this.activeStackCount += 6;
+          this.lastActionEvent = { type: 'STACK', title: `+${this.activeStackCount} STACK! ⚡`, playerName, timestamp: Date.now() };
+          this.lastActionMessage += ` — +6 stacked! (Total stack: +${this.activeStackCount})`;
+        } else {
+          const nextPlayer = this.getNextPlayer();
+          const nextHand = this.playerHands.get(nextPlayer.id) || [];
+          const penaltyCards = this.deck.drawMultiple(6, this.discardPile);
+          nextHand.push(...penaltyCards);
+          this.playerHands.set(nextPlayer.id, nextHand);
+          nextPlayer.cardCount = nextHand.length;
+          this.checkMercyRule(nextPlayer.id);
+          this.advanceTurnIndex();
+          this.lastActionEvent = { type: 'STACK', title: '+6 CARDS & SKIPPED! ⚡', playerName, timestamp: Date.now() };
+          this.lastActionMessage += ` — ${nextPlayer.name} drew 6 cards and was skipped!`;
+        }
+        break;
+
+      case 'WILD_DRAW_TEN':
+        if (this.settings.mode === 'NO_MERCY' || this.settings.houseRules.stacking) {
+          this.activeStackCount += 10;
+          this.lastActionEvent = { type: 'STACK', title: `+${this.activeStackCount} STACK! ⚡`, playerName, timestamp: Date.now() };
+          this.lastActionMessage += ` — +10 stacked! (Total stack: +${this.activeStackCount})`;
+        } else {
+          const nextPlayer = this.getNextPlayer();
+          const nextHand = this.playerHands.get(nextPlayer.id) || [];
+          const penaltyCards = this.deck.drawMultiple(10, this.discardPile);
+          nextHand.push(...penaltyCards);
+          this.playerHands.set(nextPlayer.id, nextHand);
+          nextPlayer.cardCount = nextHand.length;
+          this.checkMercyRule(nextPlayer.id);
+          this.advanceTurnIndex();
+          this.lastActionEvent = { type: 'STACK', title: '+10 CARDS & SKIPPED! ⚡', playerName, timestamp: Date.now() };
+          this.lastActionMessage += ` — ${nextPlayer.name} drew 10 cards and was skipped!`;
+        }
+        break;
+
+      case 'WILD_COLOR_ROULETTE':
+        const targetForRoulette = this.getNextPlayer();
+        const targetHand = this.playerHands.get(targetForRoulette.id) || [];
+        const chosen = this.currentColor || 'RED';
+        let drawnCount = 0;
+        let matched = false;
+        while (!matched && targetHand.length < 25) {
+          const drawnCard = this.deck.draw();
+          if (!drawnCard) break;
+          targetHand.push(drawnCard);
+          drawnCount++;
+          if (drawnCard.color === chosen) {
+            matched = true;
+          }
+        }
+        this.playerHands.set(targetForRoulette.id, targetHand);
+        targetForRoulette.cardCount = targetHand.length;
+        this.checkMercyRule(targetForRoulette.id);
+        this.advanceTurnIndex();
+        this.lastActionEvent = { type: 'COLOR_ROULETTE', title: 'COLOR ROULETTE! 🎰', playerName, timestamp: Date.now() };
+        this.lastActionMessage = `🎰 ${playerName} forced ${targetForRoulette.name} to draw ${drawnCount} cards until hitting ${chosen}!`;
+        break;
+
       case '7':
-        if (this.settings.houseRules.sevenZero) {
+        if (this.settings.mode === 'NO_MERCY' || this.settings.houseRules.sevenZero) {
           this.pendingHandSwapPlayerId = playerId;
           this.lastActionMessage += ' — Select a player to swap hands with!';
         }
         break;
 
       case '0':
-        if (this.settings.houseRules.sevenZero && activePlayers.length > 1) {
+        if ((this.settings.mode === 'NO_MERCY' || this.settings.houseRules.sevenZero) && activePlayers.length > 1) {
           this.rotateAllHands();
           this.lastActionEvent = { type: 'HAND_ROTATE', title: 'HANDS ROTATED! 🌀', playerName, timestamp: Date.now() };
           this.lastActionMessage += ' — All player hands rotated!';
@@ -881,6 +1058,7 @@ export class UnoGame {
     activePlayers.forEach((p, idx) => {
       this.playerHands.set(p.id, handsArray[idx]);
       p.cardCount = handsArray[idx].length;
+      this.checkMercyRule(p.id);
     });
 
     const winner = activePlayers.find(p => p.cardCount === 0);

@@ -3,8 +3,12 @@ import { Card, CardColor, CardValue, HouseRules } from '@shared/types/game';
 export class Deck {
   private cards: Card[] = [];
 
-  constructor(houseRules?: HouseRules) {
-    this.createDeck(houseRules);
+  constructor(houseRules?: HouseRules, mode?: string) {
+    if (mode === 'NO_MERCY') {
+      this.createNoMercyDeck();
+    } else {
+      this.createDeck(houseRules);
+    }
   }
 
   public createDeck(houseRules?: HouseRules): void {
@@ -78,6 +82,61 @@ export class Deck {
       this.cards.push({ id: `c_${cardIdCounter++}`, color: 'WILD', value: 'SKIP_WILD', score: 50 });
       this.cards.push({ id: `c_${cardIdCounter++}`, color: 'WILD', value: 'HASH_WILD', score: 50 });
       this.cards.push({ id: `c_${cardIdCounter++}`, color: 'WILD', value: 'MINUS_TWO_WILD', score: 50 });
+    }
+
+    this.shuffle();
+  }
+
+  public createNoMercyDeck(): void {
+    this.cards = [];
+    let cardIdCounter = 1;
+
+    const colors: CardColor[] = ['RED', 'YELLOW', 'GREEN', 'BLUE'];
+
+    colors.forEach((color) => {
+      // One '0' card per color
+      this.cards.push({ id: `nm_${cardIdCounter++}`, color, value: '0', score: 0 });
+
+      // Two of each 1-7 card per color
+      for (let i = 1; i <= 7; i++) {
+        const valStr = i.toString() as CardValue;
+        this.cards.push({ id: `nm_${cardIdCounter++}`, color, value: valStr, score: i });
+        this.cards.push({ id: `nm_${cardIdCounter++}`, color, value: valStr, score: i });
+      }
+
+      // Three Skip cards per color
+      for (let i = 0; i < 3; i++) {
+        this.cards.push({ id: `nm_${cardIdCounter++}`, color, value: 'SKIP', score: 20 });
+      }
+
+      // Three Reverse cards per color
+      for (let i = 0; i < 3; i++) {
+        this.cards.push({ id: `nm_${cardIdCounter++}`, color, value: 'REVERSE', score: 20 });
+      }
+
+      // Three Draw Two (+2) cards per color
+      for (let i = 0; i < 3; i++) {
+        this.cards.push({ id: `nm_${cardIdCounter++}`, color, value: 'DRAW_TWO', score: 20 });
+      }
+
+      // Three Discard All cards per color
+      for (let i = 0; i < 3; i++) {
+        this.cards.push({ id: `nm_${cardIdCounter++}`, color, value: 'DISCARD_ALL', score: 30 });
+      }
+
+      // Three Skip Everyone cards per color
+      for (let i = 0; i < 3; i++) {
+        this.cards.push({ id: `nm_${cardIdCounter++}`, color, value: 'SKIP_EVERYONE', score: 30 });
+      }
+    });
+
+    // Wild Action Cards (8 of each wild type in No Mercy)
+    for (let i = 0; i < 8; i++) {
+      this.cards.push({ id: `nm_${cardIdCounter++}`, color: 'WILD', value: 'WILD_DRAW_FOUR', score: 50 });
+      this.cards.push({ id: `nm_${cardIdCounter++}`, color: 'WILD', value: 'WILD_REVERSE_DRAW_FOUR', score: 50 });
+      this.cards.push({ id: `nm_${cardIdCounter++}`, color: 'WILD', value: 'WILD_DRAW_SIX', score: 50 });
+      this.cards.push({ id: `nm_${cardIdCounter++}`, color: 'WILD', value: 'WILD_DRAW_TEN', score: 50 });
+      this.cards.push({ id: `nm_${cardIdCounter++}`, color: 'WILD', value: 'WILD_COLOR_ROULETTE', score: 50 });
     }
 
     this.shuffle();

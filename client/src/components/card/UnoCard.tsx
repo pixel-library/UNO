@@ -176,6 +176,56 @@ export const UnoCard: React.FC<UnoCardProps> = ({
             <span className="absolute font-black italic tracking-tighter text-white drop-shadow-[0_2px_6px_rgba(0,0,0,0.9)] text-lg sm:text-2xl">🎯</span>
           </div>
         );
+      case 'SKIP_EVERYONE':
+        return <span className="font-black italic tracking-tighter drop-shadow-[0_2px_2px_rgba(0,0,0,0.25)] text-sm sm:text-base">⊘ ALL</span>;
+      case 'WILD_REVERSE_DRAW_FOUR':
+        return (
+          <div className="w-full h-full flex items-center justify-center relative">
+            <div className="w-[88%] h-[88%] rounded-full overflow-hidden grid grid-cols-2 grid-rows-2 shadow-inner border-2 border-white/80 transform -rotate-[28deg]">
+              <div className="bg-[#E52521]" />
+              <div className="bg-[#0082CA]" />
+              <div className="bg-[#FCD116]" />
+              <div className="bg-[#2D963F]" />
+            </div>
+            <span className="absolute font-black italic tracking-tighter text-white drop-shadow-[0_2px_6px_rgba(0,0,0,0.9)] text-xl sm:text-2xl">⇄+4</span>
+          </div>
+        );
+      case 'WILD_DRAW_SIX':
+        return (
+          <div className="w-full h-full flex items-center justify-center relative">
+            <div className="w-[88%] h-[88%] rounded-full overflow-hidden grid grid-cols-2 grid-rows-2 shadow-inner border-2 border-white/80 transform -rotate-[28deg]">
+              <div className="bg-[#E52521]" />
+              <div className="bg-[#0082CA]" />
+              <div className="bg-[#FCD116]" />
+              <div className="bg-[#2D963F]" />
+            </div>
+            <span className="absolute font-black italic tracking-tighter text-white drop-shadow-[0_2px_6px_rgba(0,0,0,0.9)] text-2xl sm:text-3xl">+6</span>
+          </div>
+        );
+      case 'WILD_DRAW_TEN':
+        return (
+          <div className="w-full h-full flex items-center justify-center relative">
+            <div className="w-[88%] h-[88%] rounded-full overflow-hidden grid grid-cols-2 grid-rows-2 shadow-inner border-2 border-white/80 transform -rotate-[28deg]">
+              <div className="bg-[#E52521]" />
+              <div className="bg-[#0082CA]" />
+              <div className="bg-[#FCD116]" />
+              <div className="bg-[#2D963F]" />
+            </div>
+            <span className="absolute font-black italic tracking-tighter text-white drop-shadow-[0_2px_6px_rgba(0,0,0,0.9)] text-xl sm:text-2xl">+10</span>
+          </div>
+        );
+      case 'WILD_COLOR_ROULETTE':
+        return (
+          <div className="w-full h-full flex items-center justify-center relative">
+            <div className="w-[88%] h-[88%] rounded-full overflow-hidden grid grid-cols-2 grid-rows-2 shadow-inner border-2 border-white/80 transform -rotate-[28deg]">
+              <div className="bg-[#E52521]" />
+              <div className="bg-[#0082CA]" />
+              <div className="bg-[#FCD116]" />
+              <div className="bg-[#2D963F]" />
+            </div>
+            <span className="absolute font-black italic tracking-tighter text-white drop-shadow-[0_2px_6px_rgba(0,0,0,0.9)] text-lg sm:text-xl">🎰</span>
+          </div>
+        );
       default:
         return <span className="font-black italic tracking-tight drop-shadow-[0_2px_4px_rgba(0,0,0,0.25)]">{value}</span>;
     }
@@ -194,6 +244,11 @@ export const UnoCard: React.FC<UnoCardProps> = ({
       case 'DISCARD_ALL': return 'ALL';
       case 'WILD_SHUFFLE': return '🌀';
       case 'WILD_SWAP': return '🎯';
+      case 'SKIP_EVERYONE': return '⊘ALL';
+      case 'WILD_REVERSE_DRAW_FOUR': return '⇄+4';
+      case 'WILD_DRAW_SIX': return '+6';
+      case 'WILD_DRAW_TEN': return '+10';
+      case 'WILD_COLOR_ROULETTE': return '🎰';
       default: return value;
     }
   };

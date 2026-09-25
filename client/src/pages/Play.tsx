@@ -12,7 +12,7 @@ export const Play: React.FC = () => {
 
   // Create Game State
   const [maxPlayers, setMaxPlayers] = useState<number>(4);
-  const [gameMode, setGameMode] = useState<'Classic' | 'Custom'>('Classic');
+  const [gameMode, setGameMode] = useState<'Classic' | 'No Mercy' | 'Custom'>('Classic');
   const [isPrivate, setIsPrivate] = useState<boolean>(false);
   const [stacking, setStacking] = useState<boolean>(true);
   const [jumpIn, setJumpIn] = useState<boolean>(false);
@@ -25,7 +25,7 @@ export const Play: React.FC = () => {
   const [wildSwap, setWildSwap] = useState<boolean>(false);
   const [isCreating, setIsCreating] = useState(false);
 
-  const handleModeChange = (mode: 'Classic' | 'Custom') => {
+  const handleModeChange = (mode: 'Classic' | 'No Mercy' | 'Custom') => {
     setGameMode(mode);
     if (mode === 'Classic') {
       setStacking(true);
@@ -37,6 +37,16 @@ export const Play: React.FC = () => {
       setCounterDeflect(true);
       setShuffleHands(false);
       setWildSwap(false);
+    } else if (mode === 'No Mercy') {
+      setStacking(true);
+      setJumpIn(false);
+      setSevenZero(true);
+      setForcePlay(false);
+      setDrawUntilPlayable(false);
+      setDiscardAll(true);
+      setCounterDeflect(true);
+      setShuffleHands(false);
+      setWildSwap(true);
     }
   };
 
@@ -210,7 +220,7 @@ export const Play: React.FC = () => {
       }
     }, 4000);
 
-    const isCustomNeeded = gameMode === 'Custom' || discardAll || shuffleHands || wildSwap || jumpIn || sevenZero;
+    const modeChoice = gameMode === 'No Mercy' ? 'NO_MERCY' : (gameMode === 'Custom' ? 'CUSTOM' : 'CLASSIC');
 
     try {
       const socket = socketService.getSocket();
@@ -225,7 +235,7 @@ export const Play: React.FC = () => {
             allowSpectators: true,
             enableChat: true,
             isPrivate,
-            mode: isCustomNeeded ? 'CUSTOM' : 'CLASSIC',
+            mode: modeChoice,
             houseRules: {
               stacking,
               jumpIn,
@@ -233,7 +243,7 @@ export const Play: React.FC = () => {
               forcePlay,
               drawUntilPlayable,
               multipleCardPlay: false,
-              customCards: isCustomNeeded,
+              customCards: modeChoice !== 'CLASSIC',
               discardAll,
               counterDeflect,
               shuffleHands,
@@ -564,18 +574,18 @@ export const Play: React.FC = () => {
               <div className="flex items-center justify-between">
                 <span className="text-sm font-semibold text-neutral-700">Game Mode:</span>
                 <div className="bg-neutral-100 p-1 rounded-xl flex gap-1 border border-neutral-200">
-                  {(['Classic', 'Custom'] as const).map((mode) => (
+                  {(['Classic', 'No Mercy', 'Custom'] as const).map((mode) => (
                     <button
                       key={mode}
                       type="button"
                       onClick={() => handleModeChange(mode)}
                       className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
                         gameMode === mode
-                          ? 'bg-white text-neutral-800 shadow-sm'
+                          ? 'bg-amber-400 text-slate-950 shadow-sm'
                           : 'text-neutral-500 hover:text-neutral-700'
                       }`}
                     >
-                      {mode}
+                      {mode === 'No Mercy' ? '🔥 No Mercy' : mode}
                     </button>
                   ))}
                 </div>

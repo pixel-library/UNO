@@ -587,7 +587,15 @@ export const GameScreen: React.FC = () => {
               </div>
               <div className="text-left leading-tight">
                 <div className="font-extrabold text-[10px] sm:text-xs text-white uppercase tracking-wider truncate max-w-[70px] sm:max-w-none">{topOpponent.name}</div>
-                <div className="text-[9px] font-semibold text-white/70">{topOpponent.cardCount} cards</div>
+                {topOpponent.isEliminated ? (
+                  <div className="text-[9px] font-black text-red-400">💀 ELIMINATED</div>
+                ) : gameState?.settings?.mode === 'NO_MERCY' ? (
+                  <div className={`text-[9px] font-bold ${topOpponent.cardCount >= 20 ? 'text-amber-400 animate-pulse' : 'text-white/80'}`}>
+                    {topOpponent.cardCount}/25 cards{topOpponent.cardCount >= 20 ? ' ⚠️' : ''}
+                  </div>
+                ) : (
+                  <div className="text-[9px] font-semibold text-white/70">{topOpponent.cardCount} cards</div>
+                )}
               </div>
               <span className="hidden sm:flex items-center gap-1 bg-emerald-500/20 px-2 py-0.5 rounded-full text-[10px] text-emerald-300 font-bold border border-emerald-400/30">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> {topOpponent.isConnected ? 'Online' : 'Offline'}
@@ -770,7 +778,15 @@ export const GameScreen: React.FC = () => {
                     </div>
                     <div className="text-left">
                       <div className="text-[10px] font-extrabold text-white">{leftOpponent.name}</div>
-                      <div className="text-[9px] font-semibold text-white/70">{leftOpponent.cardCount} cards</div>
+                      {leftOpponent.isEliminated ? (
+                        <div className="text-[9px] font-black text-red-400">💀 ELIMINATED</div>
+                      ) : gameState?.settings?.mode === 'NO_MERCY' ? (
+                        <div className={`text-[9px] font-bold ${leftOpponent.cardCount >= 20 ? 'text-amber-400 animate-pulse' : 'text-white/80'}`}>
+                          {leftOpponent.cardCount}/25 cards{leftOpponent.cardCount >= 20 ? ' ⚠️' : ''}
+                        </div>
+                      ) : (
+                        <div className="text-[9px] font-semibold text-white/70">{leftOpponent.cardCount} cards</div>
+                      )}
                     </div>
                   </div>
 
@@ -887,7 +903,15 @@ export const GameScreen: React.FC = () => {
                   }`}>
                     <div className="text-right">
                       <div className="text-[10px] font-extrabold text-white">{rightOpponent.name}</div>
-                      <div className="text-[9px] font-semibold text-white/70">{rightOpponent.cardCount} cards</div>
+                      {rightOpponent.isEliminated ? (
+                        <div className="text-[9px] font-black text-red-400">💀 ELIMINATED</div>
+                      ) : gameState?.settings?.mode === 'NO_MERCY' ? (
+                        <div className={`text-[9px] font-bold ${rightOpponent.cardCount >= 20 ? 'text-amber-400 animate-pulse' : 'text-white/80'}`}>
+                          {rightOpponent.cardCount}/25 cards{rightOpponent.cardCount >= 20 ? ' ⚠️' : ''}
+                        </div>
+                      ) : (
+                        <div className="text-[9px] font-semibold text-white/70">{rightOpponent.cardCount} cards</div>
+                      )}
                     </div>
                     <div className="w-5 h-5 rounded-full bg-sky-400/30 text-white flex items-center justify-center text-xs font-bold border border-sky-300/40">
                       {rightOpponent.avatar || '👤'}
@@ -1189,7 +1213,13 @@ export const GameScreen: React.FC = () => {
               <div className="bg-white/10 backdrop-blur-md px-3 py-0.5 rounded-full border border-white/20 flex items-center gap-1.5 text-[10px] font-extrabold z-10 my-0.5 relative shadow-md text-white">
                 <div className="w-3.5 h-3.5 rounded-full bg-sky-400/30 text-white flex items-center justify-center text-[8px] border border-sky-300/40">👤</div>
                 <span>You</span>
-                <span className="text-white/70">({displayHand.length} Cards)</span>
+                {gameState?.settings?.mode === 'NO_MERCY' ? (
+                  <span className={`font-black ${displayHand.length >= 20 ? 'text-amber-400 animate-pulse' : 'text-white/80'}`}>
+                    ({displayHand.length}/25 Cards{displayHand.length >= 20 ? ' ⚠️' : ''})
+                  </span>
+                ) : (
+                  <span className="text-white/70">({displayHand.length} Cards)</span>
+                )}
                 <span className="hidden sm:flex items-center gap-1 text-emerald-400 text-[9px]">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> Online
                 </span>

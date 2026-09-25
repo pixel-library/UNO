@@ -6,7 +6,7 @@ import { socketService } from '@/services/socketService';
 export const CreateGame: React.FC = () => {
   const navigate = useNavigate();
 
-  const [preset, setPreset] = useState<'CLASSIC' | 'SPEED' | 'CHAOS' | 'CUSTOM'>('CLASSIC');
+  const [preset, setPreset] = useState<'CLASSIC' | 'NO_MERCY' | 'SPEED' | 'CHAOS' | 'CUSTOM'>('CLASSIC');
   const [maxPlayers, setMaxPlayers] = useState<number>(4);
   const [startingCards, setStartingCards] = useState<number>(7);
   const [turnTimerSeconds, setTurnTimerSeconds] = useState<number>(30);
@@ -24,7 +24,7 @@ export const CreateGame: React.FC = () => {
   const [isPrivate, setIsPrivate] = useState<boolean>(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const applyPreset = (p: 'CLASSIC' | 'SPEED' | 'CHAOS' | 'CUSTOM') => {
+  const applyPreset = (p: 'CLASSIC' | 'NO_MERCY' | 'SPEED' | 'CHAOS' | 'CUSTOM') => {
     setPreset(p);
     if (p === 'CLASSIC') {
       setMaxPlayers(4);
@@ -38,6 +38,18 @@ export const CreateGame: React.FC = () => {
       setCounterDeflect(true);
       setShuffleHands(false);
       setWildSwap(false);
+    } else if (p === 'NO_MERCY') {
+      setMaxPlayers(4);
+      setStartingCards(7);
+      setTurnTimerSeconds(30);
+      setStacking(true);
+      setSevenZero(true);
+      setJumpIn(false);
+      setCustomCards(true);
+      setDiscardAll(true);
+      setCounterDeflect(true);
+      setShuffleHands(false);
+      setWildSwap(true);
     } else if (p === 'SPEED') {
       setMaxPlayers(4);
       setStartingCards(5);
@@ -83,7 +95,7 @@ export const CreateGame: React.FC = () => {
       }
     }, 4000);
 
-    const isCustomNeeded = preset !== 'CLASSIC' || customCards || discardAll || shuffleHands || wildSwap || jumpIn || sevenZero;
+    const modeChoice = preset === 'NO_MERCY' ? 'NO_MERCY' : (preset !== 'CLASSIC' ? 'CUSTOM' : 'CLASSIC');
 
     try {
       const socket = socketService.getSocket();
@@ -98,7 +110,7 @@ export const CreateGame: React.FC = () => {
             allowSpectators,
             enableChat,
             isPrivate,
-            mode: isCustomNeeded ? 'CUSTOM' : 'CLASSIC',
+            mode: modeChoice,
             houseRules: {
               stacking,
               jumpIn,
@@ -106,7 +118,7 @@ export const CreateGame: React.FC = () => {
               forcePlay,
               drawUntilPlayable: false,
               multipleCardPlay: false,
-              customCards: isCustomNeeded,
+              customCards: modeChoice !== 'CLASSIC',
               discardAll,
               counterDeflect,
               shuffleHands,
@@ -167,9 +179,10 @@ export const CreateGame: React.FC = () => {
             <label className="text-xs font-bold text-neutral-700 uppercase tracking-wider flex items-center gap-1.5">
               <Sparkles className="w-4 h-4 text-amber-500" /> GAME PRESETS
             </label>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
               {[
                 { key: 'CLASSIC', label: 'Classic 🎲', desc: 'Standard 7-card match' },
+                { key: 'NO_MERCY', label: 'No Mercy 🔥', desc: '25-Card Limit & Extreme Stacking' },
                 { key: 'SPEED', label: 'Speed Match ⚡', desc: '5 cards, 15s timer' },
                 { key: 'CHAOS', label: 'Chaos Mode 💥', desc: 'Stack + Swap + Jump-In' },
                 { key: 'CUSTOM', label: 'Custom 🛠️', desc: 'Full manual rules' }

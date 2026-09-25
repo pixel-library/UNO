@@ -7,7 +7,8 @@ export type CardValue =
   | 'SKIP' | 'REVERSE' | 'DRAW_TWO'
   | 'WILD' | 'WILD_DRAW_FOUR'
   | 'DISCARD_ALL' | 'WILD_SHUFFLE' | 'WILD_SWAP'
-  | 'REPLAY' | 'SKIP_WILD' | 'HASH' | 'HASH_WILD' | 'MINUS_ONE' | 'MINUS_TWO_WILD';
+  | 'REPLAY' | 'SKIP_WILD' | 'HASH' | 'HASH_WILD' | 'MINUS_ONE' | 'MINUS_TWO_WILD'
+  | 'SKIP_EVERYONE' | 'WILD_REVERSE_DRAW_FOUR' | 'WILD_COLOR_ROULETTE' | 'WILD_DRAW_SIX' | 'WILD_DRAW_TEN';
 
 export interface Card {
   id: string;
@@ -16,7 +17,7 @@ export interface Card {
   score: number;
 }
 
-export type GameMode = 'CLASSIC' | 'CUSTOM' | 'VS_COMPUTER' | 'QUICK_PLAY' | 'TOURNAMENT';
+export type GameMode = 'CLASSIC' | 'CUSTOM' | 'VS_COMPUTER' | 'QUICK_PLAY' | 'TOURNAMENT' | 'NO_MERCY';
 
 export interface HouseRules {
   stacking: boolean;            // +2 on +2 or +4 on +4
@@ -40,7 +41,7 @@ export interface GameSettings {
   allowSpectators: boolean;
   enableChat: boolean;
   isPrivate?: boolean;          // Room privacy: true (Code only), false (Public in lobby)
-  mode?: GameMode;              // Game mode: 'CLASSIC' | 'CUSTOM' | etc.
+  mode?: GameMode;              // Game mode: 'CLASSIC' | 'CUSTOM' | 'NO_MERCY' etc.
 }
 
 export interface PlayerPublic {
@@ -57,12 +58,13 @@ export interface PlayerPublic {
   score: number;
   isBot?: boolean;
   isFinished?: boolean;
+  isEliminated?: boolean;       // Mercy rule elimination (25+ cards)
   rank?: number;
 }
 
 
 export interface ActionEvent {
-  type: 'SKIP' | 'REVERSE' | 'DRAW_TWO' | 'WILD_DRAW_FOUR' | 'STACK' | 'HAND_SWAP' | 'HAND_ROTATE' | 'UNO_CALL' | 'UNO_CHALLENGE' | 'JUMP_IN' | 'DISCARD_ALL' | 'DEFLECT' | 'SHUFFLE_HANDS' | 'WILD_SWAP';
+  type: 'SKIP' | 'REVERSE' | 'DRAW_TWO' | 'WILD_DRAW_FOUR' | 'STACK' | 'HAND_SWAP' | 'HAND_ROTATE' | 'UNO_CALL' | 'UNO_CHALLENGE' | 'JUMP_IN' | 'DISCARD_ALL' | 'DEFLECT' | 'SHUFFLE_HANDS' | 'WILD_SWAP' | 'MERCY_ELIMINATION' | 'SKIP_EVERYONE' | 'COLOR_ROULETTE';
   title: string;
   playerName: string;
   timestamp: number;
