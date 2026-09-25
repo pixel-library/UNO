@@ -392,300 +392,98 @@ export const Play: React.FC = () => {
         </div>
 
         {/* ----------------------------------------------------------- */}
-        {/* CARD 1: CREATE MULTIPLAYER GAME (REAL HUMAN PLAYERS ONLY)   */}
+        {/* CARD 1: PLAY VS COMPUTER (AI MATCH)                          */}
         {/* ----------------------------------------------------------- */}
         <div className="w-full bg-white rounded-3xl p-5 sm:p-7 border border-neutral-200/90 shadow-lg hover:shadow-xl transition-shadow flex flex-col justify-between z-10 space-y-6">
           
-          <div>
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="text-lg font-extrabold text-[#111827] tracking-wide uppercase">
-                🌐 CREATE MULTIPLAYER
+          <div className="space-y-5">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-extrabold text-[#111827] tracking-wide uppercase flex items-center gap-2">
+                🤖 VS COMPUTER
               </h2>
-              <span className="text-[10px] font-black bg-blue-100 text-blue-800 px-2.5 py-1 rounded-full uppercase border border-blue-200">
-                REAL PLAYERS ONLY
+              <span className="text-[10px] font-black bg-amber-100 text-amber-800 px-2.5 py-1 rounded-full uppercase border border-amber-200">
+                OFFLINE / AI
               </span>
             </div>
 
-            <p className="text-xs text-neutral-500 font-medium leading-relaxed mb-5">
-              Create an online room for real human players. Invite friends using room code or link. No AI bots.
+            <p className="text-xs text-neutral-500 font-medium leading-relaxed">
+              Practice your skills against smart AI bots. Pick match size and start playing immediately!
             </p>
 
-            <div className="space-y-5">
-              
-              {/* Room Privacy Row */}
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-semibold text-neutral-700">Room Privacy:</span>
-                <div className="bg-neutral-100 p-1 rounded-xl flex gap-1 border border-neutral-200">
+            {/* Match Size Selection: 2, 3, or 4 Players */}
+            <div className="space-y-3 pt-2">
+              <span className="text-xs font-bold text-neutral-700 uppercase tracking-wider block">
+                Select Match Size:
+              </span>
+
+              <div className="grid grid-cols-3 gap-2">
+                {[
+                  { size: 2, label: '2 PLAYERS', desc: '1 vs 1 AI' },
+                  { size: 3, label: '3 PLAYERS', desc: '1 vs 2 AI' },
+                  { size: 4, label: '4 PLAYERS', desc: '1 vs 3 AI' }
+                ].map((item) => (
                   <button
+                    key={item.size}
                     type="button"
-                    onClick={() => setIsPrivate(false)}
-                    className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
-                      !isPrivate
-                        ? 'bg-emerald-500 text-white shadow-sm'
-                        : 'text-neutral-500 hover:text-neutral-700'
+                    onClick={() => setBotMatchSize(item.size as 2 | 3 | 4)}
+                    className={`py-3 px-2 rounded-2xl flex flex-col items-center justify-center border-2 transition-all ${
+                      botMatchSize === item.size
+                        ? 'border-amber-400 bg-amber-50/90 text-amber-950 shadow-sm ring-2 ring-amber-300/40 font-bold'
+                        : 'border-neutral-200 text-neutral-600 hover:border-neutral-300 bg-neutral-50/50'
                     }`}
                   >
-                    🌐 Public
+                    <span className="font-extrabold text-xs">{item.label}</span>
+                    <span className="text-[10px] text-neutral-500 font-bold mt-0.5">{item.desc}</span>
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => setIsPrivate(true)}
-                    className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
-                      isPrivate
-                        ? 'bg-amber-500 text-white shadow-sm'
-                        : 'text-neutral-500 hover:text-neutral-700'
-                    }`}
-                  >
-                    🔒 Private
-                  </button>
-                </div>
+                ))}
               </div>
+            </div>
 
-              {/* Players Row */}
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-semibold text-neutral-700">Players:</span>
-                <div className="flex gap-2">
-                  {[2, 3, 4].map((num) => (
-                    <button
-                      key={num}
-                      type="button"
-                      onClick={() => setMaxPlayers(num)}
-                      className={`w-10 h-9 rounded-lg font-bold text-sm border transition-all ${
-                        maxPlayers === num
-                          ? 'border-sky-400 bg-sky-50 text-sky-600 shadow-sm'
-                          : 'border-neutral-200 text-neutral-600 hover:border-neutral-300'
-                      }`}
-                    >
-                      {num}
-                    </button>
-                  ))}
+            {/* Visual Player Roster Preview */}
+            <div className="bg-neutral-50 rounded-2xl p-3 border border-neutral-200/80 space-y-2">
+              <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider block">
+                Match Roster Preview:
+              </span>
+              <div className="flex flex-wrap items-center gap-2">
+                {/* Human Player */}
+                <div className="flex items-center gap-1.5 bg-blue-100 text-blue-900 border border-blue-200 px-2.5 py-1 rounded-xl text-xs font-bold">
+                  <span>👤</span>
+                  <span>You</span>
                 </div>
-              </div>
-
-              {/* Game Mode Row */}
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-semibold text-neutral-700">Game Mode:</span>
-                <div className="bg-neutral-100 p-1 rounded-xl flex gap-1 border border-neutral-200">
-                  {(['Classic', 'Custom'] as const).map((mode) => (
-                    <button
-                      key={mode}
-                      type="button"
-                      onClick={() => handleModeChange(mode)}
-                      className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
-                        gameMode === mode
-                          ? 'bg-white text-neutral-800 shadow-sm'
-                          : 'text-neutral-500 hover:text-neutral-700'
-                      }`}
-                    >
-                      {mode}
-                    </button>
-                  ))}
+                
+                {/* AI Bot 1 */}
+                <div className="flex items-center gap-1.5 bg-amber-100 text-amber-900 border border-amber-200 px-2.5 py-1 rounded-xl text-xs font-bold">
+                  <span>🤖</span>
+                  <span>Bot 1</span>
                 </div>
+
+                {/* AI Bot 2 (if 3 or 4) */}
+                {botMatchSize >= 3 && (
+                  <div className="flex items-center gap-1.5 bg-amber-100 text-amber-900 border border-amber-200 px-2.5 py-1 rounded-xl text-xs font-bold">
+                    <span>🤖</span>
+                    <span>Bot 2</span>
+                  </div>
+                )}
+
+                {/* AI Bot 3 (if 4) */}
+                {botMatchSize >= 4 && (
+                  <div className="flex items-center gap-1.5 bg-amber-100 text-amber-900 border border-amber-200 px-2.5 py-1 rounded-xl text-xs font-bold">
+                    <span>🤖</span>
+                    <span>Bot 3</span>
+                  </div>
+                )}
               </div>
-
-              {/* Optional Rules Header */}
-              <div className="pt-2 border-t border-neutral-100">
-                <span className="text-xs font-bold text-neutral-600 uppercase tracking-wider block mb-3">
-                  Optional rules:
-                </span>
-
-                <div className="space-y-3">
-                  {/* Stacking Switch */}
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-neutral-700">Stacking</span>
-                    <button
-                      type="button"
-                      onClick={() => setStacking(!stacking)}
-                      className={`w-12 h-6 flex items-center rounded-full p-0.5 transition-colors ${
-                        stacking ? 'bg-sky-500' : 'bg-neutral-300'
-                      }`}
-                    >
-                      <div
-                        className={`bg-white w-5 h-5 rounded-full shadow-md transform transition-transform flex items-center justify-center ${
-                          stacking ? 'translate-x-6' : 'translate-x-0'
-                        }`}
-                      >
-                        <span className="text-[8px] font-black text-sky-600">
-                          {stacking ? 'ON' : ''}
-                        </span>
-                      </div>
-                    </button>
-                  </div>
-
-                  {/* Jump-In Switch */}
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-neutral-700">Jump-In</span>
-                    <button
-                      type="button"
-                      onClick={() => { const next = !jumpIn; setJumpIn(next); if (next) setGameMode('Custom'); }}
-                      className={`w-12 h-6 flex items-center rounded-full p-0.5 transition-colors ${
-                        jumpIn ? 'bg-sky-500' : 'bg-neutral-300'
-                      }`}
-                    >
-                      <div
-                        className={`bg-white w-5 h-5 rounded-full shadow-md transform transition-transform ${
-                          jumpIn ? 'translate-x-6' : 'translate-x-0'
-                        }`}
-                      />
-                    </button>
-                  </div>
-
-                  {/* Seven-O Switch */}
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-neutral-700">Seven-O</span>
-                    <button
-                      type="button"
-                      onClick={() => { const next = !sevenZero; setSevenZero(next); if (next) setGameMode('Custom'); }}
-                      className={`w-12 h-6 flex items-center rounded-full p-0.5 transition-colors ${
-                        sevenZero ? 'bg-sky-500' : 'bg-neutral-300'
-                      }`}
-                    >
-                      <div
-                        className={`bg-white w-5 h-5 rounded-full shadow-md transform transition-transform ${
-                          sevenZero ? 'translate-x-6' : 'translate-x-0'
-                        }`}
-                      />
-                    </button>
-                  </div>
-
-                  {/* Force Play Switch */}
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-neutral-700">Force Play</span>
-                    <button
-                      type="button"
-                      onClick={() => setForcePlay(!forcePlay)}
-                      className={`w-12 h-6 flex items-center rounded-full p-0.5 transition-colors ${
-                        forcePlay ? 'bg-sky-500' : 'bg-neutral-300'
-                      }`}
-                    >
-                      <div
-                        className={`bg-white w-5 h-5 rounded-full shadow-md transform transition-transform ${
-                          forcePlay ? 'translate-x-6' : 'translate-x-0'
-                        }`}
-                      />
-                    </button>
-                  </div>
-
-                  {/* Draw Until Playable Switch */}
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-neutral-700">Draw Until Playable</span>
-                    <button
-                      type="button"
-                      onClick={() => { const next = !drawUntilPlayable; setDrawUntilPlayable(next); if (next) setGameMode('Custom'); }}
-                      className={`w-12 h-6 flex items-center rounded-full p-0.5 transition-colors ${
-                        drawUntilPlayable ? 'bg-sky-500' : 'bg-neutral-300'
-                      }`}
-                    >
-                      <div
-                        className={`bg-white w-5 h-5 rounded-full shadow-md transform transition-transform ${
-                          drawUntilPlayable ? 'translate-x-6' : 'translate-x-0'
-                        }`}
-                      />
-                    </button>
-                  </div>
-
-                  {/* Discard All Color Switch */}
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-neutral-700">Discard All Color 🎨</span>
-                    <button
-                      type="button"
-                      onClick={() => { const next = !discardAll; setDiscardAll(next); if (next) setGameMode('Custom'); }}
-                      className={`w-12 h-6 flex items-center rounded-full p-0.5 transition-colors ${
-                        discardAll ? 'bg-sky-500' : 'bg-neutral-300'
-                      }`}
-                    >
-                      <div
-                        className={`bg-white w-5 h-5 rounded-full shadow-md transform transition-transform flex items-center justify-center ${
-                          discardAll ? 'translate-x-6' : 'translate-x-0'
-                        }`}
-                      >
-                        <span className="text-[8px] font-black text-sky-600">
-                          {discardAll ? 'ON' : ''}
-                        </span>
-                      </div>
-                    </button>
-                  </div>
-
-                  {/* Deflect Shield Switch */}
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-neutral-700">Deflect Shield 🛡️</span>
-                    <button
-                      type="button"
-                      onClick={() => setCounterDeflect(!counterDeflect)}
-                      className={`w-12 h-6 flex items-center rounded-full p-0.5 transition-colors ${
-                        counterDeflect ? 'bg-sky-500' : 'bg-neutral-300'
-                      }`}
-                    >
-                      <div
-                        className={`bg-white w-5 h-5 rounded-full shadow-md transform transition-transform flex items-center justify-center ${
-                          counterDeflect ? 'translate-x-6' : 'translate-x-0'
-                        }`}
-                      >
-                        <span className="text-[8px] font-black text-sky-600">
-                          {counterDeflect ? 'ON' : ''}
-                        </span>
-                      </div>
-                    </button>
-                  </div>
-
-                  {/* Wild Shuffle Hands Switch */}
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-neutral-700">Wild Shuffle 🌀</span>
-                    <button
-                      type="button"
-                      onClick={() => { const next = !shuffleHands; setShuffleHands(next); if (next) setGameMode('Custom'); }}
-                      className={`w-12 h-6 flex items-center rounded-full p-0.5 transition-colors ${
-                        shuffleHands ? 'bg-sky-500' : 'bg-neutral-300'
-                      }`}
-                    >
-                      <div
-                        className={`bg-white w-5 h-5 rounded-full shadow-md transform transition-transform flex items-center justify-center ${
-                          shuffleHands ? 'translate-x-6' : 'translate-x-0'
-                        }`}
-                      >
-                        <span className="text-[8px] font-black text-sky-600">
-                          {shuffleHands ? 'ON' : ''}
-                        </span>
-                      </div>
-                    </button>
-                  </div>
-
-                  {/* Wild Swap Card Switch */}
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-neutral-700">Wild Swap 🎯</span>
-                    <button
-                      type="button"
-                      onClick={() => { const next = !wildSwap; setWildSwap(next); if (next) setGameMode('Custom'); }}
-                      className={`w-12 h-6 flex items-center rounded-full p-0.5 transition-colors ${
-                        wildSwap ? 'bg-sky-500' : 'bg-neutral-300'
-                      }`}
-                    >
-                      <div
-                        className={`bg-white w-5 h-5 rounded-full shadow-md transform transition-transform flex items-center justify-center ${
-                          wildSwap ? 'translate-x-6' : 'translate-x-0'
-                        }`}
-                      >
-                        <span className="text-[8px] font-black text-sky-600">
-                          {wildSwap ? 'ON' : ''}
-                        </span>
-                      </div>
-                    </button>
-                  </div>
-
-                </div>
-              </div>
-
             </div>
           </div>
 
-          {/* CREATE GAME Button */}
-          <div className="pt-4">
+          {/* START VS COMPUTER Button */}
+          <div className="pt-2">
             <button
-              onClick={handleCreateGame}
-              disabled={isCreating}
-              className="w-full btn-3d-blue py-3.5 rounded-2xl text-sm font-black tracking-wider uppercase disabled:opacity-50"
+              onClick={() => handleCreateVsBot()}
+              disabled={isCreatingBot}
+              className="w-full btn-3d-yellow py-3.5 rounded-2xl text-sm font-black tracking-wider uppercase disabled:opacity-50 flex items-center justify-center gap-2"
             >
-              {isCreating ? 'CREATING ROOM...' : 'CREATE MULTIPLAYER GAME'}
+              {isCreatingBot ? 'STARTING MATCH...' : `PLAY ${botMatchSize}P VS COMPUTER ⚡`}
             </button>
           </div>
 
