@@ -76,6 +76,11 @@ export class UnoGame {
   }
 
   public addBot(botName?: string, botAvatar?: string): PlayerPublic | null {
+    // Strictly forbid adding AI bots to online rooms
+    if (this.settings.mode !== 'VS_COMPUTER') {
+      return null;
+    }
+
     if (this.players.filter(p => !p.isSpectator).length >= this.settings.maxPlayers) {
       return null;
     }
