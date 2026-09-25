@@ -23,7 +23,7 @@ import { useScroll3D } from '@/hooks/useScroll3D';
 
 export const Rules: React.FC = () => {
   useScroll3D();
-  const [filterCategory, setFilterCategory] = useState<'all' | 'standard' | 'action' | 'special' | 'scoring'>('all');
+  const [filterCategory, setFilterCategory] = useState<'all' | 'standard' | 'action' | 'special' | 'scoring' | 'no_mercy'>('all');
 
   return (
     <div className="w-full min-h-screen bg-gradient-to-br from-slate-50 via-sky-50/40 to-slate-100 text-slate-800 pb-20 font-sans selection:bg-[#FCD116] selection:text-slate-950">
@@ -105,6 +105,7 @@ export const Rules: React.FC = () => {
               { id: 'standard', label: 'Standard Cards', icon: CheckCircle2 },
               { id: 'action', label: 'Action Cards (+2/Skip/Reverse)', icon: Flame },
               { id: 'special', label: 'Wild & House Rules', icon: Sparkles },
+              { id: 'no_mercy', label: "No Mercy Expansion 💀", icon: Flame },
               { id: 'scoring', label: 'Scoring System', icon: Trophy },
             ] as const
           ).map((cat) => {
@@ -295,6 +296,146 @@ export const Rules: React.FC = () => {
                 <div className="border-t border-slate-200/80 pt-3 text-[11px] text-slate-500 font-bold flex justify-between">
                   <span>Count in Deck: 4 cards</span>
                   <span className="text-amber-600">Score: 50 Points</span>
+                </div>
+              </div>
+            )}
+
+            {/* 7. Draw Six (+6) Card - No Mercy */}
+            {(filterCategory === 'all' || filterCategory === 'no_mercy') && (
+              <div className="bg-white rounded-3xl border border-red-200 p-6 flex flex-col justify-between space-y-6 hover:shadow-md transition-all shadow-xs">
+                <div className="space-y-3">
+                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-100 text-red-800 text-xs font-extrabold border border-red-300">
+                    <Flame className="w-3.5 h-3.5 text-red-600" /> NO MERCY ACTION
+                  </div>
+                  <h3 className="text-lg font-extrabold text-slate-900">DRAW SIX (+6) Card</h3>
+                  <p className="text-xs text-slate-600 leading-relaxed font-medium">
+                    Forces the next player to draw 6 cards! Can be stacked onto +2 or +4 cards in No Mercy mode.
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-4 bg-slate-50 p-4 rounded-2xl border border-slate-200/80">
+                  <UnoCard color="RED" value="DRAW_SIX" size="sm" />
+                  <div className="text-xs space-y-1">
+                    <span className="font-bold text-red-600 block">+6 Penalty Attack</span>
+                    <span className="text-slate-500 text-[11px] block font-medium">Stackable with +2, +4, +6, +10</span>
+                  </div>
+                </div>
+
+                <div className="border-t border-slate-200/80 pt-3 text-[11px] text-slate-500 font-bold flex justify-between">
+                  <span>Count in No Mercy Deck: 8 cards</span>
+                  <span className="text-amber-600">Score: 30 Points</span>
+                </div>
+              </div>
+            )}
+
+            {/* 8. Wild Draw Ten (+10) Card - No Mercy */}
+            {(filterCategory === 'all' || filterCategory === 'no_mercy') && (
+              <div className="bg-white rounded-3xl border border-amber-200 p-6 flex flex-col justify-between space-y-6 hover:shadow-md transition-all shadow-xs">
+                <div className="space-y-3">
+                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-100 text-amber-900 text-xs font-extrabold border border-amber-300">
+                    <Flame className="w-3.5 h-3.5 text-amber-600" /> NO MERCY ULTIMATE
+                  </div>
+                  <h3 className="text-lg font-extrabold text-slate-900">WILD DRAW TEN (+10)</h3>
+                  <p className="text-xs text-slate-600 leading-relaxed font-medium">
+                    The most devastating penalty card! Forces next player to draw 10 cards and lets you choose the color.
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-4 bg-slate-50 p-4 rounded-2xl border border-slate-200/80">
+                  <UnoCard color="WILD" value="WILD_DRAW_TEN" size="sm" />
+                  <div className="text-xs space-y-1">
+                    <span className="font-bold text-amber-700 block">+10 Penalty & Color Choice</span>
+                    <span className="text-slate-500 text-[11px] block font-medium">Push opponents to 25 Mercy Limit!</span>
+                  </div>
+                </div>
+
+                <div className="border-t border-slate-200/80 pt-3 text-[11px] text-slate-500 font-bold flex justify-between">
+                  <span>Count in No Mercy Deck: 4 cards</span>
+                  <span className="text-amber-600">Score: 50 Points</span>
+                </div>
+              </div>
+            )}
+
+            {/* 9. Skip Everyone Card - No Mercy */}
+            {(filterCategory === 'all' || filterCategory === 'no_mercy') && (
+              <div className="bg-white rounded-3xl border border-sky-200 p-6 flex flex-col justify-between space-y-6 hover:shadow-md transition-all shadow-xs">
+                <div className="space-y-3">
+                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-sky-100 text-sky-800 text-xs font-extrabold border border-sky-300">
+                    <Ban className="w-3.5 h-3.5 text-sky-600" /> NO MERCY ACTION
+                  </div>
+                  <h3 className="text-lg font-extrabold text-slate-900">SKIP EVERYONE Card</h3>
+                  <p className="text-xs text-slate-600 leading-relaxed font-medium">
+                    Skips every single opponent turn immediately, giving you another consecutive turn right away!
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-4 bg-slate-50 p-4 rounded-2xl border border-slate-200/80">
+                  <UnoCard color="BLUE" value="SKIP_EVERYONE" size="sm" />
+                  <div className="text-xs space-y-1">
+                    <span className="font-bold text-sky-700 block">Take Immediate Next Turn</span>
+                    <span className="text-slate-500 text-[11px] block font-medium">Skips all other players</span>
+                  </div>
+                </div>
+
+                <div className="border-t border-slate-200/80 pt-3 text-[11px] text-slate-500 font-bold flex justify-between">
+                  <span>Count in No Mercy Deck: 4 cards</span>
+                  <span className="text-amber-600">Score: 30 Points</span>
+                </div>
+              </div>
+            )}
+
+            {/* 10. Wild Color Roulette - No Mercy */}
+            {(filterCategory === 'all' || filterCategory === 'no_mercy') && (
+              <div className="bg-white rounded-3xl border border-purple-200 p-6 flex flex-col justify-between space-y-6 hover:shadow-md transition-all shadow-xs">
+                <div className="space-y-3">
+                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-100 text-purple-800 text-xs font-extrabold border border-purple-300">
+                    <Sparkles className="w-3.5 h-3.5 text-purple-600" /> NO MERCY WILD
+                  </div>
+                  <h3 className="text-lg font-extrabold text-slate-900">WILD COLOR ROULETTE</h3>
+                  <p className="text-xs text-slate-600 leading-relaxed font-medium">
+                    Choose a color. The next player must continuously draw cards from the deck until drawing a card of that chosen color!
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-4 bg-slate-50 p-4 rounded-2xl border border-slate-200/80">
+                  <UnoCard color="WILD" value="WILD_COLOR_ROULETTE" size="sm" />
+                  <div className="text-xs space-y-1">
+                    <span className="font-bold text-purple-700 block">Endless Draw Trap</span>
+                    <span className="text-slate-500 text-[11px] block font-medium">Target draws until color match</span>
+                  </div>
+                </div>
+
+                <div className="border-t border-slate-200/80 pt-3 text-[11px] text-slate-500 font-bold flex justify-between">
+                  <span>Count in No Mercy Deck: 4 cards</span>
+                  <span className="text-amber-600">Score: 50 Points</span>
+                </div>
+              </div>
+            )}
+
+            {/* 11. Discard All - No Mercy */}
+            {(filterCategory === 'all' || filterCategory === 'no_mercy') && (
+              <div className="bg-white rounded-3xl border border-emerald-200 p-6 flex flex-col justify-between space-y-6 hover:shadow-md transition-all shadow-xs">
+                <div className="space-y-3">
+                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-extrabold border border-emerald-300">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> NO MERCY ACTION
+                  </div>
+                  <h3 className="text-lg font-extrabold text-slate-900">DISCARD ALL Card</h3>
+                  <p className="text-xs text-slate-600 leading-relaxed font-medium">
+                    Discard every single card in your hand that matches the color of the Discard All card in one swift turn!
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-4 bg-slate-50 p-4 rounded-2xl border border-slate-200/80">
+                  <UnoCard color="GREEN" value="DISCARD_ALL" size="sm" />
+                  <div className="text-xs space-y-1">
+                    <span className="font-bold text-emerald-700 block">Dump Matching Hand</span>
+                    <span className="text-slate-500 text-[11px] block font-medium">Discards all matching color cards</span>
+                  </div>
+                </div>
+
+                <div className="border-t border-slate-200/80 pt-3 text-[11px] text-slate-500 font-bold flex justify-between">
+                  <span>Count in No Mercy Deck: 8 cards</span>
+                  <span className="text-amber-600">Score: 30 Points</span>
                 </div>
               </div>
             )}

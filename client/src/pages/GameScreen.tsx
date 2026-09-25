@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { Copy, Volume2, VolumeX, Settings, MessageSquare, Send, Check, Play, Zap, ArrowRight, Music, X, Smile, Trophy, Sparkles, RefreshCw } from 'lucide-react';
+import { Copy, Volume2, VolumeX, Settings, MessageSquare, Send, Check, Play, Zap, ArrowRight, Music, X, Smile, Trophy, Sparkles, RefreshCw, BookOpen } from 'lucide-react';
 import { UnoCard } from '@/components/card/UnoCard';
 import { CardColor, PlayerPrivateState, Card, ChatMessage } from '@shared/types/game';
 import { audioService } from '@/services/audioService';
@@ -25,6 +25,10 @@ export const GameScreen: React.FC = () => {
   const [pendingWildCardId, setPendingWildCardId] = useState<string | null>(null);
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
+
+  // In-Match Modal States
+  const [showInMatchSettings, setShowInMatchSettings] = useState(false);
+  const [showInMatchRules, setShowInMatchRules] = useState(false);
 
   // Animated Emoji Reaction State
   const [showEmotePicker, setShowEmotePicker] = useState(false);
@@ -646,9 +650,18 @@ export const GameScreen: React.FC = () => {
           </button>
 
           <button
-            onClick={() => navigate('/settings')}
+            onClick={() => setShowInMatchRules(true)}
+            className="p-1.5 sm:px-3 sm:py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/40 transition-all text-xs font-bold flex items-center gap-1.5 text-amber-200 cursor-pointer shadow-xs"
+            title="Match Rules"
+          >
+            <BookOpen className="w-3.5 h-3.5 text-amber-400" />
+            <span className="hidden sm:inline">Rules</span>
+          </button>
+
+          <button
+            onClick={() => setShowInMatchSettings(true)}
             className="p-1.5 sm:px-3 sm:py-1.5 rounded-xl bg-white/10 hover:bg-white/20 border border-white/15 transition-all text-xs font-bold flex items-center gap-1.5 text-white cursor-pointer"
-            title="Settings"
+            title="In-Match Settings"
           >
             <Settings className="w-3.5 h-3.5 text-white/80" />
             <span className="hidden sm:inline">Settings</span>
@@ -1142,24 +1155,27 @@ export const GameScreen: React.FC = () => {
                     <span>💀 YOU WERE ELIMINATED BY THE MERCY RULE (25+ CARDS)!</span>
                     <span className="text-white/60">SPECTATING MATCH...</span>
                   </div>
-                ) : isMobile && displayHand.length > 7 ? (
-                  /* Mobile Multi-Row Layout for > 7 Cards */
-                  <div className="w-full flex flex-col items-center justify-center gap-1 py-0.5 px-0.5">
+                ) : displayHand.length > 8 ? (
+                  /* Multi-Row Layout for > 8 Cards (Desktop & Mobile) */
+                  <div className="w-full flex flex-col items-center justify-center gap-1 sm:gap-1.5 py-0.5 px-0.5">
                     {[
-                      displayHand.slice(0, Math.ceil(displayHand.length / 2)),
-                      displayHand.slice(Math.ceil(displayHand.length / 2))
+                      displayHand.slice(0, Math.ceil(displayHand.length / (displayHand.length > 16 ? 3 : 2))),
+                      displayHand.length > 16
+                        ? displayHand.slice(Math.ceil(displayHand.length / 3), Math.ceil((displayHand.length * 2) / 3))
+                        : displayHand.slice(Math.ceil(displayHand.length / 2)),
+                      ...(displayHand.length > 16 ? [displayHand.slice(Math.ceil((displayHand.length * 2) / 3))] : [])
                     ].map((rowCards, rowIndex) => (
                       <div key={rowIndex} className="flex items-center justify-center">
                         {rowCards.map((card, idx) => {
                           const isSelected = selectedCardId === card.id;
                           const totalInRow = rowCards.length;
-                          const overlapMargin = totalInRow <= 4 ? '-ml-1' : totalInRow <= 6 ? '-ml-2.5' : '-ml-4';
+                          const overlapMargin = totalInRow <= 4 ? '-ml-1 sm:-ml-2' : totalInRow <= 7 ? '-ml-2.5 sm:-ml-4' : '-ml-3.5 sm:-ml-5';
                           const isPlayable = checkCardPlayable(card);
 
                           return (
                             <div
                               key={card.id || `${rowIndex}_${idx}`}
-                              className={`group relative transition-all duration-200 ease-out ${idx > 0 ? overlapMargin : ''} hover:z-50 active:scale-105`}
+                              className={`group relative transition-all duration-200 ease-out ${idx > 0 ? overlapMargin : ''} hover:z-50 hover:-translate-y-6 hover:scale-120 active:scale-105`}
                               style={{ zIndex: isSelected ? 40 : idx + 1 }}
                             >
                               <UnoCard
@@ -1177,7 +1193,7 @@ export const GameScreen: React.FC = () => {
                     ))}
                   </div>
                 ) : (
-                  /* Single Row Fanned Layout */
+                  /* Single Row Fanned Layout for <= 8 Cards */
                   <div
                     className="flex items-center justify-center transition-all duration-300 py-1 px-1"
                     style={{
@@ -1195,15 +1211,15 @@ export const GameScreen: React.FC = () => {
                       
                       const overlapMargin = isMobile
                         ? (total <= 4 ? '-ml-2' : '-ml-4')
-                        : (total <= 4 ? '-ml-2 sm:-ml-3' : total <= 7 ? '-ml-4 sm:-ml-7' : total <= 11 ? '-ml-7 sm:-ml-12' : '-ml-10 sm:-ml-16');
+                        : (total <= 4 ? '-ml-2 sm:-ml-3' : total <= 6 ? '-ml-4 sm:-ml-6' : '-ml-5 sm:-ml-8');
 
                       const isPlayable = checkCardPlayable(card);
-                      const cardSize = (isMobile || total >= 8) ? 'sm' : 'md';
+                      const cardSize = (isMobile || total >= 7) ? 'sm' : 'md';
 
                       return (
                         <div
                           key={card.id || idx}
-                          className={`group relative transition-all duration-200 ease-out ${idx > 0 ? overlapMargin : ''} hover:z-50 hover:-translate-y-4 hover:scale-110 hover:rotate-0`}
+                          className={`group relative transition-all duration-200 ease-out ${idx > 0 ? overlapMargin : ''} hover:z-50 hover:-translate-y-6 hover:scale-115 hover:rotate-0`}
                           style={{
                             transform: `rotate(${angle}deg)`,
                             zIndex: isSelected ? 40 : idx + 1
@@ -1465,6 +1481,169 @@ export const GameScreen: React.FC = () => {
                 RETURN TO LOBBY
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ------------------------------------------------------------- */}
+      {/* IN-MATCH SETTINGS MODAL (STAYS IN MATCH)                      */}
+      {/* ------------------------------------------------------------- */}
+      {showInMatchSettings && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-50 flex items-center justify-center p-4 font-sans animate-fade-in">
+          <div className="bg-white text-slate-900 rounded-3xl p-6 sm:p-8 max-w-md w-full border border-slate-200 shadow-2xl space-y-6">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2.5 rounded-2xl bg-blue-50 text-sky-600 border border-blue-200">
+                  <Settings className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-extrabold text-lg text-slate-900 leading-tight">MATCH SETTINGS</h3>
+                  <p className="text-xs text-slate-500 font-semibold">Adjust preferences without leaving match</p>
+                </div>
+              </div>
+              <button onClick={() => setShowInMatchSettings(false)} className="p-1 text-slate-400 hover:text-slate-800 rounded-lg cursor-pointer">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-3.5">
+              {/* Sound FX Switch */}
+              <div className="flex items-center justify-between p-3.5 rounded-2xl bg-slate-50 border border-slate-200">
+                <div className="flex items-center gap-3">
+                  <Volume2 className="w-5 h-5 text-sky-600" />
+                  <div>
+                    <div className="font-bold text-sm text-slate-900">Sound Effects</div>
+                    <div className="text-xs text-slate-500">Play card draw, move & UNO audio</div>
+                  </div>
+                </div>
+                <button
+                  onClick={toggleSound}
+                  className={`w-12 h-6 flex items-center rounded-full p-0.5 transition-colors cursor-pointer ${soundEnabled ? 'bg-sky-500' : 'bg-slate-300'}`}
+                >
+                  <div className={`bg-white w-5 h-5 rounded-full shadow-md transform transition-transform ${soundEnabled ? 'translate-x-6' : 'translate-x-0'}`} />
+                </button>
+              </div>
+
+              {/* Music Switch */}
+              <div className="flex items-center justify-between p-3.5 rounded-2xl bg-slate-50 border border-slate-200">
+                <div className="flex items-center gap-3">
+                  <Music className="w-5 h-5 text-purple-600" />
+                  <div>
+                    <div className="font-bold text-sm text-slate-900">Background Music</div>
+                    <div className="text-xs text-slate-500">Play background match music</div>
+                  </div>
+                </div>
+                <button
+                  onClick={toggleMusic}
+                  className={`w-12 h-6 flex items-center rounded-full p-0.5 transition-colors cursor-pointer ${musicEnabled ? 'bg-purple-600' : 'bg-slate-300'}`}
+                >
+                  <div className={`bg-white w-5 h-5 rounded-full shadow-md transform transition-transform ${musicEnabled ? 'translate-x-6' : 'translate-x-0'}`} />
+                </button>
+              </div>
+
+              {/* Room Info Details */}
+              <div className="p-3.5 rounded-2xl bg-blue-50/70 border border-blue-200 space-y-1.5">
+                <div className="text-xs font-bold text-slate-600 uppercase tracking-wider flex items-center justify-between">
+                  <span>ROOM CODE:</span>
+                  <span className="font-black text-sky-700 text-sm">{gameState.roomCode}</span>
+                </div>
+                <div className="text-xs font-semibold text-slate-500 flex items-center justify-between">
+                  <span>GAME MODE:</span>
+                  <span className="font-extrabold text-amber-800 bg-amber-100 px-2.5 py-0.5 rounded text-[10px] uppercase border border-amber-300">
+                    {gameState.settings?.mode || 'CLASSIC'}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <button
+              onClick={() => setShowInMatchSettings(false)}
+              className="w-full bg-slate-900 hover:bg-slate-800 text-white font-extrabold py-3.5 rounded-2xl text-xs uppercase tracking-wider transition-all cursor-pointer shadow-md"
+            >
+              RESUME MATCH 🎮
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ------------------------------------------------------------- */}
+      {/* IN-MATCH RULES MODAL (HELP / RULES BOX)                      */}
+      {/* ------------------------------------------------------------- */}
+      {showInMatchRules && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-50 flex items-center justify-center p-4 font-sans animate-fade-in">
+          <div className="bg-white text-slate-900 rounded-3xl p-6 sm:p-8 max-w-lg w-full border border-slate-200 shadow-2xl space-y-5 max-h-[85vh] overflow-y-auto">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2.5 rounded-2xl bg-amber-50 text-amber-600 border border-amber-200">
+                  <BookOpen className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-extrabold text-lg text-slate-900 leading-tight">
+                    {gameState.settings?.mode === 'NO_MERCY' ? '🔥 NO MERCY RULES' : gameState.settings?.mode === 'CUSTOM' ? '🛠️ CUSTOM RULES' : '🎲 CLASSIC RULES'}
+                  </h3>
+                  <p className="text-xs text-slate-500 font-semibold">Match rules manual & card guide</p>
+                </div>
+              </div>
+              <button onClick={() => setShowInMatchRules(false)} className="p-1 text-slate-400 hover:text-slate-800 rounded-lg cursor-pointer">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Dynamic Rule Manual Based on Mode */}
+            {gameState.settings?.mode === 'NO_MERCY' ? (
+              <div className="space-y-3.5 text-xs font-medium text-slate-700">
+                <div className="p-3.5 rounded-2xl bg-red-50 border border-red-200 space-y-1">
+                  <div className="font-extrabold text-red-900 text-sm flex items-center gap-1.5">💀 MERCY RULE</div>
+                  <p className="text-slate-600">If any player accumulates <strong>25 or more cards</strong> in their hand, they are <strong>instantly eliminated</strong> from the game!</p>
+                </div>
+
+                <div className="p-3.5 rounded-2xl bg-amber-50 border border-amber-200 space-y-1">
+                  <div className="font-extrabold text-amber-900 text-sm flex items-center gap-1.5">⚡ EXTREME STACKING</div>
+                  <p className="text-slate-600">All Draw cards (<strong>+2, +4, +6, +10</strong>) can be stacked onto equal or higher penalty cards. If you cannot stack, you absorb the total penalty stack!</p>
+                </div>
+
+                <div className="p-3.5 rounded-2xl bg-purple-50 border border-purple-200 space-y-1">
+                  <div className="font-extrabold text-purple-900 text-sm flex items-center gap-1.5">🔄 7-SWAP & 0-ROTATE</div>
+                  <p className="text-slate-600">Playing a <strong>7</strong> forces swapping your hand with any active player. Playing a <strong>0</strong> rotates all hands in play direction.</p>
+                </div>
+
+                <div className="p-3.5 rounded-2xl bg-blue-50 border border-blue-200 space-y-1">
+                  <div className="font-extrabold text-blue-900 text-sm flex items-center gap-1.5">⊘⊘ SKIP EVERYONE & ROULETTE</div>
+                  <p className="text-slate-600"><strong>Skip Everyone</strong> skips all players so turn stays with you. <strong>Wild Color Roulette</strong> forces target to draw until color matches!</p>
+                </div>
+
+                <div className="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200 space-y-1">
+                  <div className="font-extrabold text-emerald-900 text-sm flex items-center gap-1.5">🎨 DISCARD ALL & REVERSE +4</div>
+                  <p className="text-slate-600"><strong>Discard All</strong> discards all matching color cards at once. <strong>Wild Reverse Draw 4</strong> reverses direction & adds +4 to stack.</p>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-3.5 text-xs font-medium text-slate-700">
+                <div className="p-3.5 rounded-2xl bg-blue-50 border border-blue-200 space-y-1">
+                  <div className="font-extrabold text-blue-900 text-sm">🎲 CORE OBJECTIVE</div>
+                  <p className="text-slate-600">Match the top discard card by Color, Number, or Symbol. Be the first player to empty your hand!</p>
+                </div>
+
+                <div className="p-3.5 rounded-2xl bg-amber-50 border border-amber-200 space-y-1">
+                  <div className="font-extrabold text-amber-900 text-sm">⚡ ACTIVE HOUSE RULES</div>
+                  <ul className="list-disc list-inside space-y-1 text-slate-600 font-semibold">
+                    <li>+2/+4 Stacking: {gameState.settings?.houseRules?.stacking ? 'ENABLED ✅' : 'DISABLED ❌'}</li>
+                    <li>Jump-In Rule: {gameState.settings?.houseRules?.jumpIn ? 'ENABLED ✅' : 'DISABLED ❌'}</li>
+                    <li>7-Zero Swap & Rotate: {gameState.settings?.houseRules?.sevenZero ? 'ENABLED ✅' : 'DISABLED ❌'}</li>
+                    <li>Discard All Color: {gameState.settings?.houseRules?.discardAll ? 'ENABLED ✅' : 'DISABLED ❌'}</li>
+                    <li>Deflect Shield: {gameState.settings?.houseRules?.counterDeflect !== false ? 'ENABLED ✅' : 'DISABLED ❌'}</li>
+                    <li>Wild Swap: {gameState.settings?.houseRules?.wildSwap ? 'ENABLED ✅' : 'DISABLED ❌'}</li>
+                  </ul>
+                </div>
+              </div>
+            )}
+
+            <button
+              onClick={() => setShowInMatchRules(false)}
+              className="w-full bg-slate-900 hover:bg-slate-800 text-white font-extrabold py-3.5 rounded-2xl text-xs uppercase tracking-wider transition-all cursor-pointer shadow-md"
+            >
+              GOT IT! 👍
+            </button>
           </div>
         </div>
       )}

@@ -24,7 +24,7 @@ import { useScroll3D } from '@/hooks/useScroll3D';
 
 export const HowToPlay: React.FC = () => {
   useScroll3D();
-  const [activeTab, setActiveTab] = useState<'basics' | 'stacking' | 'special' | 'uno_call'>('basics');
+  const [activeTab, setActiveTab] = useState<'basics' | 'stacking' | 'special' | 'uno_call' | 'no_mercy'>('basics');
 
   return (
     <div className="w-full min-h-screen bg-gradient-to-br from-slate-50 via-sky-50/40 to-slate-100 text-slate-800 pb-20 font-sans selection:bg-[#FCD116] selection:text-slate-950">
@@ -144,6 +144,16 @@ export const HowToPlay: React.FC = () => {
             }`}
           >
             <Zap className="w-4 h-4 text-yellow-300" /> 4. Calling & Catching UNO
+          </button>
+          <button
+            onClick={() => setActiveTab('no_mercy')}
+            className={`flex-1 min-w-[140px] px-5 py-3.5 rounded-2xl text-xs sm:text-sm font-extrabold transition-all flex items-center justify-center gap-2 cursor-pointer ${
+              activeTab === 'no_mercy'
+                ? 'bg-gradient-to-r from-red-600 via-rose-600 to-slate-900 text-white shadow-md'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+            }`}
+          >
+            <Flame className="w-4 h-4 text-red-400" /> 5. UNO Show 'em No Mercy 💀
           </button>
         </div>
       </section>
@@ -480,6 +490,113 @@ export const HowToPlay: React.FC = () => {
               <p className="text-slate-600 text-sm leading-relaxed font-medium max-w-3xl">
                 When you play your second-to-last card leaving you with <strong className="text-rose-600 font-black">1 card in hand</strong>, press the prominent <strong className="text-amber-600 font-black uppercase">UNO!</strong> button immediately. If an opponent catches you before you call it, click <strong className="text-sky-600 font-black uppercase">Catch UNO!</strong> to penalize them <strong className="text-amber-600 font-black">+2 cards</strong>!
               </p>
+            </div>
+          </div>
+        )}
+
+        {/* TAB 5: UNO SHOW 'EM NO MERCY */}
+        {activeTab === 'no_mercy' && (
+          <div className="space-y-10 animate-fade-in">
+            {/* Header Box */}
+            <div className="bg-gradient-to-br from-red-950 via-slate-900 to-black text-white p-6 sm:p-8 rounded-3xl border border-red-800 shadow-2xl space-y-4">
+              <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-red-900/80 text-red-200 text-xs font-black uppercase tracking-widest border border-red-700">
+                <Flame className="w-4 h-4 text-red-400 animate-pulse" /> BRUTAL EXPANSION RULESET 💀
+              </div>
+              <h2 className="text-3xl sm:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-red-400 via-amber-400 to-orange-500">
+                UNO Show 'em No Mercy
+              </h2>
+              <p className="text-slate-300 text-sm sm:text-base leading-relaxed font-medium max-w-3xl">
+                The ruthless, high-stakes game mode with <strong className="text-red-400">Extreme Penalty Stacking (+2, +4, +6, +10)</strong>, <strong className="text-amber-400">25-Card Mercy Knockouts</strong>, and game-changing cards like <strong className="text-emerald-400">Skip Everyone</strong> and <strong className="text-sky-400">Wild Color Roulette</strong>!
+              </p>
+            </div>
+
+            {/* Feature Cards Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* 1. Mercy Rule */}
+              <div className="glass-white-panel rounded-3xl p-6 border border-white space-y-4 shadow-md">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-red-700 font-extrabold text-base">
+                    <ShieldAlert className="w-5 h-5 text-red-600" /> Mercy Rule (25 Cards Knockout) 💀
+                  </div>
+                  <span className="text-[10px] font-black bg-red-100 text-red-800 px-3 py-1 rounded-full border border-red-300">
+                    INSTANT KNOCKOUT
+                  </span>
+                </div>
+                <p className="text-xs text-slate-600 font-medium leading-relaxed">
+                  If a player ever holds <strong className="text-red-600 font-extrabold">25 or more cards</strong> in their hand at any time, they are instantly eliminated from the match ("Knocked Out by Mercy Rule"). All their cards are discarded back to the pile!
+                </p>
+              </div>
+
+              {/* 2. Stacking */}
+              <div className="glass-white-panel rounded-3xl p-6 border border-white space-y-4 shadow-md">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-amber-700 font-extrabold text-base">
+                    <Flame className="w-5 h-5 text-amber-600" /> Extreme Stacking (+2, +4, +6, +10) 🔥
+                  </div>
+                  <span className="text-[10px] font-black bg-amber-100 text-amber-800 px-3 py-1 rounded-full border border-amber-300">
+                    PENALTY CUMULATIVE
+                  </span>
+                </div>
+                <p className="text-xs text-slate-600 font-medium leading-relaxed">
+                  When targeted by a draw penalty (+2, +4, +6, +10), you can stack another penalty card of <strong className="text-amber-700 font-bold">equal or higher value</strong> (+2 onto +2, +6 onto +4, +10 onto +6) to pass the entire accumulated sum to the next player!
+                </p>
+              </div>
+
+              {/* 3. New Action Cards */}
+              <div className="glass-white-panel rounded-3xl p-6 border border-white space-y-4 shadow-md md:col-span-2">
+                <h3 className="text-base font-extrabold text-slate-900 flex items-center gap-2">
+                  <Sparkles className="w-5 h-5 text-purple-600" /> New No Mercy Action Cards Showcase
+                </h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 text-center space-y-2">
+                    <UnoCard color="RED" value="DRAW_SIX" size="sm" />
+                    <span className="block text-xs font-black text-red-700">+6 Draw Six</span>
+                    <p className="text-[11px] text-slate-500 font-medium">Forces target to draw 6 cards unless stacked.</p>
+                  </div>
+
+                  <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 text-center space-y-2">
+                    <UnoCard color="WILD" value="WILD_DRAW_TEN" size="sm" />
+                    <span className="block text-xs font-black text-amber-700">+10 Wild Draw Ten</span>
+                    <p className="text-[11px] text-slate-500 font-medium">Massive 10 card penalty + pick active color!</p>
+                  </div>
+
+                  <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 text-center space-y-2">
+                    <UnoCard color="BLUE" value="SKIP_EVERYONE" size="sm" />
+                    <span className="block text-xs font-black text-sky-700">Skip Everyone</span>
+                    <p className="text-[11px] text-slate-500 font-medium">Skips ALL opponents so you take another turn!</p>
+                  </div>
+
+                  <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 text-center space-y-2">
+                    <UnoCard color="WILD" value="WILD_COLOR_ROULETTE" size="sm" />
+                    <span className="block text-xs font-black text-purple-700">Color Roulette</span>
+                    <p className="text-[11px] text-slate-500 font-medium">Target keeps drawing until getting chosen color!</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* 4. 7-0 Hand Swap */}
+              <div className="glass-white-panel rounded-3xl p-6 border border-white space-y-4 shadow-md md:col-span-2">
+                <div className="flex items-center gap-2 text-indigo-700 font-extrabold text-base">
+                  <RotateCcw className="w-5 h-5 text-indigo-600" /> Mandatory 7-0 Swap Rules
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 flex items-center gap-3">
+                    <UnoCard color="GREEN" value="7" size="sm" />
+                    <div className="text-xs space-y-1">
+                      <span className="font-extrabold text-slate-900 block">7 Card = Target Swap</span>
+                      <span className="text-slate-600 font-medium block">Must swap your entire hand with any chosen player!</span>
+                    </div>
+                  </div>
+
+                  <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 flex items-center gap-3">
+                    <UnoCard color="YELLOW" value="0" size="sm" />
+                    <div className="text-xs space-y-1">
+                      <span className="font-extrabold text-slate-900 block">0 Card = Rotation Pass</span>
+                      <span className="text-slate-600 font-medium block">All players pass their hands to the next player in turn order!</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         )}
