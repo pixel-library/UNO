@@ -352,10 +352,10 @@ export class UnoGame {
     const activePlayers = this.players.filter(p => !p.isSpectator);
     if (activePlayers.length === 0) return this.players[0];
 
-    const current = activePlayers[this.currentPlayerIndex % activePlayers.length];
-    if (current && current.isFinished) {
+    let current = activePlayers[this.currentPlayerIndex % activePlayers.length];
+    if (current && (current.isFinished || current.isEliminated)) {
       this.advanceTurnIndex();
-      return activePlayers[this.currentPlayerIndex % activePlayers.length];
+      current = activePlayers[this.currentPlayerIndex % activePlayers.length];
     }
     return current || activePlayers[0];
   }

@@ -852,6 +852,36 @@ io.on('connection', (socket) => {
   });
 });
 
+// Server Turn Monitor Interval: Auto-advances turn if turn timer expires or player hangs
+setInterval(() => {
+  activeGames.forEach((game) => {
+    if (game.status === 'PLAYING') {
+      const activePlayers = game.players.filter(p => !p.isSpectator && !p.isFinished && !p.isEliminated);
+      if (activePlayers.length < 2) return;
+
+      const currentPlayer = game.getCurrentPlayer();
+      if (!currentPlayer) return;
+
+      const maxTimerSeconds = game.settings.turnTimerSeconds || 45; // 45s safety timeout
+      const elapsedSeconds = (Date.now() - game.turnStartedAt) / 1000;
+
+      if (elapsedSeconds > maxTimerSeconds + 3) {
+        if (game.activeStackCount > 0) {
+          game.passTurn(currentPlayer.id);
+        } else {
+          const drawRes = game.drawCard(currentPlayer.id);
+          if (drawRes.drawnCard && !game.isPlayable(drawRes.drawnCard)) {
+            game.passTurn(currentPlayer.id);
+          } else if (!drawRes.drawnCard) {
+            game.passTurn(currentPlayer.id);
+          }
+        }
+        broadcastGameState(game);
+      }
+    }
+  });
+}, 2000);
+
 if (process.env.NODE_ENV === 'production') {
   app.use(express.static(path.join(__dirname, '../../client/dist')));
   app.get('*', (req, res) => {

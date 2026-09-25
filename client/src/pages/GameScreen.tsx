@@ -1507,47 +1507,13 @@ export const GameScreen: React.FC = () => {
             </div>
 
             <div className="space-y-3.5">
-              {/* Sound FX Switch */}
-              <div className="flex items-center justify-between p-3.5 rounded-2xl bg-slate-50 border border-slate-200">
-                <div className="flex items-center gap-3">
-                  <Volume2 className="w-5 h-5 text-sky-600" />
-                  <div>
-                    <div className="font-bold text-sm text-slate-900">Sound Effects</div>
-                    <div className="text-xs text-slate-500">Play card draw, move & UNO audio</div>
-                  </div>
-                </div>
-                <button
-                  onClick={toggleSound}
-                  className={`w-12 h-6 flex items-center rounded-full p-0.5 transition-colors cursor-pointer ${soundEnabled ? 'bg-sky-500' : 'bg-slate-300'}`}
-                >
-                  <div className={`bg-white w-5 h-5 rounded-full shadow-md transform transition-transform ${soundEnabled ? 'translate-x-6' : 'translate-x-0'}`} />
-                </button>
-              </div>
-
-              {/* Music Switch */}
-              <div className="flex items-center justify-between p-3.5 rounded-2xl bg-slate-50 border border-slate-200">
-                <div className="flex items-center gap-3">
-                  <Music className="w-5 h-5 text-purple-600" />
-                  <div>
-                    <div className="font-bold text-sm text-slate-900">Background Music</div>
-                    <div className="text-xs text-slate-500">Play background match music</div>
-                  </div>
-                </div>
-                <button
-                  onClick={toggleMusic}
-                  className={`w-12 h-6 flex items-center rounded-full p-0.5 transition-colors cursor-pointer ${musicEnabled ? 'bg-purple-600' : 'bg-slate-300'}`}
-                >
-                  <div className={`bg-white w-5 h-5 rounded-full shadow-md transform transition-transform ${musicEnabled ? 'translate-x-6' : 'translate-x-0'}`} />
-                </button>
-              </div>
-
               {/* Room Info Details */}
-              <div className="p-3.5 rounded-2xl bg-blue-50/70 border border-blue-200 space-y-1.5">
+              <div className="p-4 rounded-2xl bg-blue-50/80 border border-blue-200 space-y-2">
                 <div className="text-xs font-bold text-slate-600 uppercase tracking-wider flex items-center justify-between">
                   <span>ROOM CODE:</span>
-                  <span className="font-black text-sky-700 text-sm">{gameState.roomCode}</span>
+                  <span className="font-black text-sky-700 text-sm tracking-wider">{gameState.roomCode}</span>
                 </div>
-                <div className="text-xs font-semibold text-slate-500 flex items-center justify-between">
+                <div className="text-xs font-semibold text-slate-500 flex items-center justify-between border-t border-blue-100 pt-2">
                   <span>GAME MODE:</span>
                   <span className="font-extrabold text-amber-800 bg-amber-100 px-2.5 py-0.5 rounded text-[10px] uppercase border border-amber-300">
                     {gameState.settings?.mode || 'CLASSIC'}
@@ -1591,40 +1557,69 @@ export const GameScreen: React.FC = () => {
 
             {/* Dynamic Rule Manual Based on Mode */}
             {gameState.settings?.mode === 'NO_MERCY' ? (
-              <div className="space-y-3.5 text-xs font-medium text-slate-700">
-                <div className="p-3.5 rounded-2xl bg-red-50 border border-red-200 space-y-1.5">
-                  <div className="font-black text-red-900 text-sm flex items-center gap-1.5">💀 MERCY RULE (25 CARDS KNOCKOUT)</div>
+              <div className="space-y-4 text-xs font-medium text-slate-700">
+                <div className="p-4 rounded-2xl bg-red-50 border border-red-200 space-y-2">
+                  <div className="font-black text-red-900 text-sm flex items-center justify-between">
+                    <span>💀 MERCY RULE (25 CARDS KNOCKOUT)</span>
+                    <span className="text-[10px] font-black bg-red-200 text-red-900 px-2 py-0.5 rounded-full uppercase">Instant Elimination</span>
+                  </div>
                   <p className="text-slate-600 leading-relaxed">
                     If any player accumulates <strong className="text-red-700 font-extrabold">25 or more cards</strong> in their hand at any time, they are <strong className="text-red-700 font-extrabold">instantly eliminated</strong> from the match!
                   </p>
                 </div>
 
-                <div className="p-3.5 rounded-2xl bg-amber-50 border border-amber-200 space-y-1.5">
-                  <div className="font-black text-amber-900 text-sm flex items-center gap-1.5">⚡ EXTREME PENALTY STACKING</div>
+                <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 space-y-3">
+                  <div className="font-black text-amber-900 text-sm">⚡ EXTREME PENALTY STACKING (+2, +4, +6, +10)</div>
                   <p className="text-slate-600 leading-relaxed">
-                    All Draw cards (<strong className="text-amber-700">+2, +4, +6, +10</strong>) can be stacked onto equal or higher penalty cards. If you cannot stack, you absorb the total accumulated sum!
+                    Stack penalty cards of equal or higher value to pass the sum to the next player!
                   </p>
+                  <div className="flex items-center justify-center gap-2 py-2 bg-white/80 rounded-xl border border-amber-200">
+                    <UnoCard color="RED" value="DRAW_TWO" size="sm" />
+                    <span className="font-black text-slate-400">➔</span>
+                    <UnoCard color="WILD" value="WILD_DRAW_FOUR" size="sm" />
+                    <span className="font-black text-slate-400">➔</span>
+                    <UnoCard color="RED" value="DRAW_SIX" size="sm" />
+                    <span className="font-black text-slate-400">➔</span>
+                    <UnoCard color="WILD" value="WILD_DRAW_TEN" size="sm" />
+                  </div>
                 </div>
 
-                <div className="p-3.5 rounded-2xl bg-purple-50 border border-purple-200 space-y-1.5">
-                  <div className="font-black text-purple-900 text-sm flex items-center gap-1.5">🔄 7-SWAP & 0-ROTATE</div>
-                  <p className="text-slate-600 leading-relaxed">
-                    Playing a <strong className="text-purple-700 font-extrabold">7</strong> forces you to swap hands with any chosen player. Playing a <strong className="text-purple-700 font-extrabold">0</strong> rotates all player hands in the direction of play.
-                  </p>
+                <div className="p-4 rounded-2xl bg-purple-50 border border-purple-200 space-y-3">
+                  <div className="font-black text-purple-900 text-sm">🔄 MANDATORY 7-SWAP & 0-ROTATE</div>
+                  <div className="grid grid-cols-2 gap-2 text-slate-600">
+                    <div className="bg-white p-2.5 rounded-xl border border-purple-200 flex items-center gap-2">
+                      <UnoCard color="GREEN" value="7" size="sm" />
+                      <span className="text-[11px] font-bold">Swap hand with chosen player</span>
+                    </div>
+                    <div className="bg-white p-2.5 rounded-xl border border-purple-200 flex items-center gap-2">
+                      <UnoCard color="YELLOW" value="0" size="sm" />
+                      <span className="text-[11px] font-bold">Rotate all hands in turn order</span>
+                    </div>
+                  </div>
                 </div>
 
-                <div className="p-3.5 rounded-2xl bg-blue-50 border border-blue-200 space-y-1.5">
-                  <div className="font-black text-sky-900 text-sm flex items-center gap-1.5">🛑 SKIP EVERYONE & 🎰 COLOR ROULETTE</div>
-                  <p className="text-slate-600 leading-relaxed">
-                    <strong className="text-sky-700">Skip Everyone</strong> skips all players so you immediately take another turn. <strong className="text-purple-700">Wild Color Roulette</strong> forces target to draw until getting your chosen color!
-                  </p>
+                <div className="p-4 rounded-2xl bg-blue-50 border border-blue-200 space-y-3">
+                  <div className="font-black text-sky-900 text-sm">🛑 SKIP EVERYONE & 🎰 COLOR ROULETTE</div>
+                  <div className="grid grid-cols-2 gap-2 text-slate-600">
+                    <div className="bg-white p-2.5 rounded-xl border border-blue-200 flex items-center gap-2">
+                      <UnoCard color="BLUE" value="SKIP_EVERYONE" size="sm" />
+                      <span className="text-[11px] font-bold">Take another turn right away</span>
+                    </div>
+                    <div className="bg-white p-2.5 rounded-xl border border-purple-200 flex items-center gap-2">
+                      <UnoCard color="WILD" value="WILD_COLOR_ROULETTE" size="sm" />
+                      <span className="text-[11px] font-bold">Target draws until color match</span>
+                    </div>
+                  </div>
                 </div>
 
-                <div className="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200 space-y-1.5">
-                  <div className="font-black text-emerald-900 text-sm flex items-center gap-1.5">🎨 DISCARD ALL & 💥 MASSIVE DRAW CARDS</div>
-                  <p className="text-slate-600 leading-relaxed">
-                    <strong className="text-emerald-700">Discard All</strong> discards all cards in your hand matching the selected color at once. <strong className="text-red-700">+6 and +10 cards</strong> deliver devastating penalties!
-                  </p>
+                <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 space-y-3">
+                  <div className="font-black text-emerald-900 text-sm">🎨 DISCARD ALL CARDS</div>
+                  <div className="flex items-center gap-3 bg-white p-2.5 rounded-xl border border-emerald-200">
+                    <UnoCard color="GREEN" value="DISCARD_ALL" size="sm" />
+                    <span className="text-[11px] text-slate-600 font-semibold leading-tight">
+                      Discard every card in your hand matching this card's color in a single turn!
+                    </span>
+                  </div>
                 </div>
               </div>
             ) : gameState.settings?.mode === 'CUSTOM' ? (
@@ -1638,56 +1633,56 @@ export const GameScreen: React.FC = () => {
                   <div className="font-extrabold text-amber-900 text-sm">⚡ ACTIVE HOUSE RULES IN THIS MATCH</div>
                   <div className="space-y-2 text-slate-700">
                     {gameState.settings?.houseRules?.stacking && (
-                      <div className="bg-white p-2.5 rounded-xl border border-amber-200 flex items-start gap-2">
-                        <span className="text-amber-600 font-black">➕</span>
+                      <div className="bg-white p-2.5 rounded-xl border border-amber-200 flex items-center gap-2.5">
+                        <UnoCard color="BLUE" value="DRAW_TWO" size="sm" />
                         <div>
                           <strong className="text-amber-900 font-bold block">+2 / +4 Stacking</strong>
-                          <span className="text-slate-500 text-[11px]">Play +2 or +4 on top of an active penalty to pass sum to next player.</span>
+                          <span className="text-slate-500 text-[11px]">Play +2 or +4 on top of active penalty stack.</span>
                         </div>
                       </div>
                     )}
                     {gameState.settings?.houseRules?.sevenZero && (
-                      <div className="bg-white p-2.5 rounded-xl border border-purple-200 flex items-start gap-2">
-                        <span className="text-purple-600 font-black">🔄</span>
+                      <div className="bg-white p-2.5 rounded-xl border border-purple-200 flex items-center gap-2.5">
+                        <UnoCard color="GREEN" value="7" size="sm" />
                         <div>
                           <strong className="text-purple-900 font-bold block">7-Zero Swap & Rotate</strong>
-                          <span className="text-slate-500 text-[11px]">Card 7 swaps hand with targeted player; Card 0 rotates all hands in turn order.</span>
+                          <span className="text-slate-500 text-[11px]">Card 7 swaps hand with target player; Card 0 rotates all hands.</span>
                         </div>
                       </div>
                     )}
                     {gameState.settings?.houseRules?.jumpIn && (
-                      <div className="bg-white p-2.5 rounded-xl border border-emerald-200 flex items-start gap-2">
-                        <span className="text-emerald-600 font-black">⚡</span>
+                      <div className="bg-white p-2.5 rounded-xl border border-emerald-200 flex items-center gap-2.5">
+                        <UnoCard color="YELLOW" value="5" size="sm" />
                         <div>
                           <strong className="text-emerald-900 font-bold block">Jump-In Rule</strong>
-                          <span className="text-slate-500 text-[11px]">Play an identical card out of turn anytime to jump in.</span>
+                          <span className="text-slate-500 text-[11px]">Play exact matching card out of turn anytime.</span>
                         </div>
                       </div>
                     )}
                     {gameState.settings?.houseRules?.discardAll && (
-                      <div className="bg-white p-2.5 rounded-xl border border-rose-200 flex items-start gap-2">
-                        <span className="text-rose-600 font-black">🎨</span>
+                      <div className="bg-white p-2.5 rounded-xl border border-rose-200 flex items-center gap-2.5">
+                        <UnoCard color="GREEN" value="DISCARD_ALL" size="sm" />
                         <div>
                           <strong className="text-rose-900 font-bold block">Discard All Color</strong>
-                          <span className="text-slate-500 text-[11px]">Discard all cards matching the active color in a single turn.</span>
+                          <span className="text-slate-500 text-[11px]">Discard all cards matching active color.</span>
                         </div>
                       </div>
                     )}
                     {gameState.settings?.houseRules?.counterDeflect !== false && (
-                      <div className="bg-white p-2.5 rounded-xl border border-blue-200 flex items-start gap-2">
-                        <span className="text-sky-600 font-black">🛡️</span>
+                      <div className="bg-white p-2.5 rounded-xl border border-blue-200 flex items-center gap-2.5">
+                        <UnoCard color="RED" value="SKIP" size="sm" />
                         <div>
                           <strong className="text-sky-900 font-bold block">Deflect Shield</strong>
-                          <span className="text-slate-500 text-[11px]">Play matching color Skip or Reverse to deflect +2/+4 stack back to attacker.</span>
+                          <span className="text-slate-500 text-[11px]">Play Skip or Reverse to deflect +2/+4 stack back to attacker.</span>
                         </div>
                       </div>
                     )}
                     {gameState.settings?.houseRules?.wildSwap && (
-                      <div className="bg-white p-2.5 rounded-xl border border-amber-200 flex items-start gap-2">
-                        <span className="text-amber-600 font-black">🎯</span>
+                      <div className="bg-white p-2.5 rounded-xl border border-amber-200 flex items-center gap-2.5">
+                        <UnoCard color="WILD" value="WILD_SWAP" size="sm" />
                         <div>
                           <strong className="text-amber-900 font-bold block">Wild Swap Card</strong>
-                          <span className="text-slate-500 text-[11px]">Wild card allowing direct hand swap with chosen target player.</span>
+                          <span className="text-slate-500 text-[11px]">Direct hand swap with chosen target player.</span>
                         </div>
                       </div>
                     )}
@@ -1700,29 +1695,36 @@ export const GameScreen: React.FC = () => {
                 </div>
               </div>
             ) : (
-              <div className="space-y-3.5 text-xs font-medium text-slate-700">
-                <div className="p-3.5 rounded-2xl bg-blue-50 border border-blue-200 space-y-1.5">
-                  <div className="font-black text-blue-900 text-sm flex items-center gap-1.5">🎲 CORE OBJECTIVE & MATCHING</div>
+              <div className="space-y-4 text-xs font-medium text-slate-700">
+                <div className="p-4 rounded-2xl bg-blue-50 border border-blue-200 space-y-3">
+                  <div className="font-black text-blue-900 text-sm">🎲 CORE OBJECTIVE & CARD MATCHING</div>
                   <p className="text-slate-600 leading-relaxed">
-                    Match the top discard card by <strong className="text-red-600">Color</strong>, <strong className="text-amber-600">Number</strong>, or <strong className="text-sky-600">Symbol</strong>. Be the first player to empty your hand to win the match! If you have no playable card, draw 1 card from the deck.
+                    Match the top discard card by <strong className="text-red-600">Color</strong>, <strong className="text-amber-600">Number</strong>, or <strong className="text-sky-600">Symbol</strong>. First player to empty hand wins!
                   </p>
-                </div>
-
-                <div className="p-3.5 rounded-2xl bg-amber-50 border border-amber-200 space-y-2">
-                  <div className="font-black text-amber-900 text-sm flex items-center gap-1.5">🃏 ACTION & WILD CARDS</div>
-                  <div className="space-y-1.5 text-slate-600">
-                    <div><strong className="text-slate-900">🛑 SKIP:</strong> Skips the next player's turn.</div>
-                    <div><strong className="text-slate-900">🔄 REVERSE:</strong> Swaps direction of play (Clockwise ⟲ Counter-Clockwise).</div>
-                    <div><strong className="text-red-600">➕2️⃣ DRAW TWO (+2):</strong> Forces next player to draw 2 cards and lose turn.</div>
-                    <div><strong className="text-amber-700">🎨 WILD:</strong> Play anytime to select the active color.</div>
-                    <div><strong className="text-amber-700">⚡ WILD DRAW FOUR (+4):</strong> Select active color & force next player to draw 4 cards!</div>
+                  <div className="flex items-center justify-center gap-2 py-2 bg-white/80 rounded-xl border border-blue-200">
+                    <UnoCard color="RED" value="5" size="sm" />
+                    <span className="font-black text-slate-400">➔</span>
+                    <UnoCard color="RED" value="9" size="sm" />
+                    <span className="font-black text-slate-400">➔</span>
+                    <UnoCard color="BLUE" value="9" size="sm" />
                   </div>
                 </div>
 
-                <div className="p-3.5 rounded-2xl bg-rose-50 border border-rose-200 space-y-1.5">
-                  <div className="font-black text-rose-900 text-sm flex items-center gap-1.5">🔔 CALLING & CATCHING UNO</div>
+                <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 space-y-3">
+                  <div className="font-black text-amber-900 text-sm">🃏 ACTION & WILD CARDS</div>
+                  <div className="flex flex-wrap justify-center gap-2 py-2 bg-white/80 rounded-xl border border-amber-200">
+                    <UnoCard color="YELLOW" value="SKIP" size="sm" />
+                    <UnoCard color="GREEN" value="REVERSE" size="sm" />
+                    <UnoCard color="BLUE" value="DRAW_TWO" size="sm" />
+                    <UnoCard color="WILD" value="WILD" size="sm" />
+                    <UnoCard color="WILD" value="WILD_DRAW_FOUR" size="sm" />
+                  </div>
+                </div>
+
+                <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 space-y-2">
+                  <div className="font-black text-rose-900 text-sm">🔔 CALLING & CATCHING UNO</div>
                   <p className="text-slate-600 leading-relaxed">
-                    Press the <strong className="text-amber-600 font-black uppercase">UNO!</strong> button immediately when playing down to <strong className="text-rose-600 font-extrabold">1 card in hand</strong>. If an opponent catches you before you call it, click <strong className="text-sky-600 font-black uppercase">Catch UNO!</strong> to penalize them <strong className="text-amber-600 font-bold">+2 cards</strong>!
+                    Press <strong className="text-amber-600 font-black uppercase">UNO!</strong> when down to <strong className="text-rose-600 font-extrabold">1 card in hand</strong>. Catch opponents who forget to call UNO to force them to draw <strong className="text-amber-600 font-bold">+2 penalty cards</strong>!
                   </p>
                 </div>
               </div>
