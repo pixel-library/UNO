@@ -591,197 +591,212 @@ export const Play: React.FC = () => {
                 </div>
               </div>
 
-              {/* Optional Rules Header */}
-              <div className="pt-2 border-t border-neutral-100">
-                <span className="text-xs font-bold text-neutral-600 uppercase tracking-wider block mb-3">
-                  Optional rules:
-                </span>
+              {/* Optional Rules Section - Only shown when Custom mode is selected */}
+              {gameMode === 'Custom' ? (
+                <div className="pt-2 border-t border-neutral-100 animate-fade-in">
+                  <span className="text-xs font-bold text-neutral-600 uppercase tracking-wider block mb-3">
+                    Custom rules options:
+                  </span>
 
-                <div className="space-y-3">
-                  {/* Stacking Switch */}
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-neutral-700">Stacking</span>
-                    <button
-                      type="button"
-                      onClick={() => setStacking(!stacking)}
-                      className={`w-12 h-6 flex items-center rounded-full p-0.5 transition-colors ${
-                        stacking ? 'bg-sky-500' : 'bg-neutral-300'
-                      }`}
-                    >
-                      <div
-                        className={`bg-white w-5 h-5 rounded-full shadow-md transform transition-transform flex items-center justify-center ${
-                          stacking ? 'translate-x-6' : 'translate-x-0'
+                  <div className="space-y-3">
+                    {/* Stacking Switch */}
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium text-neutral-700">Stacking</span>
+                      <button
+                        type="button"
+                        onClick={() => setStacking(!stacking)}
+                        className={`w-12 h-6 flex items-center rounded-full p-0.5 transition-colors ${
+                          stacking ? 'bg-sky-500' : 'bg-neutral-300'
                         }`}
                       >
-                        <span className="text-[8px] font-black text-sky-600">
-                          {stacking ? 'ON' : ''}
-                        </span>
-                      </div>
-                    </button>
-                  </div>
+                        <div
+                          className={`bg-white w-5 h-5 rounded-full shadow-md transform transition-transform flex items-center justify-center ${
+                            stacking ? 'translate-x-6' : 'translate-x-0'
+                          }`}
+                        >
+                          <span className="text-[8px] font-black text-sky-600">
+                            {stacking ? 'ON' : ''}
+                          </span>
+                        </div>
+                      </button>
+                    </div>
 
-                  {/* Jump-In Switch */}
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-neutral-700">Jump-In</span>
-                    <button
-                      type="button"
-                      onClick={() => { const next = !jumpIn; setJumpIn(next); if (next) setGameMode('Custom'); }}
-                      className={`w-12 h-6 flex items-center rounded-full p-0.5 transition-colors ${
-                        jumpIn ? 'bg-sky-500' : 'bg-neutral-300'
-                      }`}
-                    >
-                      <div
-                        className={`bg-white w-5 h-5 rounded-full shadow-md transform transition-transform ${
-                          jumpIn ? 'translate-x-6' : 'translate-x-0'
-                        }`}
-                      />
-                    </button>
-                  </div>
-
-                  {/* Seven-O Switch */}
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-neutral-700">Seven-O</span>
-                    <button
-                      type="button"
-                      onClick={() => { const next = !sevenZero; setSevenZero(next); if (next) setGameMode('Custom'); }}
-                      className={`w-12 h-6 flex items-center rounded-full p-0.5 transition-colors ${
-                        sevenZero ? 'bg-sky-500' : 'bg-neutral-300'
-                      }`}
-                    >
-                      <div
-                        className={`bg-white w-5 h-5 rounded-full shadow-md transform transition-transform ${
-                          sevenZero ? 'translate-x-6' : 'translate-x-0'
-                        }`}
-                      />
-                    </button>
-                  </div>
-
-                  {/* Force Play Switch */}
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-neutral-700">Force Play</span>
-                    <button
-                      type="button"
-                      onClick={() => setForcePlay(!forcePlay)}
-                      className={`w-12 h-6 flex items-center rounded-full p-0.5 transition-colors ${
-                        forcePlay ? 'bg-sky-500' : 'bg-neutral-300'
-                      }`}
-                    >
-                      <div
-                        className={`bg-white w-5 h-5 rounded-full shadow-md transform transition-transform ${
-                          forcePlay ? 'translate-x-6' : 'translate-x-0'
-                        }`}
-                      />
-                    </button>
-                  </div>
-
-                  {/* Draw Until Playable Switch */}
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-neutral-700">Draw Until Playable</span>
-                    <button
-                      type="button"
-                      onClick={() => { const next = !drawUntilPlayable; setDrawUntilPlayable(next); if (next) setGameMode('Custom'); }}
-                      className={`w-12 h-6 flex items-center rounded-full p-0.5 transition-colors ${
-                        drawUntilPlayable ? 'bg-sky-500' : 'bg-neutral-300'
-                      }`}
-                    >
-                      <div
-                        className={`bg-white w-5 h-5 rounded-full shadow-md transform transition-transform ${
-                          drawUntilPlayable ? 'translate-x-6' : 'translate-x-0'
-                        }`}
-                      />
-                    </button>
-                  </div>
-
-                  {/* Discard All Color Switch */}
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-neutral-700">Discard All Color 🎨</span>
-                    <button
-                      type="button"
-                      onClick={() => { const next = !discardAll; setDiscardAll(next); if (next) setGameMode('Custom'); }}
-                      className={`w-12 h-6 flex items-center rounded-full p-0.5 transition-colors ${
-                        discardAll ? 'bg-sky-500' : 'bg-neutral-300'
-                      }`}
-                    >
-                      <div
-                        className={`bg-white w-5 h-5 rounded-full shadow-md transform transition-transform flex items-center justify-center ${
-                          discardAll ? 'translate-x-6' : 'translate-x-0'
+                    {/* Jump-In Switch */}
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium text-neutral-700">Jump-In</span>
+                      <button
+                        type="button"
+                        onClick={() => { const next = !jumpIn; setJumpIn(next); if (next) setGameMode('Custom'); }}
+                        className={`w-12 h-6 flex items-center rounded-full p-0.5 transition-colors ${
+                          jumpIn ? 'bg-sky-500' : 'bg-neutral-300'
                         }`}
                       >
-                        <span className="text-[8px] font-black text-sky-600">
-                          {discardAll ? 'ON' : ''}
-                        </span>
-                      </div>
-                    </button>
-                  </div>
+                        <div
+                          className={`bg-white w-5 h-5 rounded-full shadow-md transform transition-transform ${
+                            jumpIn ? 'translate-x-6' : 'translate-x-0'
+                          }`}
+                        />
+                      </button>
+                    </div>
 
-                  {/* Deflect Shield Switch */}
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-neutral-700">Deflect Shield 🛡️</span>
-                    <button
-                      type="button"
-                      onClick={() => setCounterDeflect(!counterDeflect)}
-                      className={`w-12 h-6 flex items-center rounded-full p-0.5 transition-colors ${
-                        counterDeflect ? 'bg-sky-500' : 'bg-neutral-300'
-                      }`}
-                    >
-                      <div
-                        className={`bg-white w-5 h-5 rounded-full shadow-md transform transition-transform flex items-center justify-center ${
-                          counterDeflect ? 'translate-x-6' : 'translate-x-0'
+                    {/* Seven-O Switch */}
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium text-neutral-700">Seven-O</span>
+                      <button
+                        type="button"
+                        onClick={() => { const next = !sevenZero; setSevenZero(next); if (next) setGameMode('Custom'); }}
+                        className={`w-12 h-6 flex items-center rounded-full p-0.5 transition-colors ${
+                          sevenZero ? 'bg-sky-500' : 'bg-neutral-300'
                         }`}
                       >
-                        <span className="text-[8px] font-black text-sky-600">
-                          {counterDeflect ? 'ON' : ''}
-                        </span>
-                      </div>
-                    </button>
-                  </div>
+                        <div
+                          className={`bg-white w-5 h-5 rounded-full shadow-md transform transition-transform ${
+                            sevenZero ? 'translate-x-6' : 'translate-x-0'
+                          }`}
+                        />
+                      </button>
+                    </div>
 
-                  {/* Wild Shuffle Hands Switch */}
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-neutral-700">Wild Shuffle 🌀</span>
-                    <button
-                      type="button"
-                      onClick={() => { const next = !shuffleHands; setShuffleHands(next); if (next) setGameMode('Custom'); }}
-                      className={`w-12 h-6 flex items-center rounded-full p-0.5 transition-colors ${
-                        shuffleHands ? 'bg-sky-500' : 'bg-neutral-300'
-                      }`}
-                    >
-                      <div
-                        className={`bg-white w-5 h-5 rounded-full shadow-md transform transition-transform flex items-center justify-center ${
-                          shuffleHands ? 'translate-x-6' : 'translate-x-0'
+                    {/* Force Play Switch */}
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium text-neutral-700">Force Play</span>
+                      <button
+                        type="button"
+                        onClick={() => setForcePlay(!forcePlay)}
+                        className={`w-12 h-6 flex items-center rounded-full p-0.5 transition-colors ${
+                          forcePlay ? 'bg-sky-500' : 'bg-neutral-300'
                         }`}
                       >
-                        <span className="text-[8px] font-black text-sky-600">
-                          {shuffleHands ? 'ON' : ''}
-                        </span>
-                      </div>
-                    </button>
-                  </div>
+                        <div
+                          className={`bg-white w-5 h-5 rounded-full shadow-md transform transition-transform ${
+                            forcePlay ? 'translate-x-6' : 'translate-x-0'
+                          }`}
+                        />
+                      </button>
+                    </div>
 
-                  {/* Wild Swap Card Switch */}
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-neutral-700">Wild Swap 🎯</span>
-                    <button
-                      type="button"
-                      onClick={() => { const next = !wildSwap; setWildSwap(next); if (next) setGameMode('Custom'); }}
-                      className={`w-12 h-6 flex items-center rounded-full p-0.5 transition-colors ${
-                        wildSwap ? 'bg-sky-500' : 'bg-neutral-300'
-                      }`}
-                    >
-                      <div
-                        className={`bg-white w-5 h-5 rounded-full shadow-md transform transition-transform flex items-center justify-center ${
-                          wildSwap ? 'translate-x-6' : 'translate-x-0'
+                    {/* Draw Until Playable Switch */}
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium text-neutral-700">Draw Until Playable</span>
+                      <button
+                        type="button"
+                        onClick={() => { const next = !drawUntilPlayable; setDrawUntilPlayable(next); if (next) setGameMode('Custom'); }}
+                        className={`w-12 h-6 flex items-center rounded-full p-0.5 transition-colors ${
+                          drawUntilPlayable ? 'bg-sky-500' : 'bg-neutral-300'
                         }`}
                       >
-                        <span className="text-[8px] font-black text-sky-600">
-                          {wildSwap ? 'ON' : ''}
-                        </span>
-                      </div>
-                    </button>
-                  </div>
+                        <div
+                          className={`bg-white w-5 h-5 rounded-full shadow-md transform transition-transform ${
+                            drawUntilPlayable ? 'translate-x-6' : 'translate-x-0'
+                          }`}
+                        />
+                      </button>
+                    </div>
 
+                    {/* Discard All Color Switch */}
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium text-neutral-700">Discard All Color 🎨</span>
+                      <button
+                        type="button"
+                        onClick={() => { const next = !discardAll; setDiscardAll(next); if (next) setGameMode('Custom'); }}
+                        className={`w-12 h-6 flex items-center rounded-full p-0.5 transition-colors ${
+                          discardAll ? 'bg-sky-500' : 'bg-neutral-300'
+                        }`}
+                      >
+                        <div
+                          className={`bg-white w-5 h-5 rounded-full shadow-md transform transition-transform flex items-center justify-center ${
+                            discardAll ? 'translate-x-6' : 'translate-x-0'
+                          }`}
+                        >
+                          <span className="text-[8px] font-black text-sky-600">
+                            {discardAll ? 'ON' : ''}
+                          </span>
+                        </div>
+                      </button>
+                    </div>
+
+                    {/* Deflect Shield Switch */}
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium text-neutral-700">Deflect Shield 🛡️</span>
+                      <button
+                        type="button"
+                        onClick={() => setCounterDeflect(!counterDeflect)}
+                        className={`w-12 h-6 flex items-center rounded-full p-0.5 transition-colors ${
+                          counterDeflect ? 'bg-sky-500' : 'bg-neutral-300'
+                        }`}
+                      >
+                        <div
+                          className={`bg-white w-5 h-5 rounded-full shadow-md transform transition-transform flex items-center justify-center ${
+                            counterDeflect ? 'translate-x-6' : 'translate-x-0'
+                          }`}
+                        >
+                          <span className="text-[8px] font-black text-sky-600">
+                            {counterDeflect ? 'ON' : ''}
+                          </span>
+                        </div>
+                      </button>
+                    </div>
+
+                    {/* Wild Shuffle Hands Switch */}
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium text-neutral-700">Wild Shuffle 🌀</span>
+                      <button
+                        type="button"
+                        onClick={() => { const next = !shuffleHands; setShuffleHands(next); if (next) setGameMode('Custom'); }}
+                        className={`w-12 h-6 flex items-center rounded-full p-0.5 transition-colors ${
+                          shuffleHands ? 'bg-sky-500' : 'bg-neutral-300'
+                        }`}
+                      >
+                        <div
+                          className={`bg-white w-5 h-5 rounded-full shadow-md transform transition-transform flex items-center justify-center ${
+                            shuffleHands ? 'translate-x-6' : 'translate-x-0'
+                          }`}
+                        >
+                          <span className="text-[8px] font-black text-sky-600">
+                            {shuffleHands ? 'ON' : ''}
+                          </span>
+                        </div>
+                      </button>
+                    </div>
+
+                    {/* Wild Swap Card Switch */}
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium text-neutral-700">Wild Swap 🎯</span>
+                      <button
+                        type="button"
+                        onClick={() => { const next = !wildSwap; setWildSwap(next); if (next) setGameMode('Custom'); }}
+                        className={`w-12 h-6 flex items-center rounded-full p-0.5 transition-colors ${
+                          wildSwap ? 'bg-sky-500' : 'bg-neutral-300'
+                        }`}
+                      >
+                        <div
+                          className={`bg-white w-5 h-5 rounded-full shadow-md transform transition-transform flex items-center justify-center ${
+                            wildSwap ? 'translate-x-6' : 'translate-x-0'
+                          }`}
+                        >
+                          <span className="text-[8px] font-black text-sky-600">
+                            {wildSwap ? 'ON' : ''}
+                          </span>
+                        </div>
+                      </button>
+                    </div>
+
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <div className="pt-2 border-t border-neutral-100">
+                  <div className="p-3.5 rounded-2xl bg-amber-50/80 border border-amber-200/80 space-y-1 text-xs">
+                    <span className="font-extrabold text-amber-950 block uppercase">
+                      {gameMode === 'Classic' ? '🎲 Classic Mode Rules Active' : "🔥 No Mercy Mode Rules Active"}
+                    </span>
+                    <p className="text-amber-800 font-medium leading-relaxed">
+                      {gameMode === 'Classic'
+                        ? 'Standard official UNO rules are active. Switch to Custom mode to configure individual house rules.'
+                        : "Official Show 'em No Mercy rules are active (25-Card Limit, Extreme Stacking, 7-0 Swap, Discard All, Color Roulette). Switch to Custom mode to configure individual house rules."}
+                    </p>
+                  </div>
+                </div>
+              )}
 
             </div>
           </div>

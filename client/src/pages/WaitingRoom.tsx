@@ -328,7 +328,7 @@ export const WaitingRoom: React.FC = () => {
           </div>
           <div className="flex flex-wrap gap-2 text-xs font-bold">
             <span className="bg-purple-100 border border-purple-300 text-purple-900 px-3 py-1.5 rounded-xl flex items-center gap-1">
-              🎮 Mode: {gameState?.settings.mode || (houseRules.customCards ? 'CUSTOM' : 'CLASSIC')}
+              🎮 Mode: {gameState?.settings.mode === 'NO_MERCY' ? 'NO MERCY 🔥' : (gameState?.settings.mode || (houseRules.customCards ? 'CUSTOM' : 'CLASSIC'))}
             </span>
             <span className="bg-blue-50 border border-blue-200 text-blue-900 px-3 py-1.5 rounded-xl flex items-center gap-1">
               👥 {maxPlayers} Players Max
@@ -339,41 +339,71 @@ export const WaitingRoom: React.FC = () => {
             <span className="bg-amber-50 border border-amber-200 text-amber-900 px-3 py-1.5 rounded-xl flex items-center gap-1">
               ⏱️ {gameState?.settings.turnTimerSeconds ? `${gameState.settings.turnTimerSeconds}s Turn Timer` : 'No Turn Timer'}
             </span>
-            <span className={`px-3 py-1.5 rounded-xl border flex items-center gap-1 ${
-              houseRules.stacking ? 'bg-amber-50 border-amber-300 text-amber-900' : 'bg-neutral-100 border-neutral-200 text-neutral-400 opacity-60'
-            }`}>
-              <Layers className="w-3.5 h-3.5" /> {houseRules.stacking ? '+2/+4 Stacking ON' : '+2/+4 Stacking OFF'}
-            </span>
-            <span className={`px-3 py-1.5 rounded-xl border flex items-center gap-1 ${
-              houseRules.sevenZero ? 'bg-purple-50 border-purple-300 text-purple-900' : 'bg-neutral-100 border-neutral-200 text-neutral-400 opacity-60'
-            }`}>
-              <RotateCcw className="w-3.5 h-3.5" /> {houseRules.sevenZero ? '7-Zero Swap ON' : '7-Zero Swap OFF'}
-            </span>
-            <span className={`px-3 py-1.5 rounded-xl border flex items-center gap-1 ${
-              houseRules.jumpIn ? 'bg-emerald-50 border-emerald-300 text-emerald-900' : 'bg-neutral-100 border-neutral-200 text-neutral-400 opacity-60'
-            }`}>
-              <Zap className="w-3.5 h-3.5" /> {houseRules.jumpIn ? 'Jump-In ON' : 'Jump-In OFF'}
-            </span>
-            <span className={`px-3 py-1.5 rounded-xl border flex items-center gap-1 ${
-              houseRules.discardAll ? 'bg-rose-50 border-rose-300 text-rose-900' : 'bg-neutral-100 border-neutral-200 text-neutral-400 opacity-60'
-            }`}>
-              🎨 {houseRules.discardAll ? 'Discard All ON' : 'Discard All OFF'}
-            </span>
-            <span className={`px-3 py-1.5 rounded-xl border flex items-center gap-1 ${
-              houseRules.counterDeflect !== false ? 'bg-blue-50 border-blue-300 text-blue-900' : 'bg-neutral-100 border-neutral-200 text-neutral-400 opacity-60'
-            }`}>
-              🛡️ {houseRules.counterDeflect !== false ? 'Deflect Shield ON' : 'Deflect Shield OFF'}
-            </span>
-            <span className={`px-3 py-1.5 rounded-xl border flex items-center gap-1 ${
-              houseRules.shuffleHands ? 'bg-indigo-50 border-indigo-300 text-indigo-900' : 'bg-neutral-100 border-neutral-200 text-neutral-400 opacity-60'
-            }`}>
-              🌀 {houseRules.shuffleHands ? 'Wild Shuffle ON' : 'Wild Shuffle OFF'}
-            </span>
-            <span className={`px-3 py-1.5 rounded-xl border flex items-center gap-1 ${
-              houseRules.wildSwap ? 'bg-amber-50 border-amber-300 text-amber-900' : 'bg-neutral-100 border-neutral-200 text-neutral-400 opacity-60'
-            }`}>
-              🎯 {houseRules.wildSwap ? 'Wild Swap ON' : 'Wild Swap OFF'}
-            </span>
+
+            {/* Mode specific rule badges */}
+            {gameState?.settings.mode === 'CLASSIC' && (
+              <span className="bg-slate-100 border border-slate-300 text-slate-800 px-3 py-1.5 rounded-xl flex items-center gap-1 font-bold">
+                🎲 Standard Official Rules Active
+              </span>
+            )}
+
+            {gameState?.settings.mode === 'NO_MERCY' && (
+              <>
+                <span className="bg-red-100 border border-red-300 text-red-900 px-3 py-1.5 rounded-xl flex items-center gap-1 font-bold">
+                  💀 25-Card Mercy Limit
+                </span>
+                <span className="bg-amber-100 border border-amber-300 text-amber-900 px-3 py-1.5 rounded-xl flex items-center gap-1 font-bold">
+                  🔥 +2/+4/+6/+10 Extreme Stacking
+                </span>
+                <span className="bg-purple-100 border border-purple-300 text-purple-900 px-3 py-1.5 rounded-xl flex items-center gap-1 font-bold">
+                  🔄 7-0 Swap & Rotate
+                </span>
+                <span className="bg-rose-100 border border-rose-300 text-rose-900 px-3 py-1.5 rounded-xl flex items-center gap-1 font-bold">
+                  🎨 Discard All & Color Roulette
+                </span>
+              </>
+            )}
+
+            {/* Individual house rules badges - Only shown for CUSTOM mode */}
+            {gameState?.settings.mode !== 'CLASSIC' && gameState?.settings.mode !== 'NO_MERCY' && (
+              <>
+                <span className={`px-3 py-1.5 rounded-xl border flex items-center gap-1 ${
+                  houseRules.stacking ? 'bg-amber-50 border-amber-300 text-amber-900' : 'bg-neutral-100 border-neutral-200 text-neutral-400 opacity-60'
+                }`}>
+                  <Layers className="w-3.5 h-3.5" /> {houseRules.stacking ? '+2/+4 Stacking ON' : '+2/+4 Stacking OFF'}
+                </span>
+                <span className={`px-3 py-1.5 rounded-xl border flex items-center gap-1 ${
+                  houseRules.sevenZero ? 'bg-purple-50 border-purple-300 text-purple-900' : 'bg-neutral-100 border-neutral-200 text-neutral-400 opacity-60'
+                }`}>
+                  <RotateCcw className="w-3.5 h-3.5" /> {houseRules.sevenZero ? '7-Zero Swap ON' : '7-Zero Swap OFF'}
+                </span>
+                <span className={`px-3 py-1.5 rounded-xl border flex items-center gap-1 ${
+                  houseRules.jumpIn ? 'bg-emerald-50 border-emerald-300 text-emerald-900' : 'bg-neutral-100 border-neutral-200 text-neutral-400 opacity-60'
+                }`}>
+                  <Zap className="w-3.5 h-3.5" /> {houseRules.jumpIn ? 'Jump-In ON' : 'Jump-In OFF'}
+                </span>
+                <span className={`px-3 py-1.5 rounded-xl border flex items-center gap-1 ${
+                  houseRules.discardAll ? 'bg-rose-50 border-rose-300 text-rose-900' : 'bg-neutral-100 border-neutral-200 text-neutral-400 opacity-60'
+                }`}>
+                  🎨 {houseRules.discardAll ? 'Discard All ON' : 'Discard All OFF'}
+                </span>
+                <span className={`px-3 py-1.5 rounded-xl border flex items-center gap-1 ${
+                  houseRules.counterDeflect !== false ? 'bg-blue-50 border-blue-300 text-blue-900' : 'bg-neutral-100 border-neutral-200 text-neutral-400 opacity-60'
+                }`}>
+                  🛡️ {houseRules.counterDeflect !== false ? 'Deflect Shield ON' : 'Deflect Shield OFF'}
+                </span>
+                <span className={`px-3 py-1.5 rounded-xl border flex items-center gap-1 ${
+                  houseRules.shuffleHands ? 'bg-indigo-50 border-indigo-300 text-indigo-900' : 'bg-neutral-100 border-neutral-200 text-neutral-400 opacity-60'
+                }`}>
+                  🌀 {houseRules.shuffleHands ? 'Wild Shuffle ON' : 'Wild Shuffle OFF'}
+                </span>
+                <span className={`px-3 py-1.5 rounded-xl border flex items-center gap-1 ${
+                  houseRules.wildSwap ? 'bg-amber-50 border-amber-300 text-amber-900' : 'bg-neutral-100 border-neutral-200 text-neutral-400 opacity-60'
+                }`}>
+                  🎯 {houseRules.wildSwap ? 'Wild Swap ON' : 'Wild Swap OFF'}
+                </span>
+              </>
+            )}
           </div>
         </div>
 

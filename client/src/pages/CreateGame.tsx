@@ -281,156 +281,178 @@ export const CreateGame: React.FC = () => {
             </div>
           </div>
 
-          {/* House Rules Toggles */}
-          <div className="space-y-3 pt-4 border-t border-neutral-100">
-            <span className="text-xs font-bold text-neutral-700 uppercase tracking-wider block">HOUSE RULES</span>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <label className="flex items-center justify-between p-3.5 rounded-2xl border border-neutral-200 cursor-pointer hover:bg-neutral-50 transition-colors">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-xl bg-amber-100 text-amber-600">
-                    <Layers className="w-4 h-4" />
+          {/* House Rules Toggles - Only visible in CUSTOM mode */}
+          {preset === 'CUSTOM' ? (
+            <div className="space-y-3 pt-4 border-t border-neutral-100 animate-fade-in">
+              <span className="text-xs font-bold text-neutral-700 uppercase tracking-wider block">CUSTOM HOUSE RULES</span>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <label className="flex items-center justify-between p-3.5 rounded-2xl border border-neutral-200 cursor-pointer hover:bg-neutral-50 transition-colors">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-xl bg-amber-100 text-amber-600">
+                      <Layers className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <div className="font-bold text-sm text-uno-navy">+2 / +4 Card Stacking</div>
+                      <div className="text-xs text-neutral-500">Stack matching draw cards onto opponents.</div>
+                    </div>
                   </div>
-                  <div>
-                    <div className="font-bold text-sm text-uno-navy">+2 / +4 Card Stacking</div>
-                    <div className="text-xs text-neutral-500">Stack matching draw cards onto opponents.</div>
-                  </div>
-                </div>
-                <input
-                  type="checkbox"
-                  checked={stacking}
-                  onChange={(e) => setStacking(e.target.checked)}
-                  className="w-5 h-5 accent-uno-blue rounded cursor-pointer"
-                />
-              </label>
+                  <input
+                    type="checkbox"
+                    checked={stacking}
+                    onChange={(e) => setStacking(e.target.checked)}
+                    className="w-5 h-5 accent-uno-blue rounded cursor-pointer"
+                  />
+                </label>
 
-              <label className="flex items-center justify-between p-3.5 rounded-2xl border border-neutral-200 cursor-pointer hover:bg-neutral-50 transition-colors">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-xl bg-purple-100 text-purple-600">
-                    <RotateCcw className="w-4 h-4" />
+                <label className="flex items-center justify-between p-3.5 rounded-2xl border border-neutral-200 cursor-pointer hover:bg-neutral-50 transition-colors">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-xl bg-purple-100 text-purple-600">
+                      <RotateCcw className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <div className="font-bold text-sm text-uno-navy">7-Zero Swap & Rotate</div>
+                      <div className="text-xs text-neutral-500">7 swaps hands; 0 rotates all hands.</div>
+                    </div>
                   </div>
-                  <div>
-                    <div className="font-bold text-sm text-uno-navy">7-Zero Swap & Rotate</div>
-                    <div className="text-xs text-neutral-500">7 swaps hands; 0 rotates all hands.</div>
-                  </div>
-                </div>
-                <input
-                  type="checkbox"
-                  checked={sevenZero}
-                  onChange={(e) => setSevenZero(e.target.checked)}
-                  className="w-5 h-5 accent-uno-blue rounded cursor-pointer"
-                />
-              </label>
+                  <input
+                    type="checkbox"
+                    checked={sevenZero}
+                    onChange={(e) => setSevenZero(e.target.checked)}
+                    className="w-5 h-5 accent-uno-blue rounded cursor-pointer"
+                  />
+                </label>
 
-              <label className="flex items-center justify-between p-3.5 rounded-2xl border border-neutral-200 cursor-pointer hover:bg-neutral-50 transition-colors">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-xl bg-emerald-100 text-emerald-600">
-                    <Zap className="w-4 h-4" />
+                <label className="flex items-center justify-between p-3.5 rounded-2xl border border-neutral-200 cursor-pointer hover:bg-neutral-50 transition-colors">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-xl bg-emerald-100 text-emerald-600">
+                      <Zap className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <div className="font-bold text-sm text-uno-navy">Jump-In Rule</div>
+                      <div className="text-xs text-neutral-500">Play exact matching card out of turn.</div>
+                    </div>
                   </div>
-                  <div>
-                    <div className="font-bold text-sm text-uno-navy">Jump-In Rule</div>
-                    <div className="text-xs text-neutral-500">Play exact matching card out of turn.</div>
-                  </div>
-                </div>
-                <input
-                  type="checkbox"
-                  checked={jumpIn}
-                  onChange={(e) => setJumpIn(e.target.checked)}
-                  className="w-5 h-5 accent-uno-blue rounded cursor-pointer"
-                />
-              </label>
+                  <input
+                    type="checkbox"
+                    checked={jumpIn}
+                    onChange={(e) => setJumpIn(e.target.checked)}
+                    className="w-5 h-5 accent-uno-blue rounded cursor-pointer"
+                  />
+                </label>
 
-              <label className="flex items-center justify-between p-3.5 rounded-2xl border border-neutral-200 cursor-pointer hover:bg-neutral-50 transition-colors">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-xl bg-sky-100 text-sky-600">
-                    <Sparkles className="w-4 h-4" />
+                <label className="flex items-center justify-between p-3.5 rounded-2xl border border-neutral-200 cursor-pointer hover:bg-neutral-50 transition-colors">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-xl bg-sky-100 text-sky-600">
+                      <Sparkles className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <div className="font-bold text-sm text-uno-navy">Force Play Drawn Card</div>
+                      <div className="text-xs text-neutral-500">Must play drawn card immediately if matching.</div>
+                    </div>
                   </div>
-                  <div>
-                    <div className="font-bold text-sm text-uno-navy">Force Play Drawn Card</div>
-                    <div className="text-xs text-neutral-500">Must play drawn card immediately if matching.</div>
-                  </div>
-                </div>
-                <input
-                  type="checkbox"
-                  checked={forcePlay}
-                  onChange={(e) => setForcePlay(e.target.checked)}
-                  className="w-5 h-5 accent-uno-blue rounded cursor-pointer"
-                />
-              </label>
+                  <input
+                    type="checkbox"
+                    checked={forcePlay}
+                    onChange={(e) => setForcePlay(e.target.checked)}
+                    className="w-5 h-5 accent-uno-blue rounded cursor-pointer"
+                  />
+                </label>
 
-              <label className="flex items-center justify-between p-3.5 rounded-2xl border border-neutral-200 cursor-pointer hover:bg-neutral-50 transition-colors">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-xl bg-rose-100 text-rose-600">
-                    <Sparkles className="w-4 h-4" />
+                <label className="flex items-center justify-between p-3.5 rounded-2xl border border-neutral-200 cursor-pointer hover:bg-neutral-50 transition-colors">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-xl bg-rose-100 text-rose-600">
+                      <Sparkles className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <div className="font-bold text-sm text-uno-navy">Discard All Color Rule 🎨</div>
+                      <div className="text-xs text-neutral-500">Discard all matching color cards at once.</div>
+                    </div>
                   </div>
-                  <div>
-                    <div className="font-bold text-sm text-uno-navy">Discard All Color Rule 🎨</div>
-                    <div className="text-xs text-neutral-500">Discard all matching color cards at once.</div>
-                  </div>
-                </div>
-                <input
-                  type="checkbox"
-                  checked={discardAll}
-                  onChange={(e) => setDiscardAll(e.target.checked)}
-                  className="w-5 h-5 accent-uno-blue rounded cursor-pointer"
-                />
-              </label>
+                  <input
+                    type="checkbox"
+                    checked={discardAll}
+                    onChange={(e) => setDiscardAll(e.target.checked)}
+                    className="w-5 h-5 accent-uno-blue rounded cursor-pointer"
+                  />
+                </label>
 
-              <label className="flex items-center justify-between p-3.5 rounded-2xl border border-neutral-200 cursor-pointer hover:bg-neutral-50 transition-colors">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-xl bg-blue-100 text-blue-600">
-                    <Zap className="w-4 h-4" />
+                <label className="flex items-center justify-between p-3.5 rounded-2xl border border-neutral-200 cursor-pointer hover:bg-neutral-50 transition-colors">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-xl bg-blue-100 text-blue-600">
+                      <Zap className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <div className="font-bold text-sm text-uno-navy">Counter / Deflect Shield 🛡️</div>
+                      <div className="text-xs text-neutral-500">Skip/Reverse deflects +2/+4 stack back to attacker.</div>
+                    </div>
                   </div>
-                  <div>
-                    <div className="font-bold text-sm text-uno-navy">Counter / Deflect Shield 🛡️</div>
-                    <div className="text-xs text-neutral-500">Skip/Reverse deflects +2/+4 stack back to attacker.</div>
-                  </div>
-                </div>
-                <input
-                  type="checkbox"
-                  checked={counterDeflect}
-                  onChange={(e) => setCounterDeflect(e.target.checked)}
-                  className="w-5 h-5 accent-uno-blue rounded cursor-pointer"
-                />
-              </label>
+                  <input
+                    type="checkbox"
+                    checked={counterDeflect}
+                    onChange={(e) => setCounterDeflect(e.target.checked)}
+                    className="w-5 h-5 accent-uno-blue rounded cursor-pointer"
+                  />
+                </label>
 
-              <label className="flex items-center justify-between p-3.5 rounded-2xl border border-neutral-200 cursor-pointer hover:bg-neutral-50 transition-colors">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-xl bg-indigo-100 text-indigo-600">
-                    <RotateCcw className="w-4 h-4" />
+                <label className="flex items-center justify-between p-3.5 rounded-2xl border border-neutral-200 cursor-pointer hover:bg-neutral-50 transition-colors">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-xl bg-indigo-100 text-indigo-600">
+                      <RotateCcw className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <div className="font-bold text-sm text-uno-navy">Wild Shuffle Hands 🌀</div>
+                      <div className="text-xs text-neutral-500">Gather, shuffle, & redeal all player hands.</div>
+                    </div>
                   </div>
-                  <div>
-                    <div className="font-bold text-sm text-uno-navy">Wild Shuffle Hands 🌀</div>
-                    <div className="text-xs text-neutral-500">Gather, shuffle, & redeal all player hands.</div>
-                  </div>
-                </div>
-                <input
-                  type="checkbox"
-                  checked={shuffleHands}
-                  onChange={(e) => setShuffleHands(e.target.checked)}
-                  className="w-5 h-5 accent-uno-blue rounded cursor-pointer"
-                />
-              </label>
+                  <input
+                    type="checkbox"
+                    checked={shuffleHands}
+                    onChange={(e) => setShuffleHands(e.target.checked)}
+                    className="w-5 h-5 accent-uno-blue rounded cursor-pointer"
+                  />
+                </label>
 
-              <label className="flex items-center justify-between p-3.5 rounded-2xl border border-neutral-200 cursor-pointer hover:bg-neutral-50 transition-colors">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-xl bg-amber-100 text-amber-600">
-                    <Sparkles className="w-4 h-4" />
+                <label className="flex items-center justify-between p-3.5 rounded-2xl border border-neutral-200 cursor-pointer hover:bg-neutral-50 transition-colors">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-xl bg-amber-100 text-amber-600">
+                      <Sparkles className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <div className="font-bold text-sm text-uno-navy">Wild Swap Card 🎯</div>
+                      <div className="text-xs text-neutral-500">Wild card allowing direct hand swap with target.</div>
+                    </div>
                   </div>
-                  <div>
-                    <div className="font-bold text-sm text-uno-navy">Wild Swap Card 🎯</div>
-                    <div className="text-xs text-neutral-500">Wild card allowing direct hand swap with target.</div>
-                  </div>
-                </div>
-                <input
-                  type="checkbox"
-                  checked={wildSwap}
-                  onChange={(e) => setWildSwap(e.target.checked)}
-                  className="w-5 h-5 accent-uno-blue rounded cursor-pointer"
-                />
-              </label>
+                  <input
+                    type="checkbox"
+                    checked={wildSwap}
+                    onChange={(e) => setWildSwap(e.target.checked)}
+                    className="w-5 h-5 accent-uno-blue rounded cursor-pointer"
+                  />
+                </label>
+              </div>
             </div>
-          </div>
+          ) : (
+            <div className="pt-4 border-t border-neutral-100">
+              <div className="p-4 rounded-2xl bg-gradient-to-r from-slate-50 to-blue-50/50 border border-slate-200/80 flex items-start gap-3 shadow-xs">
+                <Sparkles className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+                <div className="space-y-1 text-xs">
+                  <span className="font-extrabold text-slate-900 block uppercase tracking-wider">
+                    {preset === 'CLASSIC' && '🎲 CLASSIC MODE OFFICIAL RULES ACTIVE'}
+                    {preset === 'NO_MERCY' && "🔥 NO MERCY MODE OFFICIAL RULES ACTIVE"}
+                    {preset === 'SPEED' && '⚡ SPEED MATCH PRESET ACTIVE'}
+                    {preset === 'CHAOS' && '💥 CHAOS MODE PRESET ACTIVE'}
+                  </span>
+                  <p className="text-slate-600 font-medium leading-relaxed">
+                    {preset === 'CLASSIC' && 'Standard official UNO rules are enforced. Individual house rule toggles are locked for Classic mode. To configure custom house rules, select the Custom preset above.'}
+                    {preset === 'NO_MERCY' && "Official Show 'em No Mercy rules are enforced (25-Card Knockout Limit, Extreme +2/+4/+6/+10 Stacking, 7-0 Swap, Discard All, Color Roulette). To customize individual rules, select the Custom preset above."}
+                    {preset === 'SPEED' && 'Fast 5-card start & 15-second turn timer. To modify individual rules, select the Custom preset above.'}
+                    {preset === 'CHAOS' && 'High-chaos match with all stacking, swapping, and jump-in rules active. Select Custom preset to tweak individual rules.'}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Room Preferences */}
           <div className="space-y-3 pt-4 border-t border-neutral-100">
