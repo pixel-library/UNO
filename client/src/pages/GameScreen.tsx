@@ -549,6 +549,9 @@ export const GameScreen: React.FC = () => {
         const isCounterCard = cardVal === 'DRAW_TWO' || cardVal === 'WILD_DRAW_FOUR' ||
           (gameState?.settings?.houseRules?.counterDeflect && (cardVal === 'SKIP' || cardVal === 'REVERSE' || cardVal === 'SKIP_WILD'));
         if (isCounterCard) return true;
+        return false;
+      } else {
+        return false;
       }
     }
 

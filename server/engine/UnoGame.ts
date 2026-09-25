@@ -353,9 +353,11 @@ export class UnoGame {
     if (activePlayers.length === 0) return this.players[0];
 
     let current = activePlayers[this.currentPlayerIndex % activePlayers.length];
-    if (current && (current.isFinished || current.isEliminated)) {
+    let attempts = 0;
+    while (current && (current.isFinished || current.isEliminated) && attempts < activePlayers.length) {
       this.advanceTurnIndex();
       current = activePlayers[this.currentPlayerIndex % activePlayers.length];
+      attempts++;
     }
     return current || activePlayers[0];
   }
@@ -393,15 +395,18 @@ export class UnoGame {
           const topVal = this.topDiscardCard ? String(this.topDiscardCard.value || '').trim().toUpperCase() : '';
           const currentPenaltyVal = this.getPenaltyValue(topVal);
           const playPenaltyVal = this.getPenaltyValue(cardVal);
-          // Can stack if penalty value is equal to or higher than top card's penalty value (or if top was non-penalty)
           if (playPenaltyVal >= currentPenaltyVal || currentPenaltyVal === 0) {
             return true;
           }
         }
-      } else if (this.settings.houseRules.stacking) {
+        return false;
+      } else if (this.settings.houseRules?.stacking) {
         const isCounterCard = cardVal === 'DRAW_TWO' || cardVal === 'WILD_DRAW_FOUR' ||
           (this.settings.houseRules.counterDeflect && (cardVal === 'SKIP' || cardVal === 'REVERSE' || cardVal === 'SKIP_WILD'));
         if (isCounterCard) return true;
+        return false;
+      } else {
+        return false;
       }
     }
 
