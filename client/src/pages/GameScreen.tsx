@@ -521,10 +521,20 @@ export const GameScreen: React.FC = () => {
     const cardColor = String(card.color || '').trim().toUpperCase();
     const cardVal = String(card.value || '').trim().toUpperCase();
 
-    if ((gameState?.activeStackCount || 0) > 0 && gameState?.settings?.houseRules?.stacking) {
-      const isCounterCard = cardVal === 'DRAW_TWO' || cardVal === 'WILD_DRAW_FOUR' ||
-        (gameState?.settings?.houseRules?.counterDeflect && (cardVal === 'SKIP' || cardVal === 'REVERSE' || cardVal === 'SKIP_WILD'));
-      if (isCounterCard) return true;
+    if ((gameState?.activeStackCount || 0) > 0) {
+      if (gameState?.settings?.mode === 'NO_MERCY') {
+        const isPenalty = ['DRAW_TWO', 'WILD_DRAW_FOUR', 'WILD_REVERSE_DRAW_FOUR', 'WILD_DRAW_SIX', 'WILD_DRAW_TEN'].includes(cardVal);
+        if (isPenalty) {
+          const topVal = topDiscard ? String(topDiscard.value || '').trim().toUpperCase() : '';
+          const getPen = (v: string) => v === 'DRAW_TWO' ? 2 : (v === 'WILD_DRAW_FOUR' || v === 'WILD_REVERSE_DRAW_FOUR') ? 4 : v === 'WILD_DRAW_SIX' ? 6 : v === 'WILD_DRAW_TEN' ? 10 : 0;
+          if (getPen(cardVal) >= getPen(topVal) || getPen(topVal) === 0) return true;
+        }
+        return false;
+      } else if (gameState?.settings?.houseRules?.stacking) {
+        const isCounterCard = cardVal === 'DRAW_TWO' || cardVal === 'WILD_DRAW_FOUR' ||
+          (gameState?.settings?.houseRules?.counterDeflect && (cardVal === 'SKIP' || cardVal === 'REVERSE' || cardVal === 'SKIP_WILD'));
+        if (isCounterCard) return true;
+      }
     }
 
     if (cardColor === 'WILD') return true;
@@ -1127,7 +1137,12 @@ export const GameScreen: React.FC = () => {
 
               {/* Player Hand Container */}
               <div className="w-full flex items-center justify-center overflow-x-auto overflow-y-visible pt-1 sm:pt-2 pb-0.5 px-1 scrollbar-none touch-pan-x">
-                {isMobile && displayHand.length > 7 ? (
+                {gameState?.players?.find(p => p.id === myId)?.isEliminated ? (
+                  <div className="bg-red-950/90 border-2 border-red-500 text-red-100 px-6 py-4 rounded-2xl text-xs sm:text-sm font-black shadow-2xl uppercase tracking-wider flex items-center gap-2 my-2 z-40">
+                    <span>💀 YOU WERE ELIMINATED BY THE MERCY RULE (25+ CARDS)!</span>
+                    <span className="text-white/60">SPECTATING MATCH...</span>
+                  </div>
+                ) : isMobile && displayHand.length > 7 ? (
                   /* Mobile Multi-Row Layout for > 7 Cards */
                   <div className="w-full flex flex-col items-center justify-center gap-1 py-0.5 px-0.5">
                     {[

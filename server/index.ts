@@ -82,7 +82,7 @@ function executeBotTurn(game: UnoGame) {
 
   // Handle pending 7-swap or Wild swap
   if (game.pendingHandSwapPlayerId === botId) {
-    const activePlayers = game.players.filter(p => !p.isSpectator && p.id !== botId);
+    const activePlayers = game.players.filter(p => !p.isSpectator && !p.isEliminated && !p.isFinished && p.id !== botId);
     activePlayers.sort((a, b) => a.cardCount - b.cardCount);
     const target = activePlayers[0] || activePlayers[Math.floor(Math.random() * activePlayers.length)];
     if (target) {
@@ -112,8 +112,18 @@ function executeBotTurn(game: UnoGame) {
   });
 
   if (playableCards.length > 0) {
-    // Prefer Action cards (+2, +4, Skip, Reverse) or matching active color
-    let cardToPlay = playableCards.find(c => c.value === 'WILD_DRAW_FOUR' || c.value === 'DRAW_TWO' || c.value === 'SKIP' || c.value === 'REVERSE');
+    // Prefer Action cards (+10, +6, +4, Reverse +4, Roulette, Skip All, +2, Skip, Reverse) or matching active color
+    let cardToPlay = playableCards.find(c =>
+      c.value === 'WILD_DRAW_TEN' ||
+      c.value === 'WILD_DRAW_SIX' ||
+      c.value === 'WILD_REVERSE_DRAW_FOUR' ||
+      c.value === 'WILD_DRAW_FOUR' ||
+      c.value === 'WILD_COLOR_ROULETTE' ||
+      c.value === 'SKIP_EVERYONE' ||
+      c.value === 'DRAW_TWO' ||
+      c.value === 'SKIP' ||
+      c.value === 'REVERSE'
+    );
     if (!cardToPlay) cardToPlay = playableCards.find(c => c.color === game.currentColor);
     if (!cardToPlay) cardToPlay = playableCards[0];
 

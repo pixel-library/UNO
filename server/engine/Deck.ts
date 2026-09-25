@@ -132,6 +132,7 @@ export class Deck {
 
     // Wild Action Cards (8 of each wild type in No Mercy)
     for (let i = 0; i < 8; i++) {
+      this.cards.push({ id: `nm_${cardIdCounter++}`, color: 'WILD', value: 'WILD', score: 50 });
       this.cards.push({ id: `nm_${cardIdCounter++}`, color: 'WILD', value: 'WILD_DRAW_FOUR', score: 50 });
       this.cards.push({ id: `nm_${cardIdCounter++}`, color: 'WILD', value: 'WILD_REVERSE_DRAW_FOUR', score: 50 });
       this.cards.push({ id: `nm_${cardIdCounter++}`, color: 'WILD', value: 'WILD_DRAW_SIX', score: 50 });

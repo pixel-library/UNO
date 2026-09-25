@@ -36,6 +36,7 @@ export class UnoGame {
   public activeEmote: TableEmote | null = null;
   public kickedPlayerIds: Set<string> = new Set();
   public kickedNames: Set<string> = new Set();
+  public skipNextTurnAdvance: boolean = false;
 
   constructor(id: string, roomCode: string, settings?: Partial<GameSettings>) {
     this.id = id;
@@ -432,17 +433,12 @@ export class UnoGame {
     }
 
     const cardVal = String(card.value || '').trim().toUpperCase();
-    const isStackingCard = cardVal === 'DRAW_TWO' || cardVal === 'WILD_DRAW_FOUR' ||
+    const isStackingCard = this.isPenaltyCard(cardVal) ||
       (this.settings.houseRules.counterDeflect && (cardVal === 'SKIP' || cardVal === 'REVERSE' || cardVal === 'SKIP_WILD'));
 
-    // If targeted by +2/+4 stack penalty and player plays a non-stacking card (e.g. Red 5),
-    // player MUST absorb the accumulated penalty stack cards into their hand!
-    let absorbedStackCount = 0;
+    // If targeted by +2/+4/+6/+10 stack penalty and player tries to play a non-stacking card:
     if (this.activeStackCount > 0 && !isStackingCard) {
-      absorbedStackCount = this.activeStackCount;
-      const penaltyCards = this.deck.drawMultiple(absorbedStackCount, this.discardPile);
-      hand.push(...penaltyCards);
-      this.activeStackCount = 0;
+      return { success: false, error: `Active +${this.activeStackCount} stack penalty pending! You must play a valid stacking Draw card or draw the penalty stack.` };
     }
 
     // Remove played card from hand and add to discard pile
@@ -469,17 +465,7 @@ export class UnoGame {
       this.currentColor = card.color;
     }
 
-    if (absorbedStackCount > 0) {
-      this.lastActionEvent = {
-        type: 'STACK',
-        title: `+${absorbedStackCount} CARDS ABSORBED! 📥`,
-        playerName: currentPlayer.name,
-        timestamp: Date.now()
-      };
-      this.lastActionMessage = `📥 ${currentPlayer.name} played ${card.color} ${card.value} & took +${absorbedStackCount} penalty cards!`;
-    } else {
-      this.lastActionMessage = `${currentPlayer.name} played ${card.color} ${card.value}`;
-    }
+    this.lastActionMessage = `${currentPlayer.name} played ${card.color} ${card.value}`;
 
     // Apply special card action
     this.applyCardAction(card, playerId);
@@ -674,23 +660,30 @@ export class UnoGame {
       currentPlayer.hasCalledUno = false;
     }
 
+    this.checkMercyRule(playerId);
+    if (currentPlayer.isEliminated) {
+      this.advanceTurn();
+      return { success: true, drawnCard };
+    }
+
     // Check if drawn card is playable
     const isDrawnPlayable = this.isPlayable(drawnCard);
 
     // If drawUntilPlayable rule is active and drawn card is not playable, continue drawing until playable card found
     if (this.settings.houseRules.drawUntilPlayable && !isDrawnPlayable && this.deck.count > 0) {
       let currentDrawn = drawnCard;
-      while (!this.isPlayable(currentDrawn) && this.deck.count > 0) {
+      while (!this.isPlayable(currentDrawn) && this.deck.count > 0 && !currentPlayer.isEliminated) {
         const nextCard = this.deck.draw();
         if (nextCard) {
           hand.push(nextCard);
           currentDrawn = nextCard;
+          this.checkMercyRule(playerId);
         } else {
           break;
         }
       }
       currentPlayer.cardCount = hand.length;
-      if (!this.isPlayable(currentDrawn)) {
+      if (currentPlayer.isEliminated || !this.isPlayable(currentDrawn)) {
         this.advanceTurn();
       }
       return { success: true, drawnCard: currentDrawn };
@@ -846,8 +839,7 @@ export class UnoGame {
         break;
 
       case 'SKIP_EVERYONE':
-        const step = this.direction === 'CW' ? -1 : 1;
-        this.currentPlayerIndex = (this.currentPlayerIndex + step + activePlayers.length) % activePlayers.length;
+        this.skipNextTurnAdvance = true;
         this.lastActionEvent = { type: 'SKIP_EVERYONE', title: 'SKIP EVERYONE! ⊘⊘', playerName, timestamp: Date.now() };
         this.lastActionMessage = `⊘⊘ ${playerName} played SKIP EVERYONE! Turn stays with ${playerName}!`;
         break;
@@ -967,8 +959,9 @@ export class UnoGame {
         let drawnCount = 0;
         let matched = false;
         while (!matched && targetHand.length < 25) {
-          const drawnCard = this.deck.draw();
-          if (!drawnCard) break;
+          const drawnCards = this.deck.drawMultiple(1, this.discardPile);
+          if (drawnCards.length === 0) break;
+          const drawnCard = drawnCards[0];
           targetHand.push(drawnCard);
           drawnCount++;
           if (drawnCard.color === chosen) {
@@ -1034,7 +1027,7 @@ export class UnoGame {
   }
 
   private rotateAllHands(): void {
-    const activePlayers = this.players.filter(p => !p.isSpectator);
+    const activePlayers = this.players.filter(p => !p.isSpectator && !p.isEliminated && !p.isFinished);
     if (activePlayers.length < 2) return;
 
     const handsArray = activePlayers.map(p => this.playerHands.get(p.id) || []);
@@ -1072,14 +1065,14 @@ export class UnoGame {
   private advanceTurnIndex(): void {
     const activePlayers = this.players.filter(p => !p.isSpectator);
     if (activePlayers.length === 0) return;
-    const unfinished = activePlayers.filter(p => !p.isFinished);
+    const unfinished = activePlayers.filter(p => !p.isFinished && !p.isEliminated);
     if (unfinished.length === 0) return;
 
     const step = this.direction === 'CW' ? 1 : -1;
     let nextIdx = (this.currentPlayerIndex + step + activePlayers.length) % activePlayers.length;
     let attempts = 0;
 
-    while (activePlayers[nextIdx]?.isFinished && attempts < activePlayers.length) {
+    while ((activePlayers[nextIdx]?.isFinished || activePlayers[nextIdx]?.isEliminated) && attempts < activePlayers.length) {
       nextIdx = (nextIdx + step + activePlayers.length) % activePlayers.length;
       attempts++;
     }
@@ -1088,6 +1081,11 @@ export class UnoGame {
   }
 
   private advanceTurn(): void {
+    if (this.skipNextTurnAdvance) {
+      this.skipNextTurnAdvance = false;
+      this.turnStartedAt = Date.now();
+      return;
+    }
     this.advanceTurnIndex();
     this.turnStartedAt = Date.now();
   }
