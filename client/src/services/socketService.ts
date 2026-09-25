@@ -79,13 +79,7 @@ class SocketService {
     if (code && this.localGames.has(code)) {
       return this.localGames.get(code);
     }
-    const myId = typeof localStorage !== 'undefined' ? localStorage.getItem('uno_player_id') : null;
-    if (myId) {
-      const found = Array.from(this.localGames.values()).find(g => g.players.some(p => p.id === myId));
-      if (found) return found;
-    }
-    const all = Array.from(this.localGames.values());
-    return all.length > 0 ? all[all.length - 1] : undefined;
+    return undefined;
   }
 
   private startLocalBotInterval() {
@@ -180,6 +174,7 @@ class SocketService {
       supabaseRoomService.createCloudRoom(playerName || 'Player', settings).then(res => {
         if (ackCallback) ackCallback(res);
         if (res.success && res.roomCode) {
+          localStorage.setItem('uno_room_code', res.roomCode);
           supabaseRoomService.onStateUpdate(res.roomCode, (state) => {
             this.triggerLocalEvent('game:state', state);
           });
@@ -292,8 +287,8 @@ class SocketService {
 
     if (eventName === 'game:start') {
       const { roomCode } = args[0] || {};
-      const targetRoomCode = roomCode || localStorage.getItem('uno_room_code');
-      const game = targetRoomCode ? this.localGames.get(targetRoomCode) : Array.from(this.localGames.values())[0];
+      const targetRoomCode = roomCode ? String(roomCode).trim().toUpperCase() : (typeof localStorage !== 'undefined' ? localStorage.getItem('uno_room_code') : undefined);
+      const game = (targetRoomCode && this.localGames.has(targetRoomCode)) ? this.localGames.get(targetRoomCode) : undefined;
       if (game) {
         game.startGame();
         const activePlayer = game.players[0];
