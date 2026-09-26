@@ -1,15 +1,28 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bot, Globe, KeyRound, Sparkles, RefreshCw, Sliders, Shield, Flame, Play as PlayIcon, Check, Copy, Info, X, Zap } from 'lucide-react';
+import { Bot, Globe, KeyRound, Sparkles, RefreshCw, Sliders, Flame, Play as PlayIcon, Info, X, Zap, Users, Edit3, Shield } from 'lucide-react';
 import { socketService } from '@/services/socketService';
 import { supabaseRoomService } from '@/services/supabaseRoomService';
 import { validateRoomCode } from '@shared/validation/roomValidator';
-import { UnoCard } from '@/components/card/UnoCard';
 import { useScroll3D } from '@/hooks/useScroll3D';
 
 export const Play: React.FC = () => {
   const navigate = useNavigate();
   useScroll3D();
+
+  // Active Main Navigation Tab State ('create' | 'lobby' | 'join' | 'vs_bot')
+  const [activeTab, setActiveTab] = useState<'create' | 'lobby' | 'join' | 'vs_bot'>('create');
+
+  // Player Info State
+  const [playerName, setPlayerName] = useState<string>('Player');
+  const [playerAvatar, setPlayerAvatar] = useState<string>('🦊');
+
+  useEffect(() => {
+    const storedName = localStorage.getItem('uno_player_name');
+    const storedAvatar = localStorage.getItem('uno_player_avatar');
+    if (storedName) setPlayerName(storedName);
+    if (storedAvatar) setPlayerAvatar(storedAvatar);
+  }, []);
 
   // Create Game State
   const [maxPlayers, setMaxPlayers] = useState<number>(4);
@@ -63,8 +76,8 @@ export const Play: React.FC = () => {
 
   const handleCreateVsBot = (sizeOverride?: number) => {
     if (isCreatingBot) return;
-    const playerName = localStorage.getItem('uno_player_name');
-    if (!playerName) {
+    const pName = localStorage.getItem('uno_player_name');
+    if (!pName) {
       navigate('/enter-name', { state: { returnTo: '/play' } });
       return;
     }
@@ -87,7 +100,7 @@ export const Play: React.FC = () => {
       socket.emit(
         'room:createVsBot',
         {
-          playerName,
+          playerName: pName,
           botCount,
           settings: {
             startingCards: 7,
@@ -156,7 +169,7 @@ export const Play: React.FC = () => {
         serverRooms = data.rooms;
       }
     } catch (err) {
-      // Silently handle offline mode
+      // Silently ignore static host error
     } finally {
       const cloudRooms = await supabaseRoomService.fetchPublicCloudRooms();
       setPublicRooms(mergePublicRooms(serverRooms, cloudRooms));
@@ -190,14 +203,14 @@ export const Play: React.FC = () => {
 
   const handleJoinPublicRoom = (code: string) => {
     setRoomCode(code);
-    const playerName = localStorage.getItem('uno_player_name');
-    if (!playerName) {
+    const pName = localStorage.getItem('uno_player_name');
+    if (!pName) {
       navigate('/enter-name', { state: { returnTo: `/join/${code}` } });
       return;
     }
     setIsJoining(true);
     const socket = socketService.getSocket();
-    socket.emit('room:join', { roomCode: code, playerName }, (res: any) => {
+    socket.emit('room:join', { roomCode: code, playerName: pName }, (res: any) => {
       setIsJoining(false);
       if (res?.success) {
         if (res.playerId) localStorage.setItem('uno_player_id', res.playerId);
@@ -211,8 +224,8 @@ export const Play: React.FC = () => {
   // Handle Room Creation
   const handleCreateGame = () => {
     if (isCreating) return;
-    const playerName = localStorage.getItem('uno_player_name');
-    if (!playerName) {
+    const pName = localStorage.getItem('uno_player_name');
+    if (!pName) {
       navigate('/enter-name');
       return;
     }
@@ -234,7 +247,7 @@ export const Play: React.FC = () => {
       socket.emit(
         'room:create',
         {
-          playerName,
+          playerName: pName,
           settings: {
             maxPlayers,
             startingCards: 7,
@@ -296,8 +309,8 @@ export const Play: React.FC = () => {
       return;
     }
 
-    const playerName = localStorage.getItem('uno_player_name');
-    if (!playerName) {
+    const pName = localStorage.getItem('uno_player_name');
+    if (!pName) {
       navigate('/enter-name', { state: { returnTo: `/join/${validation.formattedCode}` } });
       return;
     }
@@ -314,7 +327,7 @@ export const Play: React.FC = () => {
 
     try {
       const socket = socketService.getSocket();
-      socket.emit('room:join', { roomCode: validation.formattedCode!, playerName }, (res: any) => {
+      socket.emit('room:join', { roomCode: validation.formattedCode!, playerName: pName }, (res: any) => {
         if (handled) return;
         handled = true;
         clearTimeout(timer);
@@ -349,172 +362,141 @@ export const Play: React.FC = () => {
   };
 
   return (
-    <div className="w-full min-h-[calc(100vh-64px)] bg-gradient-to-br from-[#0B4A8B] via-[#052D56] to-[#021832] text-white py-8 px-4 sm:px-6 lg:px-8 flex flex-col justify-between items-center relative overflow-hidden font-sans selection:bg-none">
+    <div className="w-full min-h-[calc(100vh-64px)] bg-gradient-to-br from-[#0B4A8B] via-[#052D56] to-[#021832] text-white py-6 px-4 sm:px-6 lg:px-8 flex flex-col justify-between items-center relative overflow-hidden font-sans selection:bg-none">
       
-      {/* Dynamic Ambient Aura Glow Overlays */}
+      {/* Dynamic Ambient Glow Overlays */}
       <div className="absolute -top-32 -left-32 w-96 h-96 bg-red-500/15 rounded-full blur-3xl pointer-events-none z-0" />
       <div className="absolute -top-32 -right-32 w-96 h-96 bg-amber-400/15 rounded-full blur-3xl pointer-events-none z-0" />
       <div className="absolute -bottom-32 -left-32 w-96 h-96 bg-emerald-500/15 rounded-full blur-3xl pointer-events-none z-0" />
       <div className="absolute -bottom-32 -right-32 w-96 h-96 bg-sky-500/15 rounded-full blur-3xl pointer-events-none z-0" />
 
-      {/* ------------------------------------------------------------- */}
-      {/* TOP HEADER TITLE BANNER                                       */}
-      {/* ------------------------------------------------------------- */}
-      <div className="text-center space-y-2 mb-8 z-10">
-        <div className="inline-flex items-center gap-2 bg-sky-950/80 border border-sky-400/30 px-3.5 py-1 rounded-full text-xs font-bold text-sky-200 shadow-md backdrop-blur-md">
-          <Sparkles className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
-          <span className="uppercase tracking-widest font-black">UNO ARENA GAME LOBBY</span>
-        </div>
-        <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white tracking-tight font-sans uppercase drop-shadow-md">
-          SELECT GAME MODE
-        </h1>
-        <p className="text-xs sm:text-sm font-semibold text-sky-200/80 max-w-lg mx-auto">
-          Play UNO online with friends worldwide or practice offline against smart AI bots.
-        </p>
-      </div>
+      <div className="w-full max-w-4xl mx-auto space-y-6 z-10 flex-1 flex flex-col justify-center">
 
-      {/* ------------------------------------------------------------- */}
-      {/* MAIN EQUAL-HEIGHT 3-CARD GRID                                 */}
-      {/* ------------------------------------------------------------- */}
-      <div className="max-w-6xl w-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 z-10 items-stretch">
-        
-        {/* ----------------------------------------------------------- */}
-        {/* CARD 1: PLAY VS COMPUTER (OFFLINE AI MATCH)                 */}
-        {/* ----------------------------------------------------------- */}
-        <div className="w-full bg-[#062447]/90 backdrop-blur-xl border border-sky-400/25 rounded-3xl p-6 sm:p-7 shadow-2xl hover:border-amber-400/50 transition-all flex flex-col justify-between space-y-6 group">
-          
-          <div className="space-y-5">
-            {/* Header Badge */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
-                <div className="p-2.5 rounded-2xl bg-amber-500/20 border border-amber-400/40 text-amber-300 shadow-sm">
-                  <Bot className="w-6 h-6" />
-                </div>
-                <div>
-                  <h2 className="text-lg font-black text-white tracking-wide uppercase">VS COMPUTER</h2>
-                  <p className="text-[10px] font-bold text-amber-300/80 uppercase tracking-wider">OFFLINE PRACTICE</p>
-                </div>
-              </div>
-              <span className="text-[10px] font-black bg-amber-500/20 text-amber-300 px-2.5 py-1 rounded-full uppercase border border-amber-400/30">
-                OFFLINE
-              </span>
+        {/* ------------------------------------------------------------- */}
+        {/* TOP PLAYER PROFILE BAR (MATCHING REFERENCE DESIGN)             */}
+        {/* ------------------------------------------------------------- */}
+        <div className="bg-[#062447]/90 backdrop-blur-xl border border-sky-400/25 rounded-2xl p-4 sm:p-5 flex items-center justify-between shadow-xl">
+          <div className="flex items-center gap-3">
+            <div className="w-11 h-11 rounded-2xl bg-amber-500/20 border border-amber-400/40 text-amber-300 flex items-center justify-center text-2xl shadow-sm">
+              {playerAvatar}
             </div>
-
-            <p className="text-xs text-sky-100/70 font-medium leading-relaxed">
-              Sharpen your skills against smart AI bots. Choose match size and start playing instantly!
-            </p>
-
-            {/* Match Size Selection: 2, 3, or 4 Players */}
-            <div className="space-y-2.5 pt-1">
-              <span className="text-xs font-extrabold text-sky-200 uppercase tracking-wider block">
-                Select Match Size:
-              </span>
-
-              <div className="grid grid-cols-3 gap-2">
-                {[
-                  { size: 2, label: '2 PLAYERS', desc: '1 vs 1 AI' },
-                  { size: 3, label: '3 PLAYERS', desc: '1 vs 2 AI' },
-                  { size: 4, label: '4 PLAYERS', desc: '1 vs 3 AI' }
-                ].map((item) => (
-                  <button
-                    key={item.size}
-                    type="button"
-                    onClick={() => setBotMatchSize(item.size as 2 | 3 | 4)}
-                    className={`py-2.5 px-2 rounded-2xl flex flex-col items-center justify-center border transition-all cursor-pointer ${
-                      botMatchSize === item.size
-                        ? 'border-amber-400 bg-amber-500/20 text-amber-200 ring-2 ring-amber-400/40 font-black shadow-md'
-                        : 'border-sky-400/20 text-sky-200/70 hover:border-sky-400/40 bg-sky-950/40'
-                    }`}
-                  >
-                    <span className="font-extrabold text-xs">{item.label}</span>
-                    <span className="text-[9px] font-bold mt-0.5 opacity-80">{item.desc}</span>
-                  </button>
-                ))}
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-black text-sky-300/70 uppercase tracking-widest block">PLAYER PROFILE</span>
               </div>
-            </div>
-
-            {/* Visual Player Roster Preview */}
-            <div className="bg-sky-950/60 rounded-2xl p-3 border border-sky-400/20 space-y-2">
-              <span className="text-[10px] font-extrabold text-sky-300/70 uppercase tracking-wider block">
-                Match Roster Preview:
-              </span>
-              <div className="flex flex-wrap items-center gap-1.5">
-                <div className="flex items-center gap-1 bg-blue-500/20 text-blue-300 border border-blue-400/30 px-2.5 py-1 rounded-xl text-xs font-extrabold">
-                  <span>👤</span>
-                  <span>You</span>
-                </div>
-                <div className="flex items-center gap-1 bg-amber-500/20 text-amber-300 border border-amber-400/30 px-2.5 py-1 rounded-xl text-xs font-extrabold">
-                  <span>🤖</span>
-                  <span>Bot 1</span>
-                </div>
-                {botMatchSize >= 3 && (
-                  <div className="flex items-center gap-1 bg-amber-500/20 text-amber-300 border border-amber-400/30 px-2.5 py-1 rounded-xl text-xs font-extrabold">
-                    <span>🤖</span>
-                    <span>Bot 2</span>
-                  </div>
-                )}
-                {botMatchSize >= 4 && (
-                  <div className="flex items-center gap-1 bg-amber-500/20 text-amber-300 border border-amber-400/30 px-2.5 py-1 rounded-xl text-xs font-extrabold">
-                    <span>🤖</span>
-                    <span>Bot 3</span>
-                  </div>
-                )}
-              </div>
+              <h2 className="text-lg sm:text-xl font-black text-white tracking-tight leading-tight flex items-center gap-2">
+                <span>{playerName}</span>
+                <span className="text-xs font-bold text-amber-300 bg-amber-500/20 border border-amber-400/30 px-2 py-0.5 rounded-full">
+                  ★ Ready
+                </span>
+              </h2>
             </div>
           </div>
 
-          {/* START VS COMPUTER BUTTON */}
-          <div className="pt-3">
-            <button
-              onClick={() => handleCreateVsBot()}
-              disabled={isCreatingBot}
-              className="w-full btn-3d-yellow py-3.5 rounded-2xl text-xs font-black tracking-wider uppercase disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg cursor-pointer"
-            >
-              <Zap className="w-4 h-4 fill-current text-slate-950" />
-              <span>{isCreatingBot ? 'STARTING MATCH...' : `PLAY ${botMatchSize}P VS COMPUTER`}</span>
-            </button>
-          </div>
-
+          <button
+            onClick={() => navigate('/enter-name')}
+            className="bg-sky-500/20 hover:bg-sky-500/30 border border-sky-400/30 text-sky-200 hover:text-white px-3.5 py-2 rounded-xl text-xs font-extrabold flex items-center gap-1.5 shadow-sm transition-all cursor-pointer"
+          >
+            <Edit3 className="w-3.5 h-3.5 text-amber-400" />
+            <span className="hidden sm:inline">Change Handle</span>
+          </button>
         </div>
 
-        {/* ----------------------------------------------------------- */}
-        {/* CARD 2: CREATE MULTIPLAYER GAME                             */}
-        {/* ----------------------------------------------------------- */}
-        <div className="w-full bg-[#062447]/90 backdrop-blur-xl border border-sky-400/25 rounded-3xl p-6 sm:p-7 shadow-2xl hover:border-sky-300/50 transition-all flex flex-col justify-between space-y-6 group">
-          
-          <div className="space-y-5">
-            {/* Header Badge */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
-                <div className="p-2.5 rounded-2xl bg-sky-500/20 border border-sky-400/40 text-sky-300 shadow-sm">
-                  <Globe className="w-6 h-6" />
-                </div>
+        {/* ------------------------------------------------------------- */}
+        {/* SEGMENTED TAB NAVIGATION BAR (MATCHING REFERENCE DESIGN)      */}
+        {/* ------------------------------------------------------------- */}
+        <div className="bg-[#062447]/90 backdrop-blur-xl border border-sky-400/25 p-1.5 rounded-2xl flex gap-1.5 justify-center shadow-xl">
+          {[
+            { id: 'create', label: 'Create Room', icon: <Globe className="w-4 h-4" /> },
+            { id: 'lobby', label: 'Public Lobby', icon: <Users className="w-4 h-4" />, count: publicRooms.length },
+            { id: 'join', label: 'Join Code', icon: <KeyRound className="w-4 h-4" /> },
+            { id: 'vs_bot', label: 'VS Computer', icon: <Bot className="w-4 h-4" /> }
+          ].map((tab) => {
+            const isSelected = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setActiveTab(tab.id as any)}
+                className={`flex-1 py-2.5 sm:py-3 px-2 sm:px-4 rounded-xl font-black text-xs sm:text-sm tracking-wide transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                  isSelected
+                    ? 'bg-gradient-to-r from-amber-400 to-yellow-500 text-slate-950 shadow-md shadow-amber-500/20 scale-[1.02]'
+                    : 'text-sky-200/70 hover:text-white hover:bg-sky-950/40'
+                }`}
+              >
+                {tab.icon}
+                <span className="truncate">{tab.label}</span>
+                {typeof tab.count === 'number' && (
+                  <span className={`text-[10px] font-extrabold px-1.5 py-0.5 rounded-full ${isSelected ? 'bg-slate-950/20 text-slate-950' : 'bg-sky-500/20 text-sky-300'}`}>
+                    {tab.count}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* ------------------------------------------------------------- */}
+        {/* ACTIVE TAB CONTENT CARD PANEL (SINGLE PROMINENT PANEL)        */}
+        {/* ------------------------------------------------------------- */}
+        <div className="w-full bg-[#062447]/90 backdrop-blur-xl border border-sky-400/25 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6">
+
+          {/* ----------------------------------------------------------- */}
+          {/* TAB 1: CREATE ROOM CONTENT                                  */}
+          {/* ----------------------------------------------------------- */}
+          {activeTab === 'create' && (
+            <div className="space-y-6 animate-fade-in">
+              <div className="flex items-center justify-between border-b border-sky-400/20 pb-4">
                 <div>
-                  <h2 className="text-lg font-black text-white tracking-wide uppercase">CREATE MULTIPLAYER</h2>
-                  <p className="text-[10px] font-bold text-sky-300/80 uppercase tracking-wider">ONLINE ROOM</p>
+                  <h3 className="text-xl font-black text-white uppercase tracking-tight flex items-center gap-2">
+                    <Globe className="w-5 h-5 text-sky-400" />
+                    <span>CREATE MULTIPLAYER ROOM</span>
+                  </h3>
+                  <p className="text-xs font-semibold text-sky-200/70 mt-0.5">
+                    Configure online game rules and room access for real players.
+                  </p>
+                </div>
+                <span className="text-xs font-extrabold bg-sky-500/20 text-sky-300 px-3 py-1 rounded-full border border-sky-400/30">
+                  ONLINE MATCH
+                </span>
+              </div>
+
+              {/* Game Preset Modes */}
+              <div className="space-y-2">
+                <span className="text-xs font-extrabold text-sky-200 uppercase tracking-wider block">SELECT PRESET MODE:</span>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  {[
+                    { mode: 'Classic', title: '🎲 CLASSIC', desc: 'Standard official UNO rules' },
+                    { mode: 'No Mercy', title: '🔥 NO MERCY', desc: '25-Card Limit & Extreme Stacking' },
+                    { mode: 'Custom', title: '⚙️ CUSTOM', desc: 'Configure individual house rules' }
+                  ].map((item) => (
+                    <button
+                      key={item.mode}
+                      type="button"
+                      onClick={() => handleModeChange(item.mode as any)}
+                      className={`p-3.5 rounded-2xl text-left border transition-all cursor-pointer ${
+                        gameMode === item.mode
+                          ? 'border-amber-400 bg-amber-500/20 text-white ring-2 ring-amber-400/40 shadow-md'
+                          : 'border-sky-400/20 text-sky-200/70 hover:border-sky-400/40 bg-sky-950/40'
+                      }`}
+                    >
+                      <div className="font-extrabold text-xs text-white">{item.title}</div>
+                      <div className="text-[10px] font-semibold text-sky-200/70 mt-1">{item.desc}</div>
+                    </button>
+                  ))}
                 </div>
               </div>
-              <span className="text-[10px] font-black bg-sky-500/20 text-sky-300 px-2.5 py-1 rounded-full uppercase border border-sky-400/30">
-                REAL PLAYERS
-              </span>
-            </div>
 
-            <p className="text-xs text-sky-100/70 font-medium leading-relaxed">
-              Host an online match for real human players. Invite friends via code or link.
-            </p>
-
-            <div className="space-y-3.5">
-              
-              {/* Privacy & Player Count Row */}
-              <div className="grid grid-cols-2 gap-2.5">
-                <div className="space-y-1">
-                  <span className="text-[10px] font-extrabold text-sky-200/80 uppercase tracking-wider block">Privacy:</span>
-                  <div className="bg-sky-950/60 p-1 rounded-xl flex gap-1 border border-sky-400/20">
+              {/* Room Access & Players Row (Matching Reference Image Layout) */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+                <div className="space-y-2">
+                  <span className="text-xs font-extrabold text-sky-200 uppercase tracking-wider block">ROOM ACCESS:</span>
+                  <div className="bg-sky-950/60 p-1.5 rounded-2xl flex gap-1.5 border border-sky-400/20">
                     <button
                       type="button"
                       onClick={() => setIsPrivate(false)}
-                      className={`flex-1 py-1 rounded-lg text-[10px] font-extrabold transition-all cursor-pointer ${
-                        !isPrivate ? 'bg-emerald-500 text-slate-950 shadow-sm font-black' : 'text-sky-200/70 hover:text-white'
+                      className={`flex-1 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${
+                        !isPrivate ? 'bg-emerald-500 text-slate-950 font-black shadow-md' : 'text-sky-200/70 hover:text-white'
                       }`}
                     >
                       🌐 Public
@@ -522,8 +504,8 @@ export const Play: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => setIsPrivate(true)}
-                      className={`flex-1 py-1 rounded-lg text-[10px] font-extrabold transition-all cursor-pointer ${
-                        isPrivate ? 'bg-amber-500 text-slate-950 shadow-sm font-black' : 'text-sky-200/70 hover:text-white'
+                      className={`flex-1 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${
+                        isPrivate ? 'bg-amber-500 text-slate-950 font-black shadow-md' : 'text-sky-200/70 hover:text-white'
                       }`}
                     >
                       🔒 Private
@@ -531,120 +513,166 @@ export const Play: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="space-y-1">
-                  <span className="text-[10px] font-extrabold text-sky-200/80 uppercase tracking-wider block">Players:</span>
-                  <div className="bg-sky-950/60 p-1 rounded-xl flex gap-1 border border-sky-400/20">
+                <div className="space-y-2">
+                  <span className="text-xs font-extrabold text-sky-200 uppercase tracking-wider block">PLAYER COUNT:</span>
+                  <div className="bg-sky-950/60 p-1.5 rounded-2xl flex gap-1.5 border border-sky-400/20">
                     {[2, 3, 4].map((num) => (
                       <button
                         key={num}
                         type="button"
                         onClick={() => setMaxPlayers(num)}
-                        className={`flex-1 py-1 rounded-lg text-[10px] font-black transition-all cursor-pointer ${
-                          maxPlayers === num ? 'bg-sky-400 text-slate-950 shadow-sm' : 'text-sky-200/70 hover:text-white'
+                        className={`flex-1 py-2 rounded-xl text-xs font-black transition-all cursor-pointer ${
+                          maxPlayers === num ? 'bg-sky-400 text-slate-950 shadow-md' : 'text-sky-200/70 hover:text-white'
                         }`}
                       >
-                        {num}P
+                        {num} Players
                       </button>
                     ))}
                   </div>
                 </div>
               </div>
 
-              {/* Game Mode Selector */}
-              <div className="space-y-1.5">
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-extrabold text-sky-200/80 uppercase tracking-wider">Game Mode:</span>
-                  {gameMode === 'Custom' && (
-                    <button
-                      onClick={() => setShowCustomModal(true)}
-                      className="text-[10px] font-extrabold text-amber-300 hover:text-amber-200 flex items-center gap-1 cursor-pointer underline"
-                    >
-                      <Sliders className="w-3 h-3" /> Edit Rules
-                    </button>
-                  )}
+              {/* Rules Description Summary Box */}
+              <div className="p-4 rounded-2xl bg-sky-950/70 border border-sky-400/20 flex items-center justify-between gap-4">
+                <div className="space-y-0.5">
+                  <span className="font-extrabold text-xs text-amber-300 uppercase tracking-wide block">
+                    {gameMode === 'Classic' ? '🎲 Classic Rules Active' : gameMode === 'No Mercy' ? '🔥 Show \'em No Mercy Active' : '⚙️ Custom House Rules Active'}
+                  </span>
+                  <p className="text-[11px] text-sky-200/80 font-medium">
+                    {gameMode === 'Classic'
+                      ? 'Standard official UNO rules (+2/+4 Stacking, Deflect Shield).'
+                      : gameMode === 'No Mercy'
+                      ? '25-Card Knockout, 7-0 Swap, Discard All, Color Roulette, Extreme Stacking.'
+                      : 'Configured house rules active.'}
+                  </p>
                 </div>
-                <div className="bg-sky-950/60 p-1 rounded-xl flex gap-1 border border-sky-400/20">
-                  {(['Classic', 'No Mercy', 'Custom'] as const).map((mode) => (
-                    <button
-                      key={mode}
-                      type="button"
-                      onClick={() => handleModeChange(mode)}
-                      className={`flex-1 py-1.5 rounded-lg text-[10px] font-black transition-all cursor-pointer ${
-                        gameMode === mode
-                          ? 'bg-gradient-to-r from-amber-400 to-yellow-500 text-slate-950 shadow-sm'
-                          : 'text-sky-200/70 hover:text-white'
-                      }`}
+                {gameMode === 'Custom' && (
+                  <button
+                    type="button"
+                    onClick={() => setShowCustomModal(true)}
+                    className="bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-400/40 px-3 py-1.5 rounded-xl text-xs font-extrabold shrink-0 cursor-pointer flex items-center gap-1.5"
+                  >
+                    <Sliders className="w-3.5 h-3.5" />
+                    <span>Edit Toggles</span>
+                  </button>
+                )}
+              </div>
+
+              {/* Create Room Button (Bottom Right Aligned like reference) */}
+              <div className="flex justify-end pt-2">
+                <button
+                  onClick={handleCreateGame}
+                  disabled={isCreating}
+                  className="btn-3d-blue px-8 py-3.5 rounded-2xl text-xs sm:text-sm font-black tracking-wider uppercase disabled:opacity-50 flex items-center gap-2 shadow-lg cursor-pointer"
+                >
+                  <Globe className="w-4 h-4" />
+                  <span>{isCreating ? 'CREATING ROOM...' : 'CREATE MULTIPLAYER ROOM'}</span>
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* ----------------------------------------------------------- */}
+          {/* TAB 2: PUBLIC LOBBY BROWSER CONTENT                         */}
+          {/* ----------------------------------------------------------- */}
+          {activeTab === 'lobby' && (
+            <div className="space-y-5 animate-fade-in">
+              <div className="flex items-center justify-between border-b border-sky-400/20 pb-4">
+                <div>
+                  <h3 className="text-xl font-black text-white uppercase tracking-tight flex items-center gap-2">
+                    <Users className="w-5 h-5 text-sky-400" />
+                    <span>OPEN PUBLIC LOBBIES</span>
+                  </h3>
+                  <p className="text-xs font-semibold text-sky-200/70 mt-0.5">
+                    Join open games created by other real players worldwide.
+                  </p>
+                </div>
+
+                <button
+                  onClick={fetchPublicRooms}
+                  disabled={isLoadingRooms}
+                  className="bg-sky-500/20 hover:bg-sky-500/30 text-sky-300 hover:text-white border border-sky-400/30 px-3.5 py-1.5 rounded-xl text-xs font-extrabold flex items-center gap-1.5 transition-colors cursor-pointer"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${isLoadingRooms ? 'animate-spin' : ''}`} />
+                  <span>Refresh</span>
+                </button>
+              </div>
+
+              {publicRooms.length === 0 ? (
+                <div className="p-8 text-center space-y-3 bg-sky-950/40 rounded-2xl border border-sky-400/20">
+                  <div className="text-3xl">🌐</div>
+                  <h4 className="text-sm font-extrabold text-white">No open public rooms found right now.</h4>
+                  <p className="text-xs font-semibold text-sky-200/60 max-w-sm mx-auto">
+                    Be the first! Click "Create Room" above to start a new public game room.
+                  </p>
+                  <button
+                    onClick={() => setActiveTab('create')}
+                    className="btn-3d-yellow px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider cursor-pointer inline-flex items-center gap-1.5 mt-2"
+                  >
+                    <span>Create Public Room Now</span>
+                  </button>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {publicRooms.map((room) => (
+                    <div
+                      key={room.code}
+                      className="bg-sky-950/60 rounded-2xl p-4 border border-sky-400/20 shadow-lg hover:border-sky-400/50 transition-all flex flex-col justify-between space-y-3"
                     >
-                      {mode === 'No Mercy' ? '🔥 No Mercy' : mode === 'Custom' ? '⚙️ Custom' : '🎲 Classic'}
-                    </button>
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="font-mono font-black text-sm text-sky-300 bg-sky-950/80 border border-sky-400/30 px-2.5 py-1 rounded-xl tracking-wider">
+                            #{room.code}
+                          </span>
+                          <span className="text-xs font-black text-emerald-300 bg-emerald-500/20 px-2.5 py-1 rounded-full border border-emerald-400/30">
+                            👥 {room.playerCount} / {room.maxPlayers}
+                          </span>
+                        </div>
+
+                        <div>
+                          <p className="text-[10px] text-sky-300/60 font-semibold uppercase">Host Player</p>
+                          <p className="text-sm font-black text-white tracking-tight">{room.hostName}</p>
+                        </div>
+                      </div>
+
+                      <button
+                        onClick={() => handleJoinPublicRoom(room.code)}
+                        className="w-full btn-3d-green py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all shadow-md active:scale-95 flex items-center justify-center gap-1.5 cursor-pointer"
+                      >
+                        <span>JOIN ROOM 🚀</span>
+                      </button>
+                    </div>
                   ))}
                 </div>
-              </div>
-
-              {/* Active Rules Info Box */}
-              <div className="p-3 rounded-2xl bg-sky-950/70 border border-sky-400/20 text-left space-y-1">
-                <span className="font-extrabold text-xs text-amber-300 uppercase tracking-wide flex items-center gap-1.5">
-                  <Info className="w-3.5 h-3.5 text-amber-400" />
-                  <span>{gameMode === 'Classic' ? 'Classic Rules' : gameMode === 'No Mercy' ? 'Show \'em No Mercy' : 'Custom Rules Active'}</span>
-                </span>
-                <p className="text-[10px] text-sky-200/70 font-semibold leading-relaxed">
-                  {gameMode === 'Classic'
-                    ? 'Standard official UNO rules (+2/+4 Stacking, Deflect Shield).'
-                    : gameMode === 'No Mercy'
-                    ? '25-Card Knockout, 7-0 Swap, Discard All, Color Roulette, Extreme Stacking.'
-                    : 'Configured house rules active. Click Edit Rules to customize toggles.'}
-                </p>
-              </div>
-
+              )}
             </div>
-          </div>
+          )}
 
-          {/* CREATE GAME BUTTON */}
-          <div className="pt-3">
-            <button
-              onClick={handleCreateGame}
-              disabled={isCreating}
-              className="w-full btn-3d-blue py-3.5 rounded-2xl text-xs font-black tracking-wider uppercase disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg cursor-pointer"
-            >
-              <Globe className="w-4 h-4" />
-              <span>{isCreating ? 'CREATING ROOM...' : 'CREATE MULTIPLAYER ROOM'}</span>
-            </button>
-          </div>
-
-        </div>
-
-        {/* ----------------------------------------------------------- */}
-        {/* CARD 3: JOIN A GAME WITH CODE                               */}
-        {/* ----------------------------------------------------------- */}
-        <div className="w-full bg-[#062447]/90 backdrop-blur-xl border border-sky-400/25 rounded-3xl p-6 sm:p-7 shadow-2xl hover:border-emerald-400/50 transition-all flex flex-col justify-between space-y-6 group">
-          
-          <div className="space-y-5">
-            {/* Header Badge */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
-                <div className="p-2.5 rounded-2xl bg-emerald-500/20 border border-emerald-400/40 text-emerald-300 shadow-sm">
-                  <KeyRound className="w-6 h-6" />
-                </div>
+          {/* ----------------------------------------------------------- */}
+          {/* TAB 3: JOIN ROOM WITH CODE CONTENT                          */}
+          {/* ----------------------------------------------------------- */}
+          {activeTab === 'join' && (
+            <div className="space-y-6 animate-fade-in">
+              <div className="flex items-center justify-between border-b border-sky-400/20 pb-4">
                 <div>
-                  <h2 className="text-lg font-black text-white tracking-wide uppercase">JOIN A GAME</h2>
-                  <p className="text-[10px] font-bold text-emerald-300/80 uppercase tracking-wider">ROOM CODE</p>
+                  <h3 className="text-xl font-black text-white uppercase tracking-tight flex items-center gap-2">
+                    <KeyRound className="w-5 h-5 text-emerald-400" />
+                    <span>JOIN WITH ROOM CODE</span>
+                  </h3>
+                  <p className="text-xs font-semibold text-sky-200/70 mt-0.5">
+                    Enter the 6-character room code from your game host.
+                  </p>
                 </div>
+                <span className="text-xs font-extrabold bg-emerald-500/20 text-emerald-300 px-3 py-1 rounded-full border border-emerald-400/30">
+                  QUICK JOIN
+                </span>
               </div>
-              <span className="text-[10px] font-black bg-emerald-500/20 text-emerald-300 px-2.5 py-1 rounded-full uppercase border border-emerald-400/30">
-                JOIN NOW
-              </span>
-            </div>
 
-            <p className="text-xs text-sky-100/70 font-medium leading-relaxed">
-              Enter a 6-character room code provided by your host to join an active game room.
-            </p>
-
-            <form onSubmit={handleJoinGame} className="space-y-4 pt-1">
-              <div className="space-y-2">
-                <label className="text-[10px] font-extrabold text-sky-200/80 uppercase tracking-wider block text-center">
-                  ENTER 6-DIGIT ROOM CODE:
-                </label>
-                <div className="max-w-[240px] mx-auto">
+              <form onSubmit={handleJoinGame} className="space-y-6 max-w-md mx-auto py-2">
+                <div className="space-y-2 text-center">
+                  <label className="text-xs font-extrabold text-sky-200 uppercase tracking-wider block">
+                    ENTER 6-DIGIT ROOM CODE:
+                  </label>
                   <input
                     type="text"
                     maxLength={6}
@@ -654,128 +682,125 @@ export const Play: React.FC = () => {
                       setJoinError(null);
                     }}
                     placeholder="ABC123"
-                    className="w-full px-4 py-3 rounded-2xl bg-sky-950/80 border-2 border-sky-400/30 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/30 focus:outline-none font-mono text-center text-xl font-black text-white uppercase tracking-widest placeholder:text-sky-300/30 shadow-inner"
+                    className="w-full px-4 py-3.5 rounded-2xl bg-sky-950/80 border-2 border-sky-400/30 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/30 focus:outline-none font-mono text-center text-2xl font-black text-white uppercase tracking-widest placeholder:text-sky-300/30 shadow-inner"
                   />
                   {joinError && (
-                    <p className="text-xs font-black text-red-400 mt-1.5 text-center">{joinError}</p>
+                    <p className="text-xs font-black text-red-400 mt-2">{joinError}</p>
+                  )}
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={isJoining}
+                  className="w-full btn-3d-green py-3.5 rounded-2xl text-xs sm:text-sm font-black tracking-wider uppercase disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg cursor-pointer"
+                >
+                  <PlayIcon className="w-4 h-4 fill-current text-white" />
+                  <span>{isJoining ? 'JOINING ROOM...' : 'JOIN ROOM NOW'}</span>
+                </button>
+              </form>
+
+              <div className="text-center pt-2">
+                <button
+                  onClick={handleInviteLink}
+                  className="text-xs font-bold text-sky-200 hover:text-amber-300 underline uppercase tracking-wider transition-colors cursor-pointer"
+                >
+                  PASTE INVITE LINK 🔗
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* ----------------------------------------------------------- */}
+          {/* TAB 4: VS COMPUTER (AI MATCH) CONTENT                       */}
+          {/* ----------------------------------------------------------- */}
+          {activeTab === 'vs_bot' && (
+            <div className="space-y-6 animate-fade-in">
+              <div className="flex items-center justify-between border-b border-sky-400/20 pb-4">
+                <div>
+                  <h3 className="text-xl font-black text-white uppercase tracking-tight flex items-center gap-2">
+                    <Bot className="w-5 h-5 text-amber-400" />
+                    <span>PLAY VS COMPUTER (AI)</span>
+                  </h3>
+                  <p className="text-xs font-semibold text-sky-200/70 mt-0.5">
+                    Practice your skills offline against smart computer AI bots.
+                  </p>
+                </div>
+                <span className="text-xs font-extrabold bg-amber-500/20 text-amber-300 px-3 py-1 rounded-full border border-amber-400/30">
+                  OFFLINE / BOT
+                </span>
+              </div>
+
+              {/* Match Size Selection: 2, 3, or 4 Players */}
+              <div className="space-y-2.5">
+                <span className="text-xs font-extrabold text-sky-200 uppercase tracking-wider block">SELECT MATCH SIZE:</span>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  {[
+                    { size: 2, label: '2 PLAYERS', desc: '1 vs 1 AI Bot' },
+                    { size: 3, label: '3 PLAYERS', desc: '1 vs 2 AI Bots' },
+                    { size: 4, label: '4 PLAYERS', desc: '1 vs 3 AI Bots' }
+                  ].map((item) => (
+                    <button
+                      key={item.size}
+                      type="button"
+                      onClick={() => setBotMatchSize(item.size as 2 | 3 | 4)}
+                      className={`p-4 rounded-2xl text-left border transition-all cursor-pointer ${
+                        botMatchSize === item.size
+                          ? 'border-amber-400 bg-amber-500/20 text-amber-200 ring-2 ring-amber-400/40 shadow-md font-black'
+                          : 'border-sky-400/20 text-sky-200/70 hover:border-sky-400/40 bg-sky-950/40'
+                      }`}
+                    >
+                      <div className="font-extrabold text-sm text-white">{item.label}</div>
+                      <div className="text-xs font-semibold text-amber-300/80 mt-0.5">{item.desc}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Match Roster Preview */}
+              <div className="bg-sky-950/60 rounded-2xl p-4 border border-sky-400/20 space-y-2">
+                <span className="text-xs font-extrabold text-sky-300/80 uppercase tracking-wider block">
+                  MATCH ROSTER PREVIEW:
+                </span>
+                <div className="flex flex-wrap items-center gap-2">
+                  <div className="flex items-center gap-1.5 bg-blue-500/20 text-blue-300 border border-blue-400/30 px-3 py-1.5 rounded-xl text-xs font-extrabold">
+                    <span>👤</span>
+                    <span>You ({playerName})</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 bg-amber-500/20 text-amber-300 border border-amber-400/30 px-3 py-1.5 rounded-xl text-xs font-extrabold">
+                    <span>🤖</span>
+                    <span>Bot 1</span>
+                  </div>
+                  {botMatchSize >= 3 && (
+                    <div className="flex items-center gap-1.5 bg-amber-500/20 text-amber-300 border border-amber-400/30 px-3 py-1.5 rounded-xl text-xs font-extrabold">
+                      <span>🤖</span>
+                      <span>Bot 2</span>
+                    </div>
+                  )}
+                  {botMatchSize >= 4 && (
+                    <div className="flex items-center gap-1.5 bg-amber-500/20 text-amber-300 border border-amber-400/30 px-3 py-1.5 rounded-xl text-xs font-extrabold">
+                      <span>🤖</span>
+                      <span>Bot 3</span>
+                    </div>
                   )}
                 </div>
               </div>
 
-              {/* JOIN GAME BUTTON */}
-              <button
-                type="submit"
-                disabled={isJoining}
-                className="w-full btn-3d-green py-3.5 rounded-2xl text-xs font-black tracking-wider uppercase disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg cursor-pointer"
-              >
-                <PlayIcon className="w-4 h-4 fill-current text-white" />
-                <span>{isJoining ? 'JOINING ROOM...' : 'JOIN ROOM'}</span>
-              </button>
-            </form>
-          </div>
-
-          {/* OR DIVIDER & INVITE LINK SHORTCUT */}
-          <div className="space-y-3 pt-2 text-center">
-            <div className="flex items-center justify-center gap-3">
-              <div className="h-[1px] flex-1 bg-sky-400/20" />
-              <span className="text-[10px] font-black text-sky-300/60 uppercase">OR</span>
-              <div className="h-[1px] flex-1 bg-sky-400/20" />
-            </div>
-
-            <button
-              onClick={handleInviteLink}
-              className="text-xs font-bold text-sky-200 hover:text-amber-300 underline uppercase tracking-wider transition-colors cursor-pointer"
-            >
-              JOIN USING INVITE LINK 🔗
-            </button>
-          </div>
-
-        </div>
-
-      </div>
-
-      {/* ------------------------------------------------------------- */}
-      {/* PUBLIC LOBBY BROWSER SECTION                                  */}
-      {/* ------------------------------------------------------------- */}
-      <div className="max-w-6xl w-full mt-10 z-10 space-y-4">
-        <div className="flex items-center justify-between px-2">
-          <div className="flex items-center gap-2">
-            <span className="text-lg">🌐</span>
-            <h2 className="text-base sm:text-lg font-black text-white tracking-wide uppercase">
-              OPEN PUBLIC LOBBIES
-            </h2>
-            <span className="bg-sky-500/20 text-sky-300 font-extrabold text-xs px-2.5 py-0.5 rounded-full border border-sky-400/30">
-              {publicRooms.length} Active
-            </span>
-          </div>
-
-          <button
-            onClick={fetchPublicRooms}
-            disabled={isLoadingRooms}
-            className="text-xs font-extrabold text-sky-300 hover:text-white flex items-center gap-1.5 transition-colors disabled:opacity-50 cursor-pointer"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 ${isLoadingRooms ? 'animate-spin' : ''}`} />
-            <span>Refresh</span>
-          </button>
-        </div>
-
-        {publicRooms.length === 0 ? (
-          <div className="bg-[#062447]/80 backdrop-blur-xl rounded-3xl p-8 border border-sky-400/20 text-center space-y-2 shadow-xl">
-            <p className="text-sm font-extrabold text-white">No open public rooms found right now.</p>
-            <p className="text-xs font-semibold text-sky-200/70">Create a new game room above to start playing with friends!</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {publicRooms.map((room) => (
-              <div
-                key={room.code}
-                className="bg-[#062447]/90 backdrop-blur-xl rounded-2xl p-5 border border-sky-400/25 shadow-xl hover:border-sky-400/50 transition-all flex flex-col justify-between space-y-4 group"
-              >
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="font-mono font-black text-base text-sky-300 bg-sky-950/80 border border-sky-400/30 px-2.5 py-1 rounded-xl tracking-wider">
-                      #{room.code}
-                    </span>
-                    <span className="text-xs font-black text-emerald-300 bg-emerald-500/20 px-2.5 py-1 rounded-full border border-emerald-400/30">
-                      👥 {room.playerCount} / {room.maxPlayers}
-                    </span>
-                  </div>
-
-                  <div className="pt-1">
-                    <p className="text-[10px] text-sky-300/60 font-semibold uppercase">Host</p>
-                    <p className="text-sm font-black text-white tracking-tight">{room.hostName}</p>
-                  </div>
-
-                  {/* Settings tags */}
-                  <div className="flex flex-wrap gap-1.5 pt-1">
-                    {room.settings?.houseRules?.stacking && (
-                      <span className="text-[10px] font-extrabold bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded-md border border-amber-400/30">
-                        Stacking +2/+4
-                      </span>
-                    )}
-                    {room.settings?.houseRules?.jumpIn && (
-                      <span className="text-[10px] font-extrabold bg-purple-500/20 text-purple-300 px-2 py-0.5 rounded-md border border-purple-400/30">
-                        Jump-In
-                      </span>
-                    )}
-                    {room.settings?.houseRules?.sevenZero && (
-                      <span className="text-[10px] font-extrabold bg-sky-500/20 text-sky-300 px-2 py-0.5 rounded-md border border-sky-400/30">
-                        7-Zero
-                      </span>
-                    )}
-                  </div>
-                </div>
-
+              {/* Start VS Computer Button */}
+              <div className="flex justify-end pt-2">
                 <button
-                  onClick={() => handleJoinPublicRoom(room.code)}
-                  className="w-full btn-3d-green py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all shadow-md active:scale-95 flex items-center justify-center gap-1.5 cursor-pointer"
+                  onClick={() => handleCreateVsBot()}
+                  disabled={isCreatingBot}
+                  className="btn-3d-yellow px-8 py-3.5 rounded-2xl text-xs sm:text-sm font-black tracking-wider uppercase disabled:opacity-50 flex items-center gap-2 shadow-lg cursor-pointer"
                 >
-                  <span>JOIN LOBBY 🚀</span>
+                  <Zap className="w-4 h-4 fill-current text-slate-950" />
+                  <span>{isCreatingBot ? 'STARTING MATCH...' : `PLAY ${botMatchSize}P VS COMPUTER`}</span>
                 </button>
               </div>
-            ))}
-          </div>
-        )}
+            </div>
+          )}
+
+        </div>
+
       </div>
 
       {/* ------------------------------------------------------------- */}
