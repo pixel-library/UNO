@@ -414,12 +414,12 @@ export const Play: React.FC = () => {
         {/* ------------------------------------------------------------- */}
         {/* SEGMENTED TAB NAVIGATION BAR (ORIGINAL WHITE THEME)           */}
         {/* ------------------------------------------------------------- */}
-        <div className="bg-[#EBE7DF] border border-stone-300/70 p-1.5 rounded-2xl flex gap-1.5 justify-center shadow-inner">
+        <div className="bg-[#EBE7DF] border border-stone-300/70 p-1.5 rounded-2xl grid grid-cols-2 sm:flex gap-1.5 justify-center shadow-inner">
           {[
-            { id: 'create', label: 'Create Room', icon: <Globe className="w-4 h-4" /> },
-            { id: 'lobby', label: 'Public Lobby', icon: <Users className="w-4 h-4" />, count: publicRooms.length },
-            { id: 'join', label: 'Join Code', icon: <KeyRound className="w-4 h-4" /> },
-            { id: 'vs_bot', label: 'VS Computer', icon: <Bot className="w-4 h-4" /> }
+            { id: 'create', label: 'Create Room', icon: <Globe className="w-4 h-4 shrink-0" /> },
+            { id: 'lobby', label: 'Public Lobby', icon: <Users className="w-4 h-4 shrink-0" />, count: publicRooms.length },
+            { id: 'join', label: 'Join Code', icon: <KeyRound className="w-4 h-4 shrink-0" /> },
+            { id: 'vs_bot', label: 'VS Computer', icon: <Bot className="w-4 h-4 shrink-0" /> }
           ].map((tab) => {
             const isSelected = activeTab === tab.id;
             return (
@@ -427,7 +427,7 @@ export const Play: React.FC = () => {
                 key={tab.id}
                 type="button"
                 onClick={() => setActiveTab(tab.id as any)}
-                className={`flex-1 py-2.5 sm:py-3 px-2 sm:px-4 rounded-xl font-black text-xs sm:text-sm tracking-wide transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                className={`flex-1 py-2.5 sm:py-3 px-2.5 sm:px-4 rounded-xl font-black text-xs sm:text-sm tracking-wide transition-all flex items-center justify-center gap-1.5 sm:gap-2 cursor-pointer ${
                   isSelected
                     ? 'bg-white text-slate-900 shadow-md ring-1 ring-stone-300/60 scale-[1.01]'
                     : 'text-stone-600 hover:text-slate-900 hover:bg-white/40'
@@ -436,7 +436,7 @@ export const Play: React.FC = () => {
                 {tab.icon}
                 <span className="truncate">{tab.label}</span>
                 {typeof tab.count === 'number' && (
-                  <span className={`text-[10px] font-extrabold px-1.5 py-0.5 rounded-full ${isSelected ? 'bg-amber-100 text-amber-900 border border-amber-300' : 'bg-stone-300/60 text-stone-700'}`}>
+                  <span className={`text-[10px] font-extrabold px-1.5 py-0.5 rounded-full shrink-0 ${isSelected ? 'bg-amber-100 text-amber-900 border border-amber-300' : 'bg-stone-300/60 text-stone-700'}`}>
                     {tab.count}
                   </span>
                 )}
