@@ -144,7 +144,10 @@ class SocketService {
         game.callUno(botId);
       }
 
-      game.playCard(botId, cardToPlay.id, cardToPlay.color === 'WILD' ? bestChosenColor : undefined);
+      const res = game.playCard(botId, cardToPlay.id, cardToPlay.color === 'WILD' ? bestChosenColor : undefined);
+      if (!res.success && game.getCurrentPlayer()?.id === botId) {
+        game.passTurn(botId);
+      }
     } else {
       const drawRes = game.drawCard(botId);
       if (drawRes.success && drawRes.drawnCard && game.getCurrentPlayer()?.id === botId && game.isPlayable(drawRes.drawnCard)) {
@@ -152,7 +155,12 @@ class SocketService {
         if (updatedHand.length === 2 && !currPlayer.hasCalledUno) {
           game.callUno(botId);
         }
-        game.playCard(botId, drawRes.drawnCard.id, drawRes.drawnCard.color === 'WILD' ? bestChosenColor : undefined);
+        const playRes = game.playCard(botId, drawRes.drawnCard.id, drawRes.drawnCard.color === 'WILD' ? bestChosenColor : undefined);
+        if (!playRes.success && game.getCurrentPlayer()?.id === botId) {
+          game.passTurn(botId);
+        }
+      } else if (game.getCurrentPlayer()?.id === botId) {
+        game.passTurn(botId);
       }
     }
 

@@ -352,11 +352,15 @@ export class UnoGame {
     const activePlayers = this.players.filter(p => !p.isSpectator);
     if (activePlayers.length === 0) return this.players[0];
 
-    let current = activePlayers[this.currentPlayerIndex % activePlayers.length];
+    const safeIdx = ((this.currentPlayerIndex % activePlayers.length) + activePlayers.length) % activePlayers.length;
+    let current = activePlayers[safeIdx];
+    let step = this.direction === 'CW' ? 1 : -1;
+    let checkIdx = safeIdx;
     let attempts = 0;
+
     while (current && (current.isFinished || current.isEliminated) && attempts < activePlayers.length) {
-      this.advanceTurnIndex();
-      current = activePlayers[this.currentPlayerIndex % activePlayers.length];
+      checkIdx = (checkIdx + step + activePlayers.length) % activePlayers.length;
+      current = activePlayers[checkIdx];
       attempts++;
     }
     return current || activePlayers[0];
@@ -403,7 +407,7 @@ export class UnoGame {
       } else if (this.settings.houseRules?.stacking) {
         const isCounterCard = cardVal === 'DRAW_TWO' || cardVal === 'WILD_DRAW_FOUR' ||
           (this.settings.houseRules.counterDeflect && (cardVal === 'SKIP' || cardVal === 'REVERSE' || cardVal === 'SKIP_WILD'));
-        if (isCounterCard) return true;
+        if (isCounterCard || this.isBasePlayable(card)) return true;
         return false;
       } else {
         return false;
@@ -445,9 +449,12 @@ export class UnoGame {
     const isStackingCard = this.isPenaltyCard(cardVal) ||
       (this.settings.houseRules.counterDeflect && (cardVal === 'SKIP' || cardVal === 'REVERSE' || cardVal === 'SKIP_WILD'));
 
-    // If targeted by +2/+4/+6/+10 stack penalty and player tries to play a non-stacking card:
+    // If targeted by +2/+4/+6/+10 stack penalty and player plays a non-counter card, absorb the active stack into hand!
     if (this.activeStackCount > 0 && !isStackingCard) {
-      return { success: false, error: `Active +${this.activeStackCount} stack penalty pending! You must play a valid stacking Draw card or draw the penalty stack.` };
+      const count = this.activeStackCount;
+      const penaltyCards = this.deck.drawMultiple(count, this.discardPile);
+      hand.push(...penaltyCards);
+      this.activeStackCount = 0;
     }
 
     // Remove played card from hand and add to discard pile
@@ -1085,7 +1092,8 @@ export class UnoGame {
     if (unfinished.length === 0) return;
 
     const step = this.direction === 'CW' ? 1 : -1;
-    let nextIdx = (this.currentPlayerIndex + step + activePlayers.length) % activePlayers.length;
+    const currentSafe = ((this.currentPlayerIndex % activePlayers.length) + activePlayers.length) % activePlayers.length;
+    let nextIdx = (currentSafe + step + activePlayers.length) % activePlayers.length;
     let attempts = 0;
 
     while ((activePlayers[nextIdx]?.isFinished || activePlayers[nextIdx]?.isEliminated) && attempts < activePlayers.length) {

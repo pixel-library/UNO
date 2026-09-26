@@ -509,6 +509,9 @@ export const supabaseRoomService = {
               game!.playerHands.set(pid, handArr as any[]);
             });
           }
+          if (payload.deck && Array.isArray(payload.deck)) {
+            (game as any).deck.setCards(payload.deck);
+          }
 
           const myId = localStorage.getItem('uno_player_id') || game.players[0]?.id;
           const privateState = game.getPrivateState(myId);
@@ -552,6 +555,7 @@ export const supabaseRoomService = {
       const payload = {
         publicState: game.getPublicState(),
         hands: handsObj,
+        deck: (game as any).deck.getCards(),
         customState
       };
 

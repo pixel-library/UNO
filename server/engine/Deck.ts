@@ -182,7 +182,18 @@ export class Deck {
     this.shuffle();
   }
 
+  public getCards(): Card[] {
+    return [...this.cards];
+  }
+
+  public setCards(cards: Card[]): void {
+    if (Array.isArray(cards)) {
+      this.cards = [...cards];
+    }
+  }
+
   public get count(): number {
     return this.cards.length;
   }
 }
+

@@ -253,22 +253,26 @@ export const GameScreen: React.FC = () => {
       return;
     }
 
-    // Zero-Latency Optimistic UI update on local state
-    setGameState((prev) => {
-      if (!prev) return prev;
-      const activePlayers = prev.players.filter(p => !p.isSpectator);
-      const isCW = prev.direction === 'CW' || prev.direction === undefined;
-      const step = isCW ? 1 : -1;
-      const nextIdx = (prev.currentPlayerIndex + step + activePlayers.length) % (activePlayers.length || 1);
+    const isSevenCard = card.value === '7' && (gameState?.settings?.mode === 'NO_MERCY' || gameState?.settings?.houseRules?.sevenZero);
 
-      return {
-        ...prev,
-        hand: prev.hand.filter(c => c.id !== card.id),
-        topDiscardCard: card,
-        currentColor: card.color === 'WILD' ? prev.currentColor : card.color,
-        currentPlayerIndex: nextIdx
-      };
-    });
+    // Zero-Latency Optimistic UI update on local state (only for normal cards)
+    if (!isSevenCard) {
+      setGameState((prev) => {
+        if (!prev) return prev;
+        const activePlayers = prev.players.filter(p => !p.isSpectator);
+        const isCW = prev.direction === 'CW' || prev.direction === undefined;
+        const step = isCW ? 1 : -1;
+        const nextIdx = (prev.currentPlayerIndex + step + activePlayers.length) % (activePlayers.length || 1);
+
+        return {
+          ...prev,
+          hand: prev.hand.filter(c => c.id !== card.id),
+          topDiscardCard: card,
+          currentColor: card.color === 'WILD' ? prev.currentColor : card.color,
+          currentPlayerIndex: nextIdx
+        };
+      });
+    }
 
     setIsActionPending(true);
     const socket = socketService.getSocket();
@@ -509,7 +513,8 @@ export const GameScreen: React.FC = () => {
   }
 
   const currentIdx = typeof gameState?.currentPlayerIndex === 'number' ? gameState.currentPlayerIndex : 0;
-  const currentTurnPlayerId = activePlayers[currentIdx]?.id;
+  const safeCurrentIdx = activePlayers.length > 0 ? (((currentIdx % activePlayers.length) + activePlayers.length) % activePlayers.length) : 0;
+  const currentTurnPlayerId = activePlayers[safeCurrentIdx]?.id;
   const isMyTurn = currentTurnPlayerId === myId;
 
   // Play Turn Chime when turn changes to local player
@@ -1421,7 +1426,7 @@ export const GameScreen: React.FC = () => {
             </div>
 
             <div className="space-y-3">
-              {activePlayers.filter(p => p.id !== myId && p.id !== gameState.pendingHandSwapPlayerId).map((target) => (
+              {activePlayers.filter(p => p.id !== myId).map((target) => (
                 <button
                   key={target.id}
                   onClick={() => handleSwapHands(target.id)}
