@@ -94,9 +94,8 @@ export const GameScreen: React.FC = () => {
         return;
       }
       
-      // Trigger victory celebration confetti when game status transitions to FINISHED
+      // Trigger victory celebration when game status transitions to FINISHED
       if (newState.status === 'FINISHED') {
-        audioService.playWinSound();
         audioService.triggerVictoryConfetti();
       }
 

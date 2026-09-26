@@ -160,26 +160,8 @@ class SoundEngine {
   }
 
   public playWinSound() {
-    if (!this.soundEnabled) return;
-    this.initCtx();
-    if (!this.ctx) return;
-
-    const now = this.ctx.currentTime;
-    [440, 554.37, 659.25, 880].forEach((freq, idx) => {
-      const osc = this.ctx!.createOscillator();
-      const gain = this.ctx!.createGain();
-      osc.type = 'triangle';
-      osc.frequency.setValueAtTime(freq, now + idx * 0.1);
-
-      gain.gain.setValueAtTime(0.3, now + idx * 0.1);
-      gain.gain.exponentialRampToValueAtTime(0.01, now + idx * 0.1 + 0.3);
-
-      osc.connect(gain);
-      gain.connect(this.ctx!.destination);
-
-      osc.start(now + idx * 0.1);
-      osc.stop(now + idx * 0.1 + 0.3);
-    });
+    // Sound effect disabled on match victory as requested
+    return;
   }
 
   public playButtonClick() {
