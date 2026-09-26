@@ -1,20 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Settings, Sparkles, Play, BookOpen, Layers, UserCheck, Edit3 } from 'lucide-react';
+import { Settings, Sparkles, Play, BookOpen, Layers } from 'lucide-react';
 
 export const Navbar: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-
-  const [playerName, setPlayerName] = useState<string | null>(null);
-  const [playerAvatar, setPlayerAvatar] = useState<string>('🦊');
-
-  useEffect(() => {
-    const storedName = localStorage.getItem('uno_player_name');
-    const storedAvatar = localStorage.getItem('uno_player_avatar');
-    setPlayerName(storedName);
-    if (storedAvatar) setPlayerAvatar(storedAvatar);
-  }, [location]);
 
   const isActive = (path: string) => location.pathname === path;
 
@@ -81,21 +71,8 @@ export const Navbar: React.FC = () => {
           </Link>
         </div>
 
-        {/* Right Actions: Player Change Name Badge & Settings */}
+        {/* Right Actions: Settings */}
         <div className="flex items-center gap-2">
-          {/* Change Name Badge */}
-          <button
-            onClick={() => navigate('/enter-name')}
-            className="bg-amber-50 hover:bg-amber-100 active:bg-amber-200 border border-amber-300 text-amber-900 px-3 py-1.5 rounded-xl text-xs font-extrabold flex items-center gap-1.5 shadow-xs transition-all cursor-pointer"
-            title="Click to Change Name"
-          >
-            <span className="text-base">{playerAvatar}</span>
-            <span className="max-w-[70px] sm:max-w-[110px] truncate font-black text-slate-900 text-xs">
-              {playerName || 'Set Name'}
-            </span>
-            <Edit3 className="w-3 h-3 text-amber-600 shrink-0" />
-          </button>
-
           {/* Settings Button */}
           <button
             onClick={() => navigate('/settings')}
