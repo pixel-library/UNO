@@ -843,6 +843,25 @@ io.on('connection', (socket) => {
     broadcastGameState(game);
   });
 
+  // 7b. Leave Room / Lobby
+  socket.on('room:leave', (_, callback) => {
+    const playerInfo = socketPlayerMap.get(socket.id);
+    if (playerInfo) {
+      const game = activeGames.get(playerInfo.roomCode);
+      if (game && game.status === 'WAITING') {
+        game.removePlayer(playerInfo.playerId);
+        if (game.players.length === 0) {
+          activeGames.delete(playerInfo.roomCode);
+        }
+        broadcastGameState(game);
+        broadcastLobbyUpdate();
+      }
+      socket.leave(`room_${playerInfo.roomCode}`);
+      socketPlayerMap.delete(socket.id);
+    }
+    if (callback) callback({ success: true });
+  });
+
   // 8. Disconnect
   socket.on('disconnect', () => {
     const playerInfo = socketPlayerMap.get(socket.id);
@@ -852,6 +871,13 @@ io.on('connection', (socket) => {
         const player = game.players.find(p => p.id === playerInfo.playerId);
         if (player) {
           player.isConnected = false;
+          if (game.status === 'WAITING') {
+            game.removePlayer(playerInfo.playerId);
+            if (game.players.length === 0) {
+              activeGames.delete(playerInfo.roomCode);
+            }
+            broadcastLobbyUpdate();
+          }
           broadcastGameState(game);
         }
       }

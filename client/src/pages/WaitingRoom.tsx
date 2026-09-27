@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Copy, Check, Play, Users, Crown, Shield, UserX, Settings, Zap, RotateCcw, Layers, Lock, Globe } from 'lucide-react';
+import { Copy, Check, Play, Users, Crown, Shield, UserX, Settings, Zap, RotateCcw, Layers, Lock, Globe, LogOut } from 'lucide-react';
 import { socketService } from '@/services/socketService';
 import { GamePublicState, PlayerPublic, GameSettings } from '@shared/types/game';
 import { DEFAULT_GAME_SETTINGS } from '@shared/constants/gameConstants';
@@ -203,6 +203,16 @@ export const WaitingRoom: React.FC = () => {
     });
   };
 
+  const handleLeaveRoom = () => {
+    const socket = socketService.getSocket();
+    socket.emit('room:leave', {}, () => {
+      navigate('/play');
+    });
+    setTimeout(() => {
+      navigate('/play');
+    }, 150);
+  };
+
   // Host Action Handlers
   const handleKickPlayer = (targetPlayerId: string) => {
     if (!confirm('Are you sure you want to kick this player?')) return;
@@ -300,6 +310,15 @@ export const WaitingRoom: React.FC = () => {
             >
               {copiedLink ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4 text-uno-blue" />}
               {copiedLink ? 'LINK COPIED!' : 'INVITE LINK'}
+            </button>
+
+            <button
+              onClick={handleLeaveRoom}
+              className="bg-red-50 hover:bg-red-100 border border-red-200 text-red-600 font-bold px-4 py-2.5 rounded-2xl text-xs flex items-center gap-2 transition-all cursor-pointer"
+              title="Leave Room"
+            >
+              <LogOut className="w-4 h-4 text-red-600" />
+              <span>LEAVE ROOM</span>
             </button>
           </div>
         </div>
