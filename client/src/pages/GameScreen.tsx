@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { Copy, Volume2, VolumeX, Settings, MessageSquare, Send, Check, Play, Zap, ArrowRight, Music, X, Smile, Trophy, Sparkles, RefreshCw, BookOpen } from 'lucide-react';
+import { Copy, Volume2, VolumeX, Settings, MessageSquare, Send, Check, Play, Zap, ArrowRight, Music, X, Smile, Trophy, Sparkles, RefreshCw, BookOpen, LogOut } from 'lucide-react';
 import { UnoCard } from '@/components/card/UnoCard';
 import { CardColor, PlayerPrivateState, Card, ChatMessage } from '@shared/types/game';
 import { audioService } from '@/services/audioService';
@@ -1506,19 +1506,15 @@ export const GameScreen: React.FC = () => {
               })}
             </div>
 
-            <div className="space-y-2 pt-1">
+            <div className="pt-2">
               <button
-                onClick={handleRematch}
+                onClick={() => {
+                  audioService.playButtonClick();
+                  navigate('/play');
+                }}
                 className="w-full bg-[#FCD116] hover:bg-[#f3c807] active:scale-95 text-slate-950 font-black py-3.5 rounded-xl text-sm flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer uppercase tracking-wider border border-amber-400/50"
               >
-                <Play className="w-4 h-4 fill-current text-slate-950" />
-                PLAY AGAIN
-              </button>
-
-              <button
-                onClick={() => navigate('/play')}
-                className="w-full bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold py-3 rounded-xl text-xs flex items-center justify-center gap-2 cursor-pointer border border-slate-200 transition-colors"
-              >
+                <LogOut className="w-4 h-4 text-slate-950" />
                 RETURN TO LOBBY
               </button>
             </div>

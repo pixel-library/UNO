@@ -26,21 +26,13 @@ export const GameResult: React.FC = () => {
           <div className="flex justify-between"><span>UNO Calls:</span><span className="font-bold text-uno-navy">1</span></div>
         </div>
 
-        <div className="space-y-3">
+        <div className="pt-2">
           <button
             onClick={() => navigate('/play')}
-            className="w-full bg-uno-yellow hover:bg-amber-400 text-uno-navy font-black py-4 rounded-2xl text-base flex items-center justify-center gap-2 shadow-lg transition-transform hover:scale-[1.02]"
+            className="w-full bg-uno-yellow hover:bg-amber-400 text-uno-navy font-black py-4 rounded-2xl text-base flex items-center justify-center gap-2 shadow-lg transition-transform hover:scale-[1.02] cursor-pointer uppercase tracking-wider"
           >
-            <RefreshCw className="w-5 h-5" />
-            PLAY AGAIN
-          </button>
-
-          <button
-            onClick={() => navigate('/')}
-            className="w-full bg-white border border-neutral-200 hover:border-neutral-300 text-uno-navy font-bold py-3.5 rounded-2xl text-sm flex items-center justify-center gap-2"
-          >
-            <Home className="w-4 h-4" />
-            GO TO HOME
+            <Home className="w-5 h-5" />
+            RETURN TO LOBBY
           </button>
         </div>
 
