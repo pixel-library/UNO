@@ -295,10 +295,10 @@ export const WaitingRoom: React.FC = () => {
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex items-center gap-2 flex-row flex-nowrap shrink-0">
             <button
               onClick={handleCopyCode}
-              className="bg-neutral-100 hover:bg-neutral-200 border border-neutral-200 text-uno-navy font-bold px-4 py-2.5 rounded-2xl text-xs flex items-center gap-2 transition-all"
+              className="bg-neutral-100 hover:bg-neutral-200 border border-neutral-200 text-uno-navy font-bold px-4 py-2.5 rounded-2xl text-xs flex items-center justify-center gap-2 transition-all shrink-0 whitespace-nowrap cursor-pointer"
             >
               {copied ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
               {copied ? 'CODE COPIED!' : 'COPY CODE'}
@@ -306,19 +306,10 @@ export const WaitingRoom: React.FC = () => {
 
             <button
               onClick={handleCopyInviteLink}
-              className="bg-blue-50 hover:bg-blue-100 border border-blue-200 text-uno-blue font-bold px-4 py-2.5 rounded-2xl text-xs flex items-center gap-2 transition-all"
+              className="bg-blue-50 hover:bg-blue-100 border border-blue-200 text-uno-blue font-bold px-4 py-2.5 rounded-2xl text-xs flex items-center justify-center gap-2 transition-all shrink-0 whitespace-nowrap cursor-pointer"
             >
               {copiedLink ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4 text-uno-blue" />}
               {copiedLink ? 'LINK COPIED!' : 'INVITE LINK'}
-            </button>
-
-            <button
-              onClick={handleLeaveRoom}
-              className="bg-red-50 hover:bg-red-100 border border-red-200 text-red-600 font-bold px-4 py-2.5 rounded-2xl text-xs flex items-center gap-2 transition-all cursor-pointer"
-              title="Leave Room"
-            >
-              <LogOut className="w-4 h-4 text-red-600" />
-              <span>LEAVE ROOM</span>
             </button>
           </div>
         </div>
@@ -429,11 +420,22 @@ export const WaitingRoom: React.FC = () => {
         {/* Player Slots */}
         <div className="bg-white rounded-3xl p-8 border border-neutral-200 shadow-lg space-y-6">
           <div className="flex items-center justify-between border-b border-neutral-100 pb-4">
-            <h2 className="font-extrabold text-lg text-uno-navy flex items-center gap-2">
-              <Users className="w-5 h-5 text-uno-blue" />
-              PLAYERS ({players.length}/{maxPlayers})
-            </h2>
-            <span className="text-xs font-bold text-neutral-400">Need min 2 players</span>
+            <div className="flex items-center gap-3">
+              <h2 className="font-extrabold text-lg text-uno-navy flex items-center gap-2">
+                <Users className="w-5 h-5 text-uno-blue" />
+                PLAYERS ({players.length}/{maxPlayers})
+              </h2>
+              <span className="text-xs font-bold text-neutral-400 hidden sm:inline">Need min 2 players</span>
+            </div>
+
+            <button
+              onClick={handleLeaveRoom}
+              className="bg-red-50 hover:bg-red-100 border border-red-200 text-red-600 font-bold px-3.5 py-2 rounded-2xl text-xs flex items-center gap-1.5 transition-all cursor-pointer shadow-2xs hover:shadow-xs"
+              title="Leave Room"
+            >
+              <LogOut className="w-4 h-4 text-red-600" />
+              <span>LEAVE ROOM</span>
+            </button>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
