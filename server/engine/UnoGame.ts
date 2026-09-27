@@ -480,6 +480,7 @@ export class UnoGame {
       const penaltyCards = this.deck.drawMultiple(count, this.discardPile);
       hand.push(...penaltyCards);
       this.activeStackCount = 0;
+      this.checkMercyRule(playerId);
     }
 
     // Remove played card from hand and add to discard pile
@@ -780,6 +781,7 @@ export class UnoGame {
       targetHand.push(...penaltyCards);
       target.cardCount = targetHand.length;
       target.hasCalledUno = false;
+      this.checkMercyRule(target.id);
 
       this.lastActionEvent = {
         type: 'UNO_CHALLENGE',
@@ -818,6 +820,7 @@ export class UnoGame {
       hand.push(...penaltyCards);
       this.playerHands.set(playerId, hand);
       currentPlayer.cardCount = hand.length;
+      this.checkMercyRule(playerId);
 
       this.lastActionEvent = {
         type: 'STACK',
@@ -1081,6 +1084,7 @@ export class UnoGame {
       cardIdx += giveCount;
       this.playerHands.set(p.id, newHand);
       p.cardCount = newHand.length;
+      this.checkMercyRule(p.id);
     });
   }
 

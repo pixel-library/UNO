@@ -481,4 +481,31 @@ describe('UnoGame Engine Unit Tests', () => {
     // 4th place (last): 0 points
     expect(scoreGame.finishedRankings[3].score).toBe(0);
   });
+
+  it('should eliminate host or any player when hand count reaches 25+ cards in No Mercy mode', () => {
+    const mercyGame = new UnoGame('g_mercy', 'MERCY1', { mode: 'NO_MERCY' });
+    const host = mercyGame.addPlayer('p_host', 's_host', 'Host Player', true);
+    mercyGame.addPlayer('p_guest', 's_guest', 'Guest Player', false);
+    mercyGame.startGame();
+
+    expect(host?.isHost).toBe(true);
+
+    // Give host 25 cards
+    const cards25 = Array.from({ length: 25 }, (_, i) => ({
+      id: `m_${i}`,
+      color: 'RED' as const,
+      value: '1' as const,
+      score: 1
+    }));
+    mercyGame.playerHands.set('p_host', cards25);
+
+    const eliminated = mercyGame.checkMercyRule('p_host');
+    expect(eliminated).toBe(true);
+    expect(host?.isEliminated).toBe(true);
+    expect(host?.isFinished).toBe(true);
+    expect(mercyGame.playerHands.get('p_host')?.length).toBe(0);
+    // Guest player wins as sole survivor
+    expect(mercyGame.status).toBe('FINISHED');
+    expect(mercyGame.winner?.id).toBe('p_guest');
+  });
 });
