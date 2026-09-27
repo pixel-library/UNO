@@ -444,4 +444,41 @@ describe('UnoGame Engine Unit Tests', () => {
     expect(multiGame.finishedRankings[3].rank).toBe(4);
     expect(multiGame.winner?.id).toBe('p1');
   });
+
+  it('should calculate dynamic snapshot scores correctly for 1st, 2nd, 3rd, and 4th place', () => {
+    const scoreGame = new UnoGame('g_score', 'SCORE1', { maxPlayers: 4 });
+    scoreGame.addPlayer('p1', 's1', 'Player 1', true);
+    scoreGame.addPlayer('p2', 's2', 'Player 2', false);
+    scoreGame.addPlayer('p3', 's3', 'Player 3', false);
+    scoreGame.addPlayer('p4', 's4', 'Player 4', false);
+    scoreGame.startGame();
+
+    const c1 = { id: 'c1', color: 'RED' as const, value: '1' as const, score: 1 };
+    const c2 = { id: 'c2', color: 'RED' as const, value: '2' as const, score: 2 };
+    const c3 = { id: 'c3', color: 'RED' as const, value: '3' as const, score: 3 };
+    const c4_1 = { id: 'c4_1', color: 'RED' as const, value: '4' as const, score: 4 };
+    const c4_2 = { id: 'c4_2', color: 'RED' as const, value: '5' as const, score: 5 };
+    const c4_wild = { id: 'c4_w', color: 'WILD' as const, value: 'WILD' as const, score: 50 };
+
+    scoreGame.playerHands.set('p1', [c1]);
+    scoreGame.playerHands.set('p2', [c2]);
+    scoreGame.playerHands.set('p3', [c3]);
+    scoreGame.playerHands.set('p4', [c4_1, c4_2, c4_wild]);
+    scoreGame.currentColor = 'RED';
+
+    // 1st place finishes (p1): p2 has (2), p3 has (3), p4 has (4+5+50=59) -> 2 + 3 + 59 = 64
+    scoreGame.playCard('p1', 'c1');
+    expect(scoreGame.finishedRankings[0].score).toBe(64);
+
+    // 2nd place finishes (p2): p3 has (3), p4 has (59) -> 3 + 59 = 62
+    scoreGame.playCard('p2', 'c2');
+    expect(scoreGame.finishedRankings[1].score).toBe(62);
+
+    // 3rd place finishes (p3): p4 has (59) -> 59
+    scoreGame.playCard('p3', 'c3');
+    expect(scoreGame.finishedRankings[2].score).toBe(59);
+
+    // 4th place (last): 0 points
+    expect(scoreGame.finishedRankings[3].score).toBe(0);
+  });
 });

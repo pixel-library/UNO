@@ -206,6 +206,7 @@ export class UnoGame {
       player.isFinished = false;
       player.isEliminated = false;
       player.rank = undefined;
+      player.score = 0;
     });
 
     // Draw initial discard card (must not be a Wild penalty or roulette card)
@@ -295,6 +296,16 @@ export class UnoGame {
     return this.discardPile.length > 0 ? this.discardPile[this.discardPile.length - 1] : null;
   }
 
+  public getCardScore(card: Card): number {
+    if (typeof card.score === 'number') return card.score;
+    const val = String(card.value || '').trim().toUpperCase();
+    if (!isNaN(Number(val))) return Number(val);
+    if (['SKIP', 'REVERSE', 'DRAW_TWO'].includes(val)) return 20;
+    if (['DISCARD_ALL', 'SKIP_EVERYONE', 'REPLAY', 'HASH', 'MINUS_ONE'].includes(val)) return 30;
+    if (val.startsWith('WILD')) return 50;
+    return 20;
+  }
+
   public checkAndRecordPlayerFinish(playerId: string): boolean {
     const player = this.players.find(p => p.id === playerId);
     if (!player || player.isFinished) return this.status === 'FINISHED';
@@ -306,13 +317,26 @@ export class UnoGame {
     const rank = this.finishedRankings.length + 1;
     player.rank = rank;
 
+    // Snapshot score calculation: sum of all remaining cards held by active opponents right now
+    let scoreEarned = 0;
+    this.playerHands.forEach((oppHand, oppId) => {
+      const opp = this.players.find(p => p.id === oppId);
+      if (opp && !opp.isFinished && !opp.isEliminated && oppId !== playerId) {
+        oppHand.forEach(card => {
+          scoreEarned += this.getCardScore(card);
+        });
+      }
+    });
+
+    player.score = scoreEarned;
+
     const rankText = rank === 1 ? '1st 🏆' : rank === 2 ? '2nd 🥈' : rank === 3 ? '3rd 🥉' : `${rank}th`;
     this.finishedRankings.push({
       playerId: player.id,
       name: player.name,
       avatar: player.avatar,
       rank,
-      score: player.score
+      score: scoreEarned
     });
 
     this.lastActionEvent = {
@@ -321,20 +345,21 @@ export class UnoGame {
       playerName: player.name,
       timestamp: Date.now()
     };
-    this.lastActionMessage = `🎉 ${player.name} finished in ${rankText} Place!`;
+    this.lastActionMessage = `🎉 ${player.name} finished in ${rankText} Place! (+${scoreEarned} pts)`;
 
-    const unfinished = this.players.filter(p => !p.isSpectator && !p.isFinished);
+    const unfinished = this.players.filter(p => !p.isSpectator && !p.isFinished && !p.isEliminated);
     if (unfinished.length <= 1) {
       if (unfinished.length === 1) {
         const lastPlayer = unfinished[0];
         lastPlayer.isFinished = true;
         lastPlayer.rank = this.finishedRankings.length + 1;
+        lastPlayer.score = 0;
         this.finishedRankings.push({
           playerId: lastPlayer.id,
           name: lastPlayer.name,
           avatar: lastPlayer.avatar,
           rank: lastPlayer.rank,
-          score: lastPlayer.score
+          score: 0
         });
       }
 
@@ -1144,14 +1169,11 @@ export class UnoGame {
       this.finishedRankings.forEach((item) => {
         const targetPlayer = this.players.find(p => p.id === item.playerId);
         if (targetPlayer) {
-          let score = 0;
-          this.playerHands.forEach((hand, pId) => {
-            if (pId !== item.playerId) {
-              hand.forEach(c => { score += c.score; });
-            }
-          });
-          targetPlayer.score = score;
-          item.score = score;
+          if (typeof item.score === 'number') {
+            targetPlayer.score = item.score;
+          } else {
+            item.score = targetPlayer.score || 0;
+          }
         }
       });
     }
