@@ -185,16 +185,10 @@ export const UnoCard: React.FC<UnoCardProps> = ({
         );
       case 'SKIP_EVERYONE':
         return (
-          <div className="flex items-center justify-center -space-x-1 select-none">
-            <svg className="w-5 h-5 sm:w-6 sm:h-6 stroke-current fill-none stroke-[3.2] drop-shadow-[0_1.5px_2px_rgba(0,0,0,0.25)]" viewBox="0 0 24 24">
-              <circle cx="12" cy="12" r="9" />
-              <line x1="5.6" y1="5.6" x2="18.4" y2="18.4" />
-            </svg>
-            <svg className="w-5 h-5 sm:w-6 sm:h-6 stroke-current fill-none stroke-[3.2] drop-shadow-[0_1.5px_2px_rgba(0,0,0,0.25)]" viewBox="0 0 24 24">
-              <circle cx="12" cy="12" r="9" />
-              <line x1="5.6" y1="5.6" x2="18.4" y2="18.4" />
-            </svg>
-          </div>
+          <svg className="w-3/4 h-3/4 stroke-current fill-none stroke-[3.2] drop-shadow-[0_1.5px_2px_rgba(0,0,0,0.25)]" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="9" />
+            <line x1="5.6" y1="5.6" x2="18.4" y2="18.4" />
+          </svg>
         );
       case 'WILD_REVERSE_DRAW_FOUR':
         return (
