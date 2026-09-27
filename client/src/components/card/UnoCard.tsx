@@ -152,22 +152,11 @@ export const UnoCard: React.FC<UnoCardProps> = ({
           </div>
         );
       case 'DISCARD_ALL':
-        const discardTextSize =
-          size === 'xs' ? 'text-[6px]' :
-          size === 'sm' ? 'text-[8px] sm:text-[9px]' :
-          size === 'md' ? 'text-[10px] sm:text-[11px]' :
-          size === 'lg' ? 'text-xs sm:text-sm' : 'text-sm sm:text-base';
         return (
-          <div className="flex flex-col items-center justify-center leading-[0.9] text-center select-none py-0.5">
-            <svg className="w-3.5 h-3.5 sm:w-4.5 sm:h-4.5 mb-0.5 fill-current opacity-95 drop-shadow-[0_1px_1px_rgba(0,0,0,0.2)]" viewBox="0 0 24 24">
+          <div className="flex flex-col items-center justify-center leading-none text-center select-none py-0.5">
+            <svg className="w-7 h-7 sm:w-8 sm:h-8 fill-current opacity-95 drop-shadow-[0_1.5px_2px_rgba(0,0,0,0.25)]" viewBox="0 0 24 24">
               <path d="M4 4h16v2H4zm2 4h12v2H6zm-4 4h20v8H2z" />
             </svg>
-            <span className={`font-black italic tracking-tighter drop-shadow-[0_1px_1px_rgba(0,0,0,0.15)] ${discardTextSize}`}>
-              DISCARD
-            </span>
-            <span className={`font-black italic tracking-tighter drop-shadow-[0_1px_1px_rgba(0,0,0,0.15)] ${discardTextSize}`}>
-              ALL
-            </span>
           </div>
         );
       case 'WILD_SHUFFLE':
@@ -195,26 +184,16 @@ export const UnoCard: React.FC<UnoCardProps> = ({
           </div>
         );
       case 'SKIP_EVERYONE':
-        const skipAllTextSize =
-          size === 'xs' ? 'text-[6px]' :
-          size === 'sm' ? 'text-[8px] sm:text-[9px]' :
-          size === 'md' ? 'text-[10px] sm:text-[11px]' :
-          size === 'lg' ? 'text-xs sm:text-sm' : 'text-sm sm:text-base';
         return (
-          <div className="flex flex-col items-center justify-center leading-[0.9] text-center select-none py-0.5">
-            <div className="flex items-center justify-center -space-x-1 mb-0.5">
-              <svg className="w-3.5 h-3.5 sm:w-4.5 sm:h-4.5 stroke-current fill-none stroke-[3.2] drop-shadow-[0_1px_1px_rgba(0,0,0,0.2)]" viewBox="0 0 24 24">
-                <circle cx="12" cy="12" r="9" />
-                <line x1="5.6" y1="5.6" x2="18.4" y2="18.4" />
-              </svg>
-              <svg className="w-3.5 h-3.5 sm:w-4.5 sm:h-4.5 stroke-current fill-none stroke-[3.2] drop-shadow-[0_1px_1px_rgba(0,0,0,0.2)]" viewBox="0 0 24 24">
-                <circle cx="12" cy="12" r="9" />
-                <line x1="5.6" y1="5.6" x2="18.4" y2="18.4" />
-              </svg>
-            </div>
-            <span className={`font-black italic tracking-tighter drop-shadow-[0_1px_1px_rgba(0,0,0,0.15)] ${skipAllTextSize}`}>
-              SKIP ALL
-            </span>
+          <div className="flex items-center justify-center -space-x-1 select-none">
+            <svg className="w-5 h-5 sm:w-6 sm:h-6 stroke-current fill-none stroke-[3.2] drop-shadow-[0_1.5px_2px_rgba(0,0,0,0.25)]" viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="9" />
+              <line x1="5.6" y1="5.6" x2="18.4" y2="18.4" />
+            </svg>
+            <svg className="w-5 h-5 sm:w-6 sm:h-6 stroke-current fill-none stroke-[3.2] drop-shadow-[0_1.5px_2px_rgba(0,0,0,0.25)]" viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="9" />
+              <line x1="5.6" y1="5.6" x2="18.4" y2="18.4" />
+            </svg>
           </div>
         );
       case 'WILD_REVERSE_DRAW_FOUR':
@@ -263,11 +242,6 @@ export const UnoCard: React.FC<UnoCardProps> = ({
           </div>
         );
       case 'WILD_COLOR_ROULETTE':
-        const rouletteTextSize =
-          size === 'xs' ? 'text-[5px]' :
-          size === 'sm' ? 'text-[7px] sm:text-[8px]' :
-          size === 'md' ? 'text-[9px] sm:text-[10px]' :
-          size === 'lg' ? 'text-[11px] sm:text-xs' : 'text-xs sm:text-sm';
         return (
           <div className="w-full h-full flex items-center justify-center relative select-none">
             {/* 4-Color Roulette Wheel Background */}
@@ -284,16 +258,6 @@ export const UnoCard: React.FC<UnoCardProps> = ({
                   <circle cx="12" cy="12" r="3.5" className="fill-white" />
                 </svg>
               </div>
-            </div>
-
-            {/* Premium Crisp Bold Overlay Label */}
-            <div className="absolute inset-0 flex flex-col items-center justify-center leading-[0.85] text-center z-20">
-              <span className={`font-black italic tracking-tighter text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.95)] px-0.5 whitespace-nowrap uppercase ${rouletteTextSize}`}>
-                COLOR
-              </span>
-              <span className={`font-black italic tracking-tighter text-amber-300 drop-shadow-[0_2px_4px_rgba(0,0,0,0.95)] px-0.5 whitespace-nowrap uppercase ${rouletteTextSize}`}>
-                ROULETTE
-              </span>
             </div>
           </div>
         );
@@ -315,12 +279,12 @@ export const UnoCard: React.FC<UnoCardProps> = ({
       case 'DISCARD_ALL': return 'ALL';
       case 'WILD_SHUFFLE': return '🌀';
       case 'WILD_SWAP': return '🎯';
-      case 'SKIP_EVERYONE': return '⊘ALL';
+      case 'SKIP_EVERYONE': return '⊘ ALL';
       case 'WILD_REVERSE_DRAW_FOUR': return '⇄+4';
       case 'DRAW_SIX':
       case 'WILD_DRAW_SIX': return '+6';
       case 'WILD_DRAW_TEN': return '+10';
-      case 'WILD_COLOR_ROULETTE': return '🎯';
+      case 'WILD_COLOR_ROULETTE': return 'Roulette';
       default: return value;
     }
   };
