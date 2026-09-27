@@ -1021,7 +1021,11 @@ export const GameScreen: React.FC = () => {
                   <span>📥</span> DRAW CARD
                 </button>
 
-                {!gameState?.settings?.houseRules?.forcePlay && (
+                {gameState?.settings?.mode !== 'CLASSIC' &&
+                 gameState?.settings?.mode !== 'NO_MERCY' &&
+                 gameState?.settings?.mode !== 'VS_COMPUTER' &&
+                 gameState?.settings?.mode !== undefined &&
+                 !gameState?.settings?.houseRules?.forcePlay && (
                   <button
                     onClick={handlePassTurn}
                     disabled={!isMyTurn || isActionPending}

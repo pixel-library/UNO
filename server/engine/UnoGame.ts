@@ -494,10 +494,8 @@ export class UnoGame {
     // Check victory post-action
     const currentHand = this.playerHands.get(playerId) || [];
     if (currentHand.length === 0) {
-      this.status = 'FINISHED';
-      this.winner = currentPlayer;
-      this.calculateScores();
-      return { success: true };
+      const matchFinished = this.checkAndRecordPlayerFinish(playerId);
+      if (matchFinished) return { success: true };
     }
 
     // Advance turn
@@ -777,9 +775,21 @@ export class UnoGame {
       return { success: false, error: 'Not your turn' };
     }
 
+    const isNoPassMode = this.settings.mode === 'CLASSIC' || 
+                         this.settings.mode === 'NO_MERCY' || 
+                         this.settings.mode === 'VS_COMPUTER' || 
+                         this.settings.houseRules.forcePlay ||
+                         this.settings.mode === undefined;
+
+    const hand = this.playerHands.get(playerId) || [];
+    const hasPlayableCard = hand.some(c => this.isPlayable(c));
+
+    if (isNoPassMode && hasPlayableCard && this.activeStackCount === 0) {
+      return { success: false, error: 'You must play a card on your turn!' };
+    }
+
     if (this.activeStackCount > 0 && this.settings.houseRules.stacking) {
       const penaltyCards = this.deck.drawMultiple(this.activeStackCount, this.discardPile);
-      const hand = this.playerHands.get(playerId) || [];
       hand.push(...penaltyCards);
       this.playerHands.set(playerId, hand);
       currentPlayer.cardCount = hand.length;
@@ -1077,12 +1087,11 @@ export class UnoGame {
       this.checkMercyRule(p.id);
     });
 
-    const winner = activePlayers.find(p => p.cardCount === 0);
-    if (winner) {
-      this.status = 'FINISHED';
-      this.winner = winner;
-      this.calculateScores();
-    }
+    activePlayers.forEach((p) => {
+      if (p.cardCount === 0) {
+        this.checkAndRecordPlayerFinish(p.id);
+      }
+    });
   }
 
   private advanceTurnIndex(): void {
@@ -1122,7 +1131,7 @@ export class UnoGame {
     let nextIdx = (this.currentPlayerIndex + step + activePlayers.length) % activePlayers.length;
     let attempts = 0;
 
-    while (activePlayers[nextIdx]?.isFinished && attempts < activePlayers.length) {
+    while ((activePlayers[nextIdx]?.isFinished || activePlayers[nextIdx]?.isEliminated) && attempts < activePlayers.length) {
       nextIdx = (nextIdx + step + activePlayers.length) % activePlayers.length;
       attempts++;
     }

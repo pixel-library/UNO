@@ -396,4 +396,52 @@ describe('UnoGame Engine Unit Tests', () => {
     expect(game.status).toBe('FINISHED');
     expect(game.winner?.id).toBe('p2');
   });
+
+  it('should handle multi-placement standings (1st, 2nd, 3rd, 4th) keeping game in PLAYING status until only 1 player remains', () => {
+    const multiGame = new UnoGame('g_multi', 'MULTI1', { maxPlayers: 4 });
+    multiGame.addPlayer('p1', 's1', 'Player 1', true);
+    multiGame.addPlayer('p2', 's2', 'Player 2', false);
+    multiGame.addPlayer('p3', 's3', 'Player 3', false);
+    multiGame.addPlayer('p4', 's4', 'Player 4', false);
+    multiGame.startGame();
+
+    const c1 = { id: 'c1', color: 'RED' as const, value: '1' as const, score: 1 };
+    const c2 = { id: 'c2', color: 'RED' as const, value: '2' as const, score: 2 };
+    const c3 = { id: 'c3', color: 'RED' as const, value: '3' as const, score: 3 };
+    const c4_1 = { id: 'c4_1', color: 'RED' as const, value: '4' as const, score: 4 };
+    const c4_2 = { id: 'c4_2', color: 'RED' as const, value: '5' as const, score: 5 };
+
+    multiGame.playerHands.set('p1', [c1]);
+    multiGame.playerHands.set('p2', [c2]);
+    multiGame.playerHands.set('p3', [c3]);
+    multiGame.playerHands.set('p4', [c4_1, c4_2]);
+    multiGame.currentColor = 'RED';
+
+    // Player 1 plays last card -> 1st Place! Match stays PLAYING
+    const resP1 = multiGame.playCard('p1', 'c1');
+    expect(resP1.success).toBe(true);
+    expect(multiGame.status).toBe('PLAYING');
+    expect(multiGame.finishedRankings.length).toBe(1);
+    expect(multiGame.finishedRankings[0].playerId).toBe('p1');
+    expect(multiGame.finishedRankings[0].rank).toBe(1);
+    expect(multiGame.getCurrentPlayer().id).toBe('p2');
+
+    // Player 2 plays last card -> 2nd Place! Match stays PLAYING
+    const resP2 = multiGame.playCard('p2', 'c2');
+    expect(resP2.success).toBe(true);
+    expect(multiGame.status).toBe('PLAYING');
+    expect(multiGame.finishedRankings.length).toBe(2);
+    expect(multiGame.finishedRankings[1].playerId).toBe('p2');
+    expect(multiGame.finishedRankings[1].rank).toBe(2);
+    expect(multiGame.getCurrentPlayer().id).toBe('p3');
+
+    // Player 3 plays last card -> 3rd Place! Match ends as only Player 4 remains (4th Place)
+    const resP3 = multiGame.playCard('p3', 'c3');
+    expect(resP3.success).toBe(true);
+    expect(multiGame.status).toBe('FINISHED');
+    expect(multiGame.finishedRankings.length).toBe(4);
+    expect(multiGame.finishedRankings[2].rank).toBe(3);
+    expect(multiGame.finishedRankings[3].rank).toBe(4);
+    expect(multiGame.winner?.id).toBe('p1');
+  });
 });
